@@ -1,0 +1,1352 @@
+diff --git a/arduino-lang.js b/arduino-lang.js
+new file mode 100644
+index 0000000..7b0ce6c
+--- /dev/null
++++ b/arduino-lang.js
+@@ -0,0 +1,751 @@
++/* ========================================================================
++   ARDUINO-LANG — a tiny interpreter for a subset of Arduino C++
++   Tokenizer -> Recursive-descent parser -> Generator-based tree-walking
++   evaluator. delay()/delayMicroseconds() yield control so the caller can
++   drive execution over (simulated) time without freezing the browser.
++   ======================================================================== */
++
++(function (root, factory) {
++  if (typeof module === 'object' && module.exports) {
++    module.exports = factory();
++  } else {
++    root.ArduinoLang = factory();
++  }
++})(typeof self !== 'undefined' ? self : this, function () {
++  'use strict';
++
++  /* ---------------------------- Errors / signals ---------------------------- */
++  class RuntimeErr extends Error {}
++  class SyntaxErr extends Error {}
++  class ReturnSignal { constructor(value) { this.value = value; } }
++  class BreakSignal {}
++  class ContinueSignal {}
++
++  function truthy(v) { return !!v; }
++
++  /* ------------------------------- Preprocess -------------------------------- */
++  function stripComments(src) {
++    let out = '';
++    let i = 0;
++    const n = src.length;
++    while (i < n) {
++      const c = src[i];
++      if (c === '/' && src[i + 1] === '/') {
++        while (i < n && src[i] !== '\n') i++;
++        continue;
++      }
++      if (c === '/' && src[i + 1] === '*') {
++        i += 2;
++        while (i < n && !(src[i] === '*' && src[i + 1] === '/')) i++;
++        i += 2;
++        continue;
++      }
++      if (c === '"' || c === "'") {
++        const quote = c;
++        out += c; i++;
++        while (i < n && src[i] !== quote) {
++          if (src[i] === '\\') { out += src[i]; i++; if (i < n) { out += src[i]; i++; } continue; }
++          out += src[i]; i++;
++        }
++        if (i < n) { out += src[i]; i++; }
++        continue;
++      }
++      out += c; i++;
++    }
++    return out;
++  }
++
++  function preprocess(src) {
++    src = stripComments(src);
++    const defines = {};
++    const lines = src.split('\n');
++    const kept = [];
++    for (const line of lines) {
++      const trimmed = line.trim();
++      if (trimmed.startsWith('#include')) { kept.push(''); continue; }
++      const m = trimmed.match(/^#define\s+(\w+)\s+(.+)$/);
++      if (m) { defines[m[1]] = m[2].trim(); kept.push(''); continue; }
++      if (trimmed.startsWith('#')) { kept.push(''); continue; }
++      kept.push(line);
++    }
++    let out = kept.join('\n');
++    const names = Object.keys(defines).sort((a, b) => b.length - a.length);
++    for (const name of names) {
++      const re = new RegExp('\\b' + name + '\\b', 'g');
++      out = out.replace(re, defines[name]);
++    }
++    return out;
++  }
++
++  /* -------------------------------- Tokenizer -------------------------------- */
++  const TWO_OPS = ['==', '!=', '<=', '>=', '&&', '||', '++', '--', '+=', '-=', '*=', '/=', '%=', '<<', '>>'];
++
++  function tokenize(src) {
++    const tokens = [];
++    let i = 0;
++    const n = src.length;
++    let line = 1;
++    const isDigit = c => c >= '0' && c <= '9';
++    const isIdentStart = c => /[A-Za-z_]/.test(c);
++    const isIdentPart = c => /[A-Za-z0-9_]/.test(c);
++
++    while (i < n) {
++      const c = src[i];
++      if (c === '\n') { line++; i++; continue; }
++      if (/\s/.test(c)) { i++; continue; }
++
++      if (isDigit(c) || (c === '.' && isDigit(src[i + 1]))) {
++        const start = i;
++        if (c === '0' && (src[i + 1] === 'x' || src[i + 1] === 'X')) {
++          i += 2;
++          while (i < n && /[0-9a-fA-F]/.test(src[i])) i++;
++          tokens.push({ type: 'num', value: parseInt(src.slice(start, i), 16), line });
++          continue;
++        }
++        while (i < n && isDigit(src[i])) i++;
++        if (src[i] === '.' && isDigit(src[i + 1])) { i++; while (i < n && isDigit(src[i])) i++; }
++        if (src[i] === 'e' || src[i] === 'E') {
++          i++;
++          if (src[i] === '+' || src[i] === '-') i++;
++          while (i < n && isDigit(src[i])) i++;
++        }
++        while (i < n && /[fFlLuU]/.test(src[i])) i++;
++        const text = src.slice(start, i).replace(/[fFlLuU]+$/, '');
++        tokens.push({ type: 'num', value: parseFloat(text), line });
++        continue;
++      }
++
++      if (isIdentStart(c)) {
++        const start = i; i++;
++        while (i < n && isIdentPart(src[i])) i++;
++        tokens.push({ type: 'id', value: src.slice(start, i), line });
++        continue;
++      }
++
++      if (c === '"') {
++        i++;
++        let s = '';
++        while (i < n && src[i] !== '"') {
++          if (src[i] === '\\') {
++            const nc = src[i + 1];
++            const map = { n: '\n', t: '\t', '"': '"', '\\': '\\', r: '\r', '0': '\0' };
++            s += (map[nc] !== undefined ? map[nc] : nc); i += 2; continue;
++          }
++          s += src[i]; i++;
++        }
++        i++; // closing quote
++        tokens.push({ type: 'str', value: s, line });
++        continue;
++      }
++
++      if (c === "'") {
++        i++;
++        let s = '';
++        while (i < n && src[i] !== "'") {
++          if (src[i] === '\\') {
++            const nc = src[i + 1];
++            const map = { n: '\n', t: '\t', "'": "'", '\\': '\\', '0': '\0' };
++            s += (map[nc] !== undefined ? map[nc] : nc); i += 2; continue;
++          }
++          s += src[i]; i++;
++        }
++        i++;
++        tokens.push({ type: 'num', value: s.length ? s.charCodeAt(0) : 0, line });
++        continue;
++      }
++
++      const two = src.slice(i, i + 2);
++      if (TWO_OPS.includes(two)) { tokens.push({ type: 'op', value: two, line }); i += 2; continue; }
++      tokens.push({ type: 'op', value: c, line }); i++;
++    }
++    tokens.push({ type: 'eof', value: null, line });
++    return tokens;
++  }
++
++  /* --------------------------------- Parser ---------------------------------- */
++  const TYPE_KEYWORDS = new Set([
++    'void', 'int', 'float', 'double', 'long', 'short', 'byte', 'char', 'bool', 'boolean',
++    'uint8_t', 'uint16_t', 'uint32_t', 'uint64_t', 'int8_t', 'int16_t', 'int32_t',
++    'size_t', 'word', 'String', 'auto'
++  ]);
++
++  function parse(tokens) {
++    let pos = 0;
++    const peek = (o = 0) => tokens[pos + o];
++    const at = (type, value) => { const t = peek(); return t.type === type && (value === undefined || t.value === value); };
++    const atOp = v => at('op', v);
++    const atId = v => at('id', v);
++    const advance = () => tokens[pos++];
++    const err = msg => new SyntaxErr(`خطای نحوی نزدیک خط ${peek().line}: ${msg}`);
++    const expectOp = v => { if (!atOp(v)) throw err(`انتظار «${v}» می‌رفت`); return advance(); };
++
++    function isTypeStart() {
++      const t = peek();
++      if (t.type !== 'id') return false;
++      if (t.value === 'const') return true;
++      if (TYPE_KEYWORDS.has(t.value)) return true;
++      const n = peek(1);
++      // Heuristic: "Ident Ident" => custom-type declaration (e.g. "Servo myServo;")
++      return !!(n && n.type === 'id');
++    }
++
++    function parseTypeSpec() {
++      while (atId('const')) advance();
++      if (peek().type !== 'id') throw err('نوع داده منتظر بود');
++      advance();
++      while (atOp('*')) advance();
++      // allow "unsigned int" / "unsigned long" style two-word types
++      if (peek().type === 'id' && TYPE_KEYWORDS.has(peek().value)) advance();
++      return true;
++    }
++
++    function parseExpr() {
++      let e = parseAssignment();
++      while (atOp(',')) { advance(); const e2 = parseAssignment(); e = { type: 'Seq', left: e, right: e2 }; }
++      return e;
++    }
++
++    const ASSIGN_OPS = ['=', '+=', '-=', '*=', '/=', '%='];
++    function parseAssignment() {
++      const left = parseBinary(1);
++      if (peek().type === 'op' && ASSIGN_OPS.includes(peek().value)) {
++        const op = advance().value;
++        const right = parseAssignment();
++        return { type: 'Assign', operator: op, target: left, value: right };
++      }
++      return left;
++    }
++
++    const PREC = {
++      '||': 1, '&&': 2, '|': 3, '^': 4, '&': 5,
++      '==': 6, '!=': 6,
++      '<': 7, '>': 7, '<=': 7, '>=': 7,
++      '<<': 8, '>>': 8,
++      '+': 9, '-': 9,
++      '*': 10, '/': 10, '%': 10
++    };
++    function parseBinary(minPrec) {
++      let left = parseUnary();
++      for (;;) {
++        const t = peek();
++        if (t.type !== 'op') break;
++        const prec = PREC[t.value];
++        if (prec === undefined || prec < minPrec) break;
++        const op = advance().value;
++        const right = parseBinary(prec + 1);
++        left = { type: 'Binary', operator: op, left, right };
++      }
++      return left;
++    }
++    function parseUnary() {
++      if (atOp('!') || atOp('-') || atOp('+')) { const op = advance().value; return { type: 'Unary', operator: op, argument: parseUnary() }; }
++      if (atOp('++') || atOp('--')) { const op = advance().value; return { type: 'UpdateExpr', operator: op, argument: parseUnary(), prefix: true }; }
++      return parsePostfix();
++    }
++    function parsePostfix() {
++      let expr = parsePrimary();
++      for (;;) {
++        if (atOp('(')) {
++          advance();
++          const args = [];
++          if (!atOp(')')) { do { args.push(parseAssignment()); } while (atOp(',') && advance()); }
++          expectOp(')');
++          expr = { type: 'Call', callee: expr, arguments: args };
++        } else if (atOp('.')) {
++          advance();
++          if (peek().type !== 'id') throw err('نام ویژگی منتظر بود');
++          const prop = advance().value;
++          expr = { type: 'Member', object: expr, property: prop };
++        } else if (atOp('[')) {
++          advance();
++          const idx = parseExpr();
++          expectOp(']');
++          expr = { type: 'Index', object: expr, index: idx };
++        } else if (atOp('++') || atOp('--')) {
++          const op = advance().value;
++          expr = { type: 'UpdateExpr', operator: op, argument: expr, prefix: false };
++        } else break;
++      }
++      return expr;
++    }
++    function parsePrimary() {
++      const t = peek();
++      if (t.type === 'num') { advance(); return { type: 'Num', value: t.value }; }
++      if (t.type === 'str') { advance(); return { type: 'Str', value: t.value }; }
++      if (t.type === 'id') { advance(); return { type: 'Ident', name: t.value }; }
++      if (atOp('(')) { advance(); const e = parseExpr(); expectOp(')'); return e; }
++      if (atOp('{')) {
++        advance();
++        const elements = [];
++        if (!atOp('}')) { do { elements.push(parseAssignment()); } while (atOp(',') && advance()); }
++        expectOp('}');
++        return { type: 'ArrayLit', elements };
++      }
++      throw err('عبارت نامعتبر یا ناتمام');
++    }
++
++    function parseVarDeclStatement() {
++      parseTypeSpec();
++      const decls = [];
++      do {
++        if (peek().type !== 'id') throw err('نام متغیر منتظر بود');
++        const name = advance().value;
++        let arraySize = null;
++        if (atOp('[')) { advance(); if (!atOp(']')) arraySize = parseExpr(); expectOp(']'); }
++        let init = null;
++        if (atOp('=')) { advance(); init = parseAssignment(); }
++        decls.push({ name, arraySize, init });
++      } while (atOp(',') && advance());
++      expectOp(';');
++      return { type: 'VarDecl', decls };
++    }
++
++    function parseBlock() {
++      expectOp('{');
++      const body = [];
++      while (!atOp('}')) {
++        if (at('eof')) throw err('«}» بسته‌نشده — یک آکولاد جا افتاده؟');
++        body.push(parseStatement());
++      }
++      expectOp('}');
++      return { type: 'Block', body };
++    }
++
++    function parseIf() {
++      advance(); expectOp('(');
++      const test = parseExpr();
++      expectOp(')');
++      const consequent = parseStatement();
++      let alternate = null;
++      if (atId('else')) { advance(); alternate = parseStatement(); }
++      return { type: 'If', test, consequent, alternate };
++    }
++    function parseFor() {
++      advance(); expectOp('(');
++      let init = null;
++      if (!atOp(';')) {
++        init = isTypeStart() ? parseVarDeclStatement() : (() => { const e = parseExpr(); expectOp(';'); return { type: 'ExprStmt', expression: e }; })();
++      } else advance();
++      let test = null;
++      if (!atOp(';')) test = parseExpr();
++      expectOp(';');
++      let update = null;
++      if (!atOp(')')) update = parseExpr();
++      expectOp(')');
++      const body = parseStatement();
++      return { type: 'For', init, test, update, body };
++    }
++    function parseWhile() {
++      advance(); expectOp('(');
++      const test = parseExpr();
++      expectOp(')');
++      const body = parseStatement();
++      return { type: 'While', test, body };
++    }
++    function parseDoWhile() {
++      advance();
++      const body = parseStatement();
++      if (!atId('while')) throw err('«while» بعد از «do» منتظر بود');
++      advance(); expectOp('(');
++      const test = parseExpr();
++      expectOp(')'); expectOp(';');
++      return { type: 'DoWhile', test, body };
++    }
++    function parseStatement() {
++      if (atOp('{')) return parseBlock();
++      if (atOp(';')) { advance(); return { type: 'Empty' }; }
++      if (atId('if')) return parseIf();
++      if (atId('for')) return parseFor();
++      if (atId('while')) return parseWhile();
++      if (atId('do')) return parseDoWhile();
++      if (atId('return')) { advance(); let arg = null; if (!atOp(';')) arg = parseExpr(); expectOp(';'); return { type: 'Return', argument: arg }; }
++      if (atId('break')) { advance(); expectOp(';'); return { type: 'Break' }; }
++      if (atId('continue')) { advance(); expectOp(';'); return { type: 'Continue' }; }
++      if (isTypeStart()) return parseVarDeclStatement();
++      const expr = parseExpr();
++      expectOp(';');
++      return { type: 'ExprStmt', expression: expr };
++    }
++
++    const functions = {};
++    const globals = [];
++    while (!at('eof')) {
++      if (atOp(';')) { advance(); continue; }
++      const save = pos;
++      parseTypeSpec();
++      if (peek().type !== 'id') throw err('نام تابع یا متغیر سراسری منتظر بود');
++      const name = advance().value;
++      if (atOp('(')) {
++        advance();
++        const params = [];
++        if (!atOp(')')) {
++          do {
++            if (atOp(')')) break;
++            parseTypeSpec();
++            let pname = null;
++            if (peek().type === 'id') pname = advance().value;
++            if (atOp('[')) { advance(); if (!atOp(']')) parseExpr(); expectOp(']'); }
++            params.push({ name: pname });
++          } while (atOp(',') && advance());
++        }
++        expectOp(')');
++        if (atOp(';')) { advance(); continue; } // forward declaration only
++        const body = parseBlock();
++        functions[name] = { name, params, body };
++      } else {
++        pos = save;
++        globals.push(parseVarDeclStatement());
++      }
++    }
++    return { functions, globals };
++  }
++
++  /* -------------------------------- Scope ------------------------------------ */
++  class Scope {
++    constructor(parent) { this.vars = Object.create(null); this.parent = parent; }
++    declare(name, val) { this.vars[name] = val; }
++    get(name) {
++      let s = this;
++      while (s) { if (name in s.vars) return s.vars[name]; s = s.parent; }
++      throw new RuntimeErr(`متغیر تعریف‌نشده: ${name}`);
++    }
++    set(name, val) {
++      let s = this;
++      while (s) { if (name in s.vars) { s.vars[name] = val; return; } s = s.parent; }
++      // Permissive fallback: implicitly declare in the outermost (global) scope.
++      let g = this; while (g.parent) g = g.parent;
++      g.vars[name] = val;
++    }
++  }
++
++  /* ------------------------------ Interpreter --------------------------------- */
++  class Interpreter {
++    constructor(ast, io) {
++      this.ast = ast;
++      this.io = io;
++      this.global = new Scope(null);
++      this.sliceSteps = 0;
++      this.MAX_SLICE_STEPS = 250000;
++      this.setupBuiltins();
++    }
++
++    setupBuiltins() {
++      const g = this.global;
++      g.declare('HIGH', 1);
++      g.declare('LOW', 0);
++      g.declare('OUTPUT', 'OUTPUT');
++      g.declare('INPUT', 'INPUT');
++      g.declare('INPUT_PULLUP', 'INPUT_PULLUP');
++      g.declare('LED_BUILTIN', 13);
++      g.declare('true', true);
++      g.declare('false', false);
++      g.declare('PI', Math.PI);
++      g.declare('HALF_PI', Math.PI / 2);
++      g.declare('TWO_PI', Math.PI * 2);
++
++      const self = this;
++      g.declare('Serial', {
++        begin: () => undefined,
++        print: (...a) => { self.io.serialPrint(a.map(x => self.stringify(x)).join('')); },
++        println: (...a) => { self.io.serialPrint(a.map(x => self.stringify(x)).join('') + '\n'); }
++      });
++
++      this.natives = {
++        pinMode: ([pin, mode]) => { self.io.pinMode(pin, mode); },
++        digitalWrite: ([pin, val]) => { self.io.digitalWrite(pin, val ? 1 : 0); },
++        digitalRead: ([pin]) => self.io.digitalRead(pin),
++        analogWrite: ([pin, val]) => { self.io.analogWrite(pin, val); },
++        analogRead: ([pin]) => (self.io.analogRead ? self.io.analogRead(pin) : 0),
++        millis: () => self.io.millis(),
++        micros: () => self.io.millis() * 1000,
++        random: (args) => {
++          if (args.length >= 2) return Math.floor(args[0] + Math.random() * (args[1] - args[0]));
++          if (args.length === 1) return Math.floor(Math.random() * args[0]);
++          return Math.floor(Math.random() * 2147483647);
++        },
++        randomSeed: () => undefined,
++        map: ([x, inMin, inMax, outMin, outMax]) => (x - inMin) * (outMax - outMin) / (inMax - inMin) + outMin,
++        constrain: ([x, lo, hi]) => Math.min(Math.max(x, lo), hi),
++        abs: ([x]) => Math.abs(x),
++        min: ([a, b]) => Math.min(a, b),
++        max: ([a, b]) => Math.max(a, b),
++        pow: ([a, b]) => Math.pow(a, b),
++        sqrt: ([a]) => Math.sqrt(a),
++        sq: ([a]) => a * a,
++        tone: ([pin, freq]) => { if (self.io.tone) self.io.tone(pin, freq); },
++        noTone: ([pin]) => { if (self.io.noTone) self.io.noTone(pin); }
++      };
++    }
++
++    stringify(v) {
++      if (typeof v === 'number') return Number.isInteger(v) ? String(v) : String(Math.round(v * 100) / 100);
++      if (v === undefined) return '';
++      return String(v);
++    }
++
++    tick() {
++      this.sliceSteps++;
++      if (this.sliceSteps > this.MAX_SLICE_STEPS) {
++        throw new RuntimeErr('کد بدون فراخوانی delay() در یک حلقه گیر کرده و شبیه‌ساز را قفل می‌کند. یک delay() داخل loop() اضافه کن.');
++      }
++    }
++
++    * run() {
++      for (const g of this.ast.globals) yield* this.execVarDecl(g, this.global);
++      const setupFn = this.ast.functions['setup'];
++      const loopFn = this.ast.functions['loop'];
++      if (!setupFn) throw new RuntimeErr('تابع ()setup پیدا نشد.');
++      if (!loopFn) throw new RuntimeErr('تابع ()loop پیدا نشد.');
++      yield* this.callFunction(setupFn, []);
++      yield { type: 'setupDone' };
++      while (true) {
++        yield* this.callFunction(loopFn, []);
++        yield { type: 'loopEnd' };
++      }
++    }
++
++    * callFunction(fn, args) {
++      const scope = new Scope(this.global);
++      fn.params.forEach((p, i) => { if (p.name) scope.declare(p.name, args[i] !== undefined ? args[i] : 0); });
++      try {
++        yield* this.execBlock(fn.body, scope);
++      } catch (e) {
++        if (e instanceof ReturnSignal) return e.value;
++        throw e;
++      }
++      return undefined;
++    }
++
++    * execBlock(block, parentScope) {
++      const scope = new Scope(parentScope);
++      for (const stmt of block.body) yield* this.execStatement(stmt, scope);
++    }
++
++    * execVarDecl(node, scope) {
++      for (const d of node.decls) {
++        let val = 0;
++        if (d.init) {
++          val = yield* this.evalExpr(d.init, scope);
++        } else if (d.arraySize) {
++          const size = Math.max(0, Math.floor(yield* this.evalExpr(d.arraySize, scope)) || 0);
++          val = new Array(size).fill(0);
++        }
++        scope.declare(d.name, val);
++      }
++    }
++
++    * execStatement(node, scope) {
++      this.tick();
++      switch (node.type) {
++        case 'Block': yield* this.execBlock(node, scope); return;
++        case 'Empty': return;
++        case 'VarDecl': yield* this.execVarDecl(node, scope); return;
++        case 'ExprStmt': yield* this.evalExpr(node.expression, scope); return;
++        case 'If': {
++          const test = yield* this.evalExpr(node.test, scope);
++          if (truthy(test)) yield* this.execStatement(node.consequent, scope);
++          else if (node.alternate) yield* this.execStatement(node.alternate, scope);
++          return;
++        }
++        case 'While': {
++          while (truthy(yield* this.evalExpr(node.test, scope))) {
++            this.tick();
++            try { yield* this.execStatement(node.body, scope); }
++            catch (e) { if (e instanceof BreakSignal) break; if (e instanceof ContinueSignal) continue; throw e; }
++          }
++          return;
++        }
++        case 'DoWhile': {
++          do {
++            this.tick();
++            try { yield* this.execStatement(node.body, scope); }
++            catch (e) { if (e instanceof BreakSignal) break; if (e instanceof ContinueSignal) continue; throw e; }
++          } while (truthy(yield* this.evalExpr(node.test, scope)));
++          return;
++        }
++        case 'For': {
++          const forScope = new Scope(scope);
++          if (node.init) yield* this.execStatement(node.init, forScope);
++          while (node.test ? truthy(yield* this.evalExpr(node.test, forScope)) : true) {
++            this.tick();
++            try { yield* this.execStatement(node.body, forScope); }
++            catch (e) {
++              if (e instanceof BreakSignal) break;
++              if (!(e instanceof ContinueSignal)) throw e;
++            }
++            if (node.update) yield* this.evalExpr(node.update, forScope);
++          }
++          return;
++        }
++        case 'Return': {
++          const val = node.argument ? yield* this.evalExpr(node.argument, scope) : undefined;
++          throw new ReturnSignal(val);
++        }
++        case 'Break': throw new BreakSignal();
++        case 'Continue': throw new ContinueSignal();
++        default: throw new RuntimeErr('نوع دستور ناشناخته: ' + node.type);
++      }
++    }
++
++    * resolveRef(node, scope) {
++      if (node.type === 'Ident') {
++        return { current: scope.get(node.name), set: (v) => scope.set(node.name, v) };
++      }
++      if (node.type === 'Index') {
++        const obj = yield* this.evalExpr(node.object, scope);
++        const idx = yield* this.evalExpr(node.index, scope);
++        return { current: obj ? obj[idx] : undefined, set: (v) => { if (obj) obj[idx] = v; } };
++      }
++      if (node.type === 'Member') {
++        const obj = yield* this.evalExpr(node.object, scope);
++        return { current: obj ? obj[node.property] : undefined, set: (v) => { if (obj) obj[node.property] = v; } };
++      }
++      throw new RuntimeErr('سمت چپ انتساب نامعتبر است');
++    }
++
++    * evalAssign(node, scope) {
++      const ref = yield* this.resolveRef(node.target, scope);
++      const rhs = yield* this.evalExpr(node.value, scope);
++      let newV;
++      switch (node.operator) {
++        case '=': newV = rhs; break;
++        case '+=': newV = ref.current + rhs; break;
++        case '-=': newV = ref.current - rhs; break;
++        case '*=': newV = ref.current * rhs; break;
++        case '/=': newV = ref.current / rhs; break;
++        case '%=': newV = ref.current % rhs; break;
++        default: throw new RuntimeErr('عملگر انتساب ناشناخته');
++      }
++      ref.set(newV);
++      return newV;
++    }
++
++    * evalBinary(node, scope) {
++      if (node.operator === '&&') {
++        const l = yield* this.evalExpr(node.left, scope);
++        if (!truthy(l)) return false;
++        return truthy(yield* this.evalExpr(node.right, scope));
++      }
++      if (node.operator === '||') {
++        const l = yield* this.evalExpr(node.left, scope);
++        if (truthy(l)) return true;
++        return truthy(yield* this.evalExpr(node.right, scope));
++      }
++      const l = yield* this.evalExpr(node.left, scope);
++      const r = yield* this.evalExpr(node.right, scope);
++      switch (node.operator) {
++        case '+': return l + r;
++        case '-': return l - r;
++        case '*': return l * r;
++        case '/':
++          if (r === 0) throw new RuntimeErr('تقسیم بر صفر');
++          return (Number.isInteger(l) && Number.isInteger(r)) ? Math.trunc(l / r) : l / r;
++        case '%': return l % r;
++        case '==': return l === r;
++        case '!=': return l !== r;
++        case '<': return l < r;
++        case '>': return l > r;
++        case '<=': return l <= r;
++        case '>=': return l >= r;
++        case '&': return l & r;
++        case '|': return l | r;
++        case '^': return l ^ r;
++        case '<<': return l << r;
++        case '>>': return l >> r;
++        default: throw new RuntimeErr('عملگر ناشناخته: ' + node.operator);
++      }
++    }
++
++    * evalCall(node, scope) {
++      if (node.callee.type === 'Ident') {
++        const name = node.callee.name;
++        if (this.ast.functions[name]) {
++          const args = [];
++          for (const a of node.arguments) args.push(yield* this.evalExpr(a, scope));
++          return yield* this.callFunction(this.ast.functions[name], args);
++        }
++        if (name === 'delay') {
++          const ms = yield* this.evalExpr(node.arguments[0], scope);
++          yield { type: 'delay', ms: Math.max(0, ms) };
++          this.sliceSteps = 0;
++          return undefined;
++        }
++        if (name === 'delayMicroseconds') {
++          const us = yield* this.evalExpr(node.arguments[0], scope);
++          yield { type: 'delay', ms: Math.max(0, us / 1000) };
++          this.sliceSteps = 0;
++          return undefined;
++        }
++        if (this.natives[name]) {
++          const args = [];
++          for (const a of node.arguments) args.push(yield* this.evalExpr(a, scope));
++          return this.natives[name](args);
++        }
++        throw new RuntimeErr(`تابع ناشناخته: ${name}()`);
++      }
++      if (node.callee.type === 'Member') {
++        const obj = yield* this.evalExpr(node.callee.object, scope);
++        const method = obj ? obj[node.callee.property] : undefined;
++        if (typeof method !== 'function') throw new RuntimeErr(`متد ناشناخته: ${node.callee.property}()`);
++        const args = [];
++        for (const a of node.arguments) args.push(yield* this.evalExpr(a, scope));
++        return method.apply(obj, args);
++      }
++      throw new RuntimeErr('فراخوانی نامعتبر');
++    }
++
++    * evalExpr(node, scope) {
++      this.tick();
++      switch (node.type) {
++        case 'Num': return node.value;
++        case 'Str': return node.value;
++        case 'Ident':
++          if (node.name === 'true') return true;
++          if (node.name === 'false') return false;
++          return scope.get(node.name);
++        case 'ArrayLit': {
++          const arr = [];
++          for (const el of node.elements) arr.push(yield* this.evalExpr(el, scope));
++          return arr;
++        }
++        case 'Seq': { yield* this.evalExpr(node.left, scope); return yield* this.evalExpr(node.right, scope); }
++        case 'Assign': return yield* this.evalAssign(node, scope);
++        case 'Unary': {
++          const v = yield* this.evalExpr(node.argument, scope);
++          if (node.operator === '-') return -v;
++          if (node.operator === '+') return +v;
++          if (node.operator === '!') return !truthy(v);
++          throw new RuntimeErr('عملگر یکانی ناشناخته');
++        }
++        case 'UpdateExpr': {
++          const ref = yield* this.resolveRef(node.argument, scope);
++          const oldV = ref.current;
++          const newV = node.operator === '++' ? oldV + 1 : oldV - 1;
++          ref.set(newV);
++          return node.prefix ? newV : oldV;
++        }
++        case 'Binary': return yield* this.evalBinary(node, scope);
++        case 'Member': {
++          const obj = yield* this.evalExpr(node.object, scope);
++          if (obj == null) throw new RuntimeErr('دسترسی به ویژگی روی مقدار نامعتبر');
++          return obj[node.property];
++        }
++        case 'Index': {
++          const obj = yield* this.evalExpr(node.object, scope);
++          const idx = yield* this.evalExpr(node.index, scope);
++          return obj ? obj[idx] : undefined;
++        }
++        case 'Call': return yield* this.evalCall(node, scope);
++        default: throw new RuntimeErr('عبارت ناشناخته: ' + node.type);
++      }
++    }
++  }
++
++  function compile(source) {
++    const pre = preprocess(source);
++    const tokens = tokenize(pre);
++    return parse(tokens);
++  }
++
++  return { preprocess, tokenize, parse, compile, Interpreter, RuntimeErr, SyntaxErr };
++});
+diff --git a/arduino-sim.js b/arduino-sim.js
+new file mode 100644
+index 0000000..cc66363
+--- /dev/null
++++ b/arduino-sim.js
+@@ -0,0 +1,330 @@
++/* ========================================================================
++   ARDUINO-SIM.JS — شبیه‌ساز سبک آردوینو برای مأموریت اول (LED چشمک‌زن)
++   از ARDUINO-LANG.JS (تفسیرگر) استفاده می‌کند و یک ادیتور کد + مدار SVG +
++   کنسول را می‌سازد. وقتی کد کاربر واقعاً LED را چشمک‌زن کند، callback
++   onSuccess صدا زده می‌شود تا quest.js مأموریت را تکمیل کند.
++   ======================================================================== */
++
++const ArduinoSim = (() => {
++  const CODE_STORAGE_PREFIX = 'shovalie-madar-arduino-code-v1:';
++  const RUN_SPEED = 2.2;          // شبیه‌سازی چندبرابر سریع‌تر از واقعیت
++  const MIN_STEP_MS = 12;
++  const MAX_STEP_MS = 900;
++  const MAX_RUN_MS = 11000;       // سقف زمان واقعیِ هر اجرا
++
++  function starterCode(pin) {
++    return `// چراغ‌قلعه: یک LED با یک مقاومت ۲۲۰ اهم به پایه ${pin} و GND وصل است.
++// وظیفه: کد را کامل کن تا LED با delay() چشمک بزند (روشن، مکث، خاموش، مکث...)
++
++int ledPin = ${pin};
++
++void setup() {
++  // TODO: پایه LED را با pinMode روی OUTPUT تنظیم کن
++
++}
++
++void loop() {
++  // TODO: با digitalWrite و delay، LED را روشن و خاموش کن
++
++}
++`;
++  }
++
++  function loadSavedCode(id, pin) {
++    try {
++      const raw = localStorage.getItem(CODE_STORAGE_PREFIX + id);
++      if (raw) return raw;
++    } catch (e) { /* ignore */ }
++    return starterCode(pin);
++  }
++  function saveCode(id, code) {
++    try { localStorage.setItem(CODE_STORAGE_PREFIX + id, code); } catch (e) { /* ignore */ }
++  }
++
++  /* ------------------------------ SVG circuit ------------------------------ */
++  function boardSVG(pin) {
++    return `
++    <svg viewBox="0 0 300 190" class="sim-board-svg" aria-hidden="true">
++      <defs>
++        <filter id="simLedGlow" x="-120%" y="-120%" width="340%" height="340%">
++          <feGaussianBlur stdDeviation="5" result="blur"/>
++          <feMerge>
++            <feMergeNode in="blur"/>
++            <feMergeNode in="SourceGraphic"/>
++          </feMerge>
++        </filter>
++      </defs>
++
++      <rect x="170" y="46" width="112" height="112" rx="8" class="sim-bb-outline"/>
++
++      <rect x="8" y="15" width="140" height="160" rx="10" class="sim-board-body"/>
++      <rect x="55" y="4" width="30" height="13" rx="2" class="sim-usb"/>
++      <text x="78" y="34" text-anchor="middle" class="sim-board-label">ARDUINO</text>
++      <text x="78" y="48" text-anchor="middle" class="sim-board-sub">UNO</text>
++
++      <circle cx="148" cy="70" r="3.2" class="sim-pin-dot sim-pin-live"/>
++      <text x="137" y="73.5" text-anchor="end" class="sim-pin-label">${pin}</text>
++      <circle cx="148" cy="140" r="3.2" class="sim-pin-dot sim-pin-gnd"/>
++      <text x="137" y="143.5" text-anchor="end" class="sim-pin-label sim-pin-label-muted">GND</text>
++
++      <line x1="148" y1="70" x2="176" y2="70" class="sim-wire sim-wire-live"/>
++      <rect x="176" y="64" width="38" height="12" rx="2" class="sim-resistor-body"/>
++      <rect x="184" y="64" width="3" height="12" class="sim-band sim-band-1"/>
++      <rect x="192" y="64" width="3" height="12" class="sim-band sim-band-2"/>
++      <rect x="200" y="64" width="3" height="12" class="sim-band sim-band-3"/>
++      <line x1="214" y1="70" x2="245" y2="70" class="sim-wire sim-wire-live"/>
++
++      <g id="simLedGroup" class="sim-led-group">
++        <line x1="262" y1="53" x2="270" y2="45" class="sim-led-ray"/>
++        <line x1="262" y1="53" x2="254" y2="45" class="sim-led-ray"/>
++        <line x1="270" y1="70" x2="280" y2="70" class="sim-led-ray"/>
++        <circle id="simLedBulb" cx="262" cy="70" r="17" class="sim-led-bulb"/>
++      </g>
++      <line x1="262" y1="87" x2="262" y2="140" class="sim-wire sim-wire-gnd"/>
++      <line x1="262" y1="140" x2="148" y2="140" class="sim-wire sim-wire-gnd"/>
++
++      <text x="262" y="178" text-anchor="middle" class="sim-caption">LED + مقاومت ۲۲۰Ω</text>
++    </svg>`;
++  }
++
++  /* --------------------------- success detection --------------------------- */
++  function checkBlink(events, pin, pinModes) {
++    if (pinModes[pin] !== 'OUTPUT') {
++      return { ok: false, reason: `پایه ${pin} هنوز با ()pinMode روی OUTPUT تنظیم نشده.` };
++    }
++    const pinEvents = events.filter(e => e.pin === pin);
++    if (pinEvents.length < 2) {
++      return { ok: false, reason: 'هنوز LED روشن و خاموش (چشمک) نشده — از ()digitalWrite با HIGH و LOW استفاده کن.' };
++    }
++    let toggles = 0;
++    for (let i = 1; i < pinEvents.length; i++) {
++      if (pinEvents[i].val !== pinEvents[i - 1].val && pinEvents[i].ms > pinEvents[i - 1].ms) toggles++;
++    }
++    if (toggles < 2) {
++      return { ok: false, reason: 'LED باید حداقل یک‌بار کامل روشن ← خاموش ← روشن شود (با delay() بین هرکدام).' };
++    }
++    return { ok: true };
++  }
++
++  /* --------------------------------- mount --------------------------------- */
++  function mount(container, opts) {
++    const { missionId, pin, alreadyDone, onSuccess } = opts;
++
++    container.innerHTML = `
++      <div class="sim-wrap">
++        <div class="sim-board-wrap">
++          ${boardSVG(pin)}
++        </div>
++        <div class="sim-status" data-state="idle">کد را در ادامه بنویس و «اجرا کن» را بزن.</div>
++        <div class="sim-editor-head">
++          <span class="sim-editor-title">کد آردوینو (Arduino C++)</span>
++          <div class="sim-actions">
++            <button type="button" class="sim-btn sim-btn-ghost" data-act="reset">↺ کد اولیه</button>
++            <button type="button" class="sim-btn sim-btn-stop" data-act="stop" disabled>■ توقف</button>
++            <button type="button" class="sim-btn sim-btn-run" data-act="run">▶ اجرا کن</button>
++          </div>
++        </div>
++        <textarea class="sim-editor mono" spellcheck="false" autocapitalize="off" autocorrect="off"></textarea>
++        <div class="sim-console mono" data-role="console"></div>
++      </div>`;
++
++    const el = {
++      status: container.querySelector('.sim-status'),
++      editor: container.querySelector('.sim-editor'),
++      console: container.querySelector('[data-role="console"]'),
++      runBtn: container.querySelector('[data-act="run"]'),
++      stopBtn: container.querySelector('[data-act="stop"]'),
++      resetBtn: container.querySelector('[data-act="reset"]'),
++      ledBulb: container.querySelector('#simLedBulb'),
++      ledGroup: container.querySelector('#simLedGroup')
++    };
++
++    el.editor.value = loadSavedCode(missionId, pin);
++    let saveTimer = null;
++    el.editor.addEventListener('input', () => {
++      clearTimeout(saveTimer);
++      saveTimer = setTimeout(() => saveCode(missionId, el.editor.value), 300);
++    });
++
++    let successFired = !!alreadyDone;
++    let running = false;
++    let stopRequested = false;
++    let runToken = 0;
++
++    function setStatus(text, state) {
++      el.status.textContent = text;
++      el.status.setAttribute('data-state', state || 'idle');
++    }
++    function logLine(text, cls) {
++      const line = document.createElement('div');
++      if (cls) line.className = cls;
++      line.textContent = text;
++      el.console.appendChild(line);
++      el.console.scrollTop = el.console.scrollHeight;
++      while (el.console.childNodes.length > 200) el.console.removeChild(el.console.firstChild);
++    }
++    function clearConsole() { el.console.innerHTML = ''; }
++
++    function setLed(ratio) {
++      const r = Math.max(0, Math.min(1, ratio));
++      el.ledGroup.classList.toggle('is-on', r > 0.02);
++      el.ledBulb.style.setProperty('--sim-led-ratio', r.toFixed(3));
++    }
++
++    function setRunning(isRunning) {
++      running = isRunning;
++      el.runBtn.disabled = isRunning;
++      el.stopBtn.disabled = !isRunning;
++      el.resetBtn.disabled = isRunning;
++    }
++
++    if (alreadyDone) {
++      setStatus('این مأموریت قبلاً با موفقیت تکمیل شده — می‌تونی دوباره تمرین کنی. ✓', 'success');
++      setLed(1);
++    }
++
++    function makeIO() {
++      const io = {
++        pinModes: {},
++        pinStates: {},
++        _ms: 0,
++        pinMode(p, mode) {
++          io.pinModes[p] = mode;
++          if (p === pin && mode !== 'OUTPUT') {
++            logLine(`⚠️ پایه ${pin} روی «${mode}» تنظیم شد، نه OUTPUT — LED روشن نخواهد شد.`, 'sim-warn');
++          }
++        },
++        digitalWrite(p, val) {
++          const v = val ? 1 : 0;
++          io.pinStates[p] = v;
++          events.push({ pin: p, val: v, ms: io._ms });
++          if (p === pin) setLed(v);
++        },
++        digitalRead(p) { return io.pinStates[p] || 0; },
++        analogWrite(p, val) {
++          const v = Math.max(0, Math.min(255, Math.round(val)));
++          io.pinStates[p] = v;
++          events.push({ pin: p, val: v, ms: io._ms, pwm: true });
++          if (p === pin) setLed(v / 255);
++        },
++        analogRead() { return 512; },
++        millis() { return Math.round(io._ms); },
++        serialPrint(text) {
++          text.split('\n').forEach((seg, idx, arr) => {
++            if (idx < arr.length - 1 || seg) logLine(seg, 'sim-serial');
++          });
++        }
++      };
++      return io;
++    }
++
++    let events = [];
++
++    function runProgram() {
++      if (running) return;
++      const myToken = ++runToken;
++      events = [];
++      clearConsole();
++      setLed(0);
++      setStatus('در حال اجرا…', 'running');
++
++      let ast;
++      try {
++        ast = ArduinoLang.compile(el.editor.value);
++      } catch (e) {
++        setStatus('خطا در کد — کنسول را ببین.', 'error');
++        logLine('✗ ' + e.message, 'sim-error');
++        return;
++      }
++
++      const io = makeIO();
++      const interp = new ArduinoLang.Interpreter(ast, io);
++      let gen;
++      try { gen = interp.run(); }
++      catch (e) { setStatus('خطا در اجرا.', 'error'); logLine('✗ ' + e.message, 'sim-error'); return; }
++
++      setRunning(true);
++      stopRequested = false;
++      const startedAt = performance.now();
++
++      function finish(reason) {
++        if (myToken !== runToken) return;
++        setRunning(false);
++        if (reason === 'stopped') {
++          setStatus('اجرا متوقف شد.', 'idle');
++        } else if (reason === 'timeout') {
++          const check = checkBlink(events, pin, io.pinModes);
++          setStatus(check.ok ? 'خیلی خوبه — می‌تونی اجرا را ادامه بدی یا مأموریت را تمام‌شده علامت بزنی.' : ('هنوز کامل نیست: ' + check.reason), check.ok ? 'success' : 'idle');
++        }
++      }
++
++      function step() {
++        if (myToken !== runToken) return;
++        if (stopRequested) { finish('stopped'); return; }
++        let res;
++        try {
++          res = gen.next();
++        } catch (e) {
++          setRunning(false);
++          setStatus('خطا هنگام اجرا — کنسول را ببین.', 'error');
++          logLine('✗ ' + e.message, 'sim-error');
++          return;
++        }
++        if (res.done) { setRunning(false); setStatus('برنامه به پایان رسید.', 'idle'); return; }
++
++        const val = res.value;
++        const elapsedReal = performance.now() - startedAt;
++        if (elapsedReal > MAX_RUN_MS) { finish('timeout'); return; }
++
++        if (val && val.type === 'delay') {
++          io._ms += val.ms;
++          const check = checkBlink(events, pin, io.pinModes);
++          if (check.ok && !successFired) {
++            successFired = true;
++            setRunning(false);
++            setStatus('🎉 عالی بود! LED درست چشمک زد — مأموریت تکمیل شد.', 'success');
++            logLine('✓ چشمک‌زدن با موفقیت تشخیص داده شد.', 'sim-ok');
++            if (onSuccess) onSuccess();
++            return;
++          }
++          const wait = Math.max(MIN_STEP_MS, Math.min(MAX_STEP_MS, val.ms / RUN_SPEED));
++          setTimeout(step, wait);
++          return;
++        }
++        if (val && val.type === 'loopEnd') {
++          setTimeout(step, 0);
++          return;
++        }
++        setTimeout(step, 0);
++      }
++      step();
++    }
++
++    function stopProgram() {
++      stopRequested = true;
++      runToken++; // invalidate any in-flight step()
++      setRunning(false);
++      setStatus('اجرا متوقف شد.', 'idle');
++    }
++
++    function resetCode() {
++      if (running) stopProgram();
++      el.editor.value = starterCode(pin);
++      saveCode(missionId, el.editor.value);
++      setLed(0);
++      clearConsole();
++      setStatus('کد به حالت اولیه بازگشت.', 'idle');
++    }
++
++    el.runBtn.addEventListener('click', runProgram);
++    el.stopBtn.addEventListener('click', stopProgram);
++    el.resetBtn.addEventListener('click', resetCode);
++
++    return {
++      stop: stopProgram,
++      destroy() { stopProgram(); }
++    };
++  }
++
++  return { mount, checkBlink, starterCode };
++})();
+diff --git a/index.html b/index.html
+index b994ce0..b227fe1 100644
+--- a/index.html
++++ b/index.html
+@@ -378,10 +378,12 @@
+     <div class="modal-quote" id="modalQuote"></div>
+     <div class="modal-desc" id="modalDesc"></div>
+     <ul class="steps" id="modalSteps"></ul>
++    <div class="modal-sim" id="modalSim" style="display:none"></div>
+     <div class="reward-row">
+       <div class="reward" id="modalReward">✨ +۰ XP</div>
+     </div>
+     <button class="complete-btn" id="completeBtn">مأموریت را تکمیل کردم</button>
++    <button class="complete-btn next-btn" id="nextMissionBtn" style="display:none">مأموریت بعدی ⟶</button>
+   </div>
+ </div>
+ 
+@@ -413,6 +415,8 @@
+ </div>
+ 
+ <script src="common.js?v=2"></script>
++<script src="arduino-lang.js?v=1"></script>
++<script src="arduino-sim.js?v=1"></script>
+ <script src="quest.js"></script>
+ 
+ <!-- Google sign-in + cloud sync (optional — see firebase-config.js) -->
+diff --git a/quest.css b/quest.css
+index 9641cde..d79013c 100644
+--- a/quest.css
++++ b/quest.css
+@@ -125,6 +125,93 @@
+   }
+   .complete-btn:disabled{ background:#242c3a; color:var(--muted); cursor:default; }
+   .complete-btn:not(:disabled):hover{ opacity:.9; }
++  .complete-btn.next-btn{
++    margin-top:10px;
++    background:linear-gradient(90deg, var(--gold), var(--copper-bright)); color:#241a06;
++  }
++
++  /* ---------- MISSION-1 ARDUINO SIMULATOR ---------- */
++  .modal.has-sim{ max-width:640px; }
++  .modal-sim{ margin-bottom:18px; }
++  .sim-wrap{
++    background:#0d1119; border:1px solid var(--panel-border); border-radius:14px;
++    padding:14px; display:flex; flex-direction:column; gap:10px;
++  }
++  .sim-board-wrap{
++    display:flex; justify-content:center; background:#0a0d13;
++    border:1px solid var(--panel-border); border-radius:10px; padding:6px;
++  }
++  .sim-board-svg{ width:100%; max-width:300px; height:auto; }
++  .sim-board-body{ fill:#151c28; stroke:var(--copper); stroke-width:1.4; }
++  .sim-usb{ fill:#232b3a; stroke:var(--panel-border); }
++  .sim-board-label{ font-family:'JetBrains Mono', monospace; font-size:10px; font-weight:700; fill:var(--copper-bright); letter-spacing:.5px; }
++  .sim-board-sub{ font-family:'JetBrains Mono', monospace; font-size:7.5px; fill:var(--muted); letter-spacing:1px; }
++  .sim-bb-outline{ fill:none; stroke:var(--panel-border); stroke-dasharray:3 3; }
++  .sim-pin-dot{ fill:var(--copper-bright); }
++  .sim-pin-dot.sim-pin-gnd{ fill:var(--muted); }
++  .sim-pin-label{ font-family:'JetBrains Mono', monospace; font-size:9px; fill:var(--parchment); }
++  .sim-pin-label-muted{ fill:var(--muted); font-size:8px; }
++  .sim-wire{ stroke:var(--copper); stroke-width:2; stroke-linecap:round; }
++  .sim-wire-gnd{ stroke:var(--muted); }
++  .sim-resistor-body{ fill:#d8c9a3; stroke:#8a7550; stroke-width:1; }
++  .sim-band{ fill:#b23b2e; }
++  .sim-band-2{ fill:#b23b2e; }
++  .sim-band-3{ fill:#6b4a2a; }
++  .sim-caption{ font-family:'Vazirmatn'; font-size:8.5px; fill:var(--muted); }
++  .sim-led-ray{ stroke:#ffdd88; stroke-width:1.6; stroke-linecap:round; opacity:0; transition:opacity .12s ease; }
++  .sim-led-bulb{
++    --sim-led-ratio:0;
++    fill:#4a1b16; stroke:#7a3a2a; stroke-width:1.4;
++    transition:fill .12s ease, filter .12s ease;
++  }
++  .sim-led-group.is-on .sim-led-ray{ opacity:calc(0.25 + var(--sim-led-ratio, 1) * .75); }
++  .sim-led-group.is-on .sim-led-bulb{
++    fill:#ff5c42; stroke:#ffb27a;
++    filter:url(#simLedGlow) drop-shadow(0 0 6px rgba(255,110,70,.85));
++  }
++  .sim-status{
++    font-size:13px; line-height:1.7; padding:10px 12px; border-radius:9px;
++    background:#141924; border:1px solid var(--panel-border); color:#cfc8b6;
++  }
++  .sim-status[data-state="running"]{ border-color:var(--trace); color:var(--trace-bright); }
++  .sim-status[data-state="success"]{ border-color:var(--gold); color:var(--gold); font-weight:700; }
++  .sim-status[data-state="error"]{ border-color:var(--danger); color:#ff9c92; }
++  .sim-editor-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
++  .sim-editor-title{ font-size:12.5px; color:var(--muted); font-weight:700; }
++  .sim-actions{ display:flex; gap:6px; }
++  .sim-btn{
++    font-family:'Vazirmatn'; font-weight:700; font-size:12.5px; cursor:pointer;
++    padding:7px 11px; border-radius:8px; border:1px solid var(--panel-border);
++    background:#1a2130; color:var(--parchment); transition:opacity .15s ease, border-color .15s ease;
++  }
++  .sim-btn:disabled{ opacity:.4; cursor:default; }
++  .sim-btn-ghost:not(:disabled):hover{ border-color:var(--copper); }
++  .sim-btn-run{ background:linear-gradient(90deg, var(--trace), var(--trace-bright)); color:#08150f; border:none; }
++  .sim-btn-run:not(:disabled):hover{ opacity:.9; }
++  .sim-btn-stop{ background:#241a1a; border-color:var(--danger); color:#ff9c92; }
++  .sim-editor{
++    width:100%; min-height:150px; resize:vertical;
++    background:#0a0d13; border:1px solid var(--panel-border); border-radius:9px;
++    color:#d9e6d3; font-size:13px; line-height:1.65; padding:10px 12px;
++    direction:ltr; text-align:left; tab-size:2;
++  }
++  .sim-editor:focus{ outline:none; border-color:var(--trace); }
++  .sim-console{
++    min-height:44px; max-height:120px; overflow-y:auto;
++    background:#080a10; border:1px solid var(--panel-border); border-radius:9px;
++    padding:8px 10px; font-size:12px; line-height:1.6; color:#9fb0a0;
++    direction:ltr; text-align:left;
++  }
++  .sim-console:empty::before{ content:'خروجی سریال و پیام‌های خطا این‌جا نشان داده می‌شود.'; color:var(--muted); direction:rtl; }
++  .sim-console .sim-error{ color:#ff9c92; }
++  .sim-console .sim-warn{ color:#e7c56a; }
++  .sim-console .sim-ok{ color:var(--trace-bright); }
++  .sim-console .sim-serial{ color:#9fb0a0; }
++
++  @media (max-width:520px){
++    .modal.has-sim{ max-width:100%; }
++    .sim-editor{ min-height:130px; font-size:16px; } /* 16px avoids iOS zoom-on-focus */
++  }
+ 
+   /* ---------- WELCOME MODAL ---------- */
+   .welcome-modal{ text-align:center; }
+diff --git a/quest.js b/quest.js
+index bb6969f..d715c62 100644
+--- a/quest.js
++++ b/quest.js
+@@ -451,6 +451,13 @@ function drawPath(){
+ let currentIndex = null;
+ const overlay = document.getElementById('overlay');
+ 
++/* ================= MISSION 1 — LIVE ARDUINO SIMULATOR ================= */
++const SIM_MISSION_ID = 'led';
++const SIM_TARGET_PIN = 8;
++const modalSim = document.getElementById('modalSim');
++const nextMissionBtn = document.getElementById('nextMissionBtn');
++let activeSim = null;
++
+ function onNodeClick(i, locked, evt){
+   const nodeEl = evt && evt.currentTarget;
+   if(locked){
+@@ -482,8 +489,37 @@ function onNodeClick(i, locked, evt){
+   document.getElementById('modalReward').textContent = `✨ +${toFa(q.xp)} XP`;
+   const btn = document.getElementById('completeBtn');
+   const done = progress[q.id];
+-  btn.textContent = done ? 'قبلاً تکمیل شده ✓' : 'مأموریت را تکمیل کردم';
+-  btn.disabled = done;
++
++  if(activeSim){ activeSim.stop(); activeSim = null; }
++  nextMissionBtn.style.display = 'none';
++
++  if(q.id === SIM_MISSION_ID){
++    // مأموریت اول: تکمیل به‌صورت خودکار توسط شبیه‌ساز انجام می‌شود، نه با کلیک دستی.
++    btn.style.display = 'none';
++    modalSim.style.display = '';
++    modalSim.closest('.modal').classList.add('has-sim');
++    activeSim = ArduinoSim.mount(modalSim, {
++      missionId: q.id,
++      pin: SIM_TARGET_PIN,
++      alreadyDone: done,
++      onSuccess: () => {
++        completeMission(q, { closeOverlayAfter: null });
++        nextMissionBtn.style.display = '';
++        nextMissionBtn.textContent = (i + 1 < QUESTS.length) ? 'مأموریت بعدی ⟶' : 'دیدن مسیر';
++      }
++    });
++    if(done && i + 1 < QUESTS.length){
++      nextMissionBtn.style.display = '';
++      nextMissionBtn.textContent = 'مأموریت بعدی ⟶';
++    }
++  } else {
++    modalSim.style.display = 'none';
++    modalSim.closest('.modal').classList.remove('has-sim');
++    document.querySelector('.modal .reward-row').style.display = '';
++    btn.style.display = '';
++    btn.textContent = done ? 'قبلاً تکمیل شده ✓' : 'مأموریت را تکمیل کردم';
++    btn.disabled = done;
++  }
+   openOverlay();
+ }
+ 
+@@ -496,13 +532,15 @@ function closeOverlay(){
+   overlay.classList.remove('open');
+   overlay.style.display = 'none';
+   document.body.style.overflow = '';
++  if(activeSim){ activeSim.stop(); }
+ }
+ 
+-document.getElementById('completeBtn').addEventListener('click', (evt) => {
+-  const q = QUESTS[currentIndex];
++// Shared by the manual "مأموریت را تکمیل کردم" button AND the mission-1
++// simulator's auto-success callback. `closeOverlayAfter` lets the caller
++// keep the modal open (e.g. so the learner can see the LED blinking and
++// the success message before choosing to move on).
++function completeMission(q, { closeOverlayAfter = 420 } = {}){
+   if(progress[q.id]) return;
+-  const btn = evt.currentTarget;
+-  ripple(btn, evt);
+ 
+   progress[q.id] = true;
+   saveProgress();
+@@ -531,22 +569,40 @@ document.getElementById('completeBtn').addEventListener('click', (evt) => {
+     ? 'باورنکردنی است... تو دیگر شاگرد نیستی. تو خودت اکنون یک شوالیه‌ی مدار هستی. 🏆'
+     : KNIGHT_AVAILABLE_TOASTS[Math.floor(Math.random()*KNIGHT_AVAILABLE_TOASTS.length)];
+ 
+-  setTimeout(() => {
+-    closeOverlay();
+-    render();
+-    // celebrate the freshly completed node in the path
+-    requestAnimationFrame(() => {
+-      const doneNode = Array.from(container.querySelectorAll('.node')).find(n =>
+-        n.querySelector('.node-title').textContent === q.title
+-      );
+-      if(doneNode){
+-        doneNode.classList.add('completing');
+-        const icon = doneNode.querySelector('.node-icon');
+-        icon.classList.add('burst');
+-        setTimeout(() => { doneNode.classList.remove('completing'); icon.classList.remove('burst'); }, 550);
+-      }
+-    });
+-  }, 420);
++  render();
++  // celebrate the freshly completed node in the path
++  requestAnimationFrame(() => {
++    const doneNode = Array.from(container.querySelectorAll('.node')).find(n =>
++      n.querySelector('.node-title').textContent === q.title
++    );
++    if(doneNode){
++      doneNode.classList.add('completing');
++      const icon = doneNode.querySelector('.node-icon');
++      icon.classList.add('burst');
++      setTimeout(() => { doneNode.classList.remove('completing'); icon.classList.remove('burst'); }, 550);
++    }
++  });
++
++  if(closeOverlayAfter !== null){
++    setTimeout(() => closeOverlay(), closeOverlayAfter);
++  }
++}
++
++document.getElementById('completeBtn').addEventListener('click', (evt) => {
++  const q = QUESTS[currentIndex];
++  if(progress[q.id]) return;
++  ripple(evt.currentTarget, evt);
++  completeMission(q);
++});
++
++nextMissionBtn.addEventListener('click', (evt) => {
++  SFX.click();
++  ripple(evt.currentTarget, evt);
++  const nextIndex = currentIndex + 1;
++  closeOverlay();
++  if(nextIndex < QUESTS.length && !isLocked(nextIndex)){
++    setTimeout(() => onNodeClick(nextIndex, false), 260);
++  }
+ });
+ 
+ document.getElementById('closeModal').addEventListener('click', () => { SFX.hover(); closeOverlay(); });

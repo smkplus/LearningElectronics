@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
+<title>ادیتورِ بلوکی</title>
+<style>
+  :root{
+    --panel:#161c28; --panel-border:#2a3346; --trace:#57d8a3; --trace-bright:#6ee6b8;
+    --parchment:#e9edf5; --muted:#8b95a5; --copper:#c98a4b; --bg2:#0d1117;
+  }
+  html,body{ margin:0; padding:0; height:100%; background:var(--bg2); font-family:'Vazirmatn',sans-serif; overflow:hidden; }
+  #bar{
+    position:absolute; top:0; left:0; right:0; height:40px; box-sizing:border-box;
+    display:flex; align-items:center; gap:10px; padding:0 10px;
+    background:var(--panel); border-bottom:1px solid var(--panel-border); z-index:10;
+  }
+  #status{ font-size:12.5px; color:var(--muted); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #status.is-error{ color:#ff9c92; }
+  #status.is-saved{ color:var(--trace-bright); }
+  #blocklyWrap{ position:absolute; inset:40px 0 0 0; }
+  #blocklyDiv{ position:absolute; inset:0; }
+  #errBox{
+    position:absolute; inset:0; z-index:5; display:none; align-items:center; justify-content:center;
+    text-align:center; padding:24px; font-size:13.5px; line-height:1.9; color:#ff9c92;
+    background:rgba(13,17,23,.94);
+  }
+  /* لودینگِ خودِ همین iframe — مستقلِ از هر اسپینری که صفحه‌ی اصلی شاید
+     دورِ iframe نشان بدهد. چون بارگذاریِ Blockly (فایل‌های CDN) دقیقاً همین‌جا
+     و بعد از پیامِ «ready» اتفاق می‌افتد، تنها جایی که واقعاً می‌داند این
+     بارگذاری کِی تمام می‌شود همین اسکریپت است؛ پس خودش هم مسئولِ نشان‌دادنِ
+     لودینگ است، نه صفحه‌ی اصلی. کلاسِ .sim-blockly-msg / .sim-blockly-spinner
+     را از arduino-blocks.css می‌گیرد تا ظاهرش با بقیه‌ی سایت یکی باشد؛
+     پیش‌فرض هم نمایان است (همین لحظه‌ای که این فایل پارس می‌شود، قبل از
+     اجرای هیچ اسکریپتی) تا فاصله‌ی خالی/سفید صفر شود. */
+  #loadingBox{ z-index:6; }
+</style>
+<link rel="stylesheet" href="arduino-blocks.css">
+</head>
+<body>
+  <div id="bar">
+    <span id="status"></span>
+  </div>
+  <div id="blocklyWrap">
+    <div id="blocklyDiv"></div>
+    <div id="errBox"></div>
+    <div id="loadingBox" class="sim-blockly-msg">
+      <div class="sim-blockly-spinner"></div>
+      <span id="loadingText">در حال آماده‌سازیِ ادیتورِ بلوکی…</span>
+    </div>
+  </div>
+
+  <!-- ترتیب مهم است: اول مفسرِ کد، بعد ادیتورِ بلوکی (بدونِ defer و بدونِ تکرار) -->
+  <script src="arduino-lang.js?v=3"></script>
+  <script src="arduino-blocks.js?v=2"></script>
+  <script>
+    let ws = null;
+    let loaded = false;      // تا وقتی true نشده هیچ ذخیره‌ی خودکاری انجام نمی‌شود
+    let initToken = 0;
+    let saveT = null, layoutT = null, flashT = null;
+    let baseStatus = '';
+
+    const $ = (id) => document.getElementById(id);
+    function post(msg) {
+      window.parent.postMessage(Object.assign({ __ardBlocks: true }, msg), '*');
+    }
+    function setStatus(text, cls) {
+      const s = $('status');
+      s.textContent = text || '';
+      s.className = cls || '';
+    }
+    // لودینگِ خودِ iframe: پیش‌فرضِ CSS همین الان (قبل از اجرای این اسکریپت)
+    // نمایانش کرده؛ این دو تابع فقط نشان/پنهانش می‌کنند. متنش هم می‌تواند
+    // عوض شود (مثلاً وقتی خودِ ArduinoLang هنوز نیامده، جدا از Blockly).
+    function showLoading(text) {
+      $('loadingText').textContent = text || 'در حال آماده‌سازیِ ادیتورِ بلوکی…';
+      $('loadingBox').style.display = 'flex';
+    }
+    function hideLoading() {
+      $('loadingBox').style.display = 'none';
+    }
+    function showError(text) {
+      hideLoading();
+      $('errBox').textContent = text;
+      $('errBox').style.display = 'flex';
+      setStatus(text, 'is-error');
+    }
+    function hideError() { $('errBox').style.display = 'none'; }
+
+    // اگر کاربر تازه داخلِ یک فیلد (مثلاً شماره‌ی پین) چیزی تایپ کرده و هنوز
+    // کامیت نشده، با بستنِ ویجت/دراپ‌داونِ باز مقدارش در بلوک ثبت می‌شود.
+    function commitOpenFields() {
+      try { if (window.Blockly && Blockly.WidgetDiv) Blockly.WidgetDiv.hide(); } catch (e) { /* noop */ }
+      try { if (window.Blockly && Blockly.DropDownDiv) Blockly.DropDownDiv.hideWithoutAnimation(); } catch (e) { /* noop */ }
+    }
+
+    // ذخیره‌ی خودکار: کد + عکسِ فوریِ بلوک‌ها + چیدمان را برای صفحه‌ی اصلی می‌فرستد.
+    function commit() {
+      clearTimeout(saveT); saveT = null;
+      if (!ws || !loaded) return false;
+      let code;
+      try {
+        code = ArduinoBlocks.workspaceToCode(ws);
+      } catch (e) {
+        // وضعیتِ میانیِ ناقصِ بلوک (مثلاً یک ورودیِ خالی) — همین تغییر ذخیره نمی‌شود،
+        // ولی آخرین کدِ سالم سرِ جایش می‌ماند.
+        setStatus('یکی از بلوک‌ها ناقص است؛ این تغییر هنوز ذخیره نشده.', 'is-error');
+        return false;
+      }
+      const msg = { type: 'change', code };
+      try { msg.snapshot = ArduinoBlocks.saveWorkspaceSnapshot(ws); } catch (e) { /* noop */ }
+      try { msg.layout = ArduinoBlocks.getLayout(ws); } catch (e) { /* noop */ }
+      post(msg);
+      setStatus('✓ ذخیره شد', 'is-saved');
+      clearTimeout(flashT);
+      flashT = setTimeout(() => setStatus(baseStatus), 1200);
+      return true;
+    }
+    function sendLayout() {
+      layoutT = null;
+      if (!ws || !loaded) return;
+      try { post({ type: 'layout', layout: ArduinoBlocks.getLayout(ws) }); } catch (e) { /* noop */ }
+    }
+    function onChange(evt) {
+      if (!loaded) return;
+      if (evt && evt.isUiEvent) {            // اسکرول/زوم/انتخاب: فقط چیدمان
+        clearTimeout(layoutT);
+        layoutT = setTimeout(sendLayout, 300);
+        return;
+      }
+      clearTimeout(saveT);                   // تغییرِ واقعیِ بلوک: کد هم دوباره ساخته شود
+      saveT = setTimeout(commit, 120);
+    }
+
+    function init(d) {
+      const token = ++initToken;
+      loaded = false;
+      clearTimeout(saveT); clearTimeout(layoutT);
+      hideError();
+      baseStatus = '';
+      setStatus('در حال آماده‌سازی…');
+      // اگر ensureReady() از قبل (پیش‌بارگذاریِ پس‌زمینه‌ای، پایین‌ترِ همین
+      // فایل) تمام شده باشد، این promise همان لحظه resolve می‌شود و کاربر
+      // اصلاً این لودینگ را نمی‌بیند؛ وگرنه تا رسیدنِ فایل‌های Blockly از
+      // شبکه نمایان می‌ماند.
+      showLoading();
+      ArduinoBlocks.ensureReady().then(() => {
+        if (token !== initToken) return;
+        if (ws) { try { ArduinoBlocks.disposeWorkspace(ws); } catch (e) { /* noop */ } ws = null; }
+        $('blocklyDiv').innerHTML = '';
+        // مأموریت‌های STM32: وضعیتِ Cube (کدام پایه ورودی/خروجی است) برای هشدارِ روی بلوک‌ها
+        if (d.hal && ArduinoBlocks.setHalContext) ArduinoBlocks.setHalContext(d.hal);
+        ws = ArduinoBlocks.createWorkspace($('blocklyDiv'), d.task);
+
+        // اگر عکسِ فوریِ معتبر داریم همان بلوک‌ها را عیناً برمی‌گردانیم؛ وگرنه از رویِ متن.
+        let ok = false, res = null;
+        if (d.snapshot && ArduinoBlocks.loadWorkspaceSnapshot(ws, d.snapshot)) {
+          ok = true;
+        } else {
+          res = ArduinoBlocks.codeToWorkspace(d.code || '', ws, d.layout || null);
+          ok = !!(res && res.ok);
+        }
+        if (!ok) {
+          // تبدیل نشد: بوم خالی می‌ماند و ذخیره‌ی خودکار روشن نمی‌شود، تا کدِ
+          // سالمِ کاربر هرگز با یک خروجیِ خالی جایگزین نشود.
+          showError((res && res.message) || 'کد به بلوک تبدیل نشد.');
+          post({ type: 'error', message: (res && res.message) || 'کد به بلوک تبدیل نشد.' });
+          return;
+        }
+        try { Blockly.svgResize(ws); } catch (e) { /* noop */ }
+        try { if (ArduinoBlocks.refreshHal) ArduinoBlocks.refreshHal(ws); } catch (e) { /* noop */ }
+        hideLoading();
+        post({ type: 'loaded' });
+        baseStatus = (res && res.warnings && res.warnings.length)
+          ? (res.warnings.length + ' بخش از کد به‌صورتِ کدِ خام نگه داشته شد.') : '';
+        setStatus(baseStatus);
+        // رویدادهای خودِ بارگذاری (که Blockly با کمی تأخیر پخش می‌کند) نباید
+        // ذخیره‌ی خودکار را راه بیندازند — وگرنه صرفِ بازکردنِ ادیتور می‌توانست
+        // کدِ کاربر را (مثلاً کامنت‌ها را) بازنویسی کند.
+        setTimeout(() => {
+          if (token !== initToken || !ws) return;
+          ws.addChangeListener(onChange);
+          loaded = true;
+        }, 200);
+      }).catch((err) => {
+        showError('بارگذاریِ Blockly ناموفق بود: ' + (err && err.message ? err.message : err));
+      });
+    }
+
+    window.addEventListener('message', (e) => {
+      if (e.source !== window.parent) return;
+      const d = e.data;
+      if (!d || d.__ardBlocks !== true) return;
+      if (d.type === 'init') { init(d); return; }
+      // تنظیماتِ Cube عوض شد (فقط مأموریت‌های STM32): هشدارها و پایه‌های پیشنهادی تازه شوند
+      if (d.type === 'hal-context' && ws && ArduinoBlocks.updateHalContext) { try { ArduinoBlocks.updateHalContext(ws, d.hal); } catch (err) { /* noop */ } return; }
+      // صفحه‌ی اصلی پیش از جابه‌جایی به «متن»، آخرین تغییرِ ذخیره‌نشده را می‌خواهد
+      if (d.type === 'flush') { commitOpenFields(); if (!commit()) post({ type: 'flushed' }); return; }
+    });
+
+    // دکمه‌ی جداگانه‌ای برای بازگشت نیست؛ کاربر با «✕ بستن» در صفحه‌ی اصلی
+    // خارج می‌شود. همان لحظه که این iframe از صفحه حذف می‌شود، pagehide پخش
+    // می‌شود — همان‌جا آخرین تغییرِ ذخیره‌نشده را می‌فرستیم.
+    window.addEventListener('pagehide', () => { commitOpenFields(); commit(); });
+
+    // پیش‌بارگذاریِ Blockly در پس‌زمینه، همین لحظه‌ای که این iframe بالا
+    // می‌آید — بدونِ صبر برای پیامِ «init» از صفحه‌ی اصلی. تا وقتی آن پیام
+    // (که معمولاً خیلی زود، بلافاصله بعدِ «ready» می‌رسد) برسد، دانلودِ
+    // فایل‌های سنگینِ Blockly از قبل شروع شده؛ init() همان promise را
+    // می‌گیرد (ensureReady خودش idempotent است) و فقط منتظرِ تمام‌شدنش
+    // می‌ماند، نه این‌که از صفر شروع کند. اگر همین‌جا شکست بخورد، خودِ
+    // ensureReady داخلی‌اش را ریست می‌کند تا init() دوباره تلاش کند.
+    try { ArduinoBlocks.ensureReady().catch(() => { /* init() دوباره امتحان می‌کند */ }); } catch (e) { /* noop */ }
+
+    post({ type: 'ready' });
+  </script>
+</body>
+</html>

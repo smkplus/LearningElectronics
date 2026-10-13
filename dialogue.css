@@ -1,0 +1,72 @@
+/* ========================================================================
+   DIALOGUE.CSS — استایل باکس گفتگوی بالای صفحه (شوالیه/ولتاژ)
+   توسط هر دو تب (Quest و Lab) استفاده می‌شود. به common.css نیاز دارد.
+   ======================================================================== */
+
+  /* ---------- KNIGHT / QUEST GIVER — top dialogue box ---------- */
+  .knight-section{
+    position:fixed; left:0; right:0; top:0; z-index:200;
+    display:flex; gap:16px; align-items:flex-start; justify-content:center;
+    max-width:920px; margin:0 auto; width:100%;
+    padding:calc(14px + env(safe-area-inset-top)) 18px 0;
+    pointer-events:none; /* let clicks pass through the empty side padding */
+    transform:translateY(-130%);
+    opacity:0;
+    transition:transform .45s cubic-bezier(.2,.9,.25,1.15), opacity .3s ease;
+    cursor:pointer;
+  }
+  .knight-section.show{ transform:translateY(0); opacity:1; }
+  .knight-avatar{
+    flex:0 0 auto; width:76px; height:76px; border-radius:14px;
+    background:radial-gradient(circle at 35% 30%, #2a3346, #171c27);
+    border:1px solid var(--copper);
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+    box-shadow:0 0 22px rgba(201,124,61,.3) inset, 0 8px 26px -8px rgba(0,0,0,.6);
+    pointer-events:auto;
+  }
+  .knight-img{ width:100%; height:100%; object-fit:cover; object-position:top center; }
+  .speech{
+    position:relative; flex:1; max-width:640px;
+    background:var(--panel); border:1px solid var(--panel-border);
+    border-radius:16px; padding:14px 18px 14px 30px;
+    box-shadow:0 10px 30px -10px rgba(0,0,0,.55);
+    pointer-events:auto;
+  }
+  .speech::before{
+    content:""; position:absolute; top:22px; right:-8px;
+    width:16px; height:16px; background:var(--panel);
+    border-left:1px solid var(--panel-border); border-bottom:1px solid var(--panel-border);
+    transform:rotate(45deg);
+  }
+  .speech .name{ font-weight:800; color:var(--gold); font-size:clamp(14px,3.4vw,16px); margin-bottom:4px; }
+  .speech::after{
+    content:"✕"; position:absolute; top:10px; left:12px;
+    font-size:12px; color:var(--muted); line-height:1;
+  }
+  .speech .line{ font-size:clamp(14px,3.6vw,17px); line-height:1.9; color:#d9d3c2; min-height:1.9em; }
+  .speech .line::after{
+    content:""; display:inline-block; width:2px; height:1em; margin-inline-start:2px;
+    background:var(--trace-bright); vertical-align:-2px;
+    animation:caretBlink .8s step-end infinite;
+  }
+  .speech .line.done::after{ display:none; }
+  @keyframes caretBlink{ 50%{ opacity:0; } }
+
+  .knight-avatar.talk{ animation:knightNod .4s ease; }
+  @keyframes knightNod{
+    0%,100%{ transform:rotate(0deg); }
+    30%{ transform:rotate(-4deg) scale(1.04); }
+    60%{ transform:rotate(3deg); }
+  }
+
+  /* ---------- MOBILE ---------- */
+  @media (max-width: 640px){
+    .knight-section{ padding:10px 14px 0; gap:10px; }
+    .knight-avatar{ width:74px; height:74px; border-radius:14px; }
+    .speech{ padding:14px 16px; border-radius:14px; }
+    .speech .line{ line-height:2; }
+  }
+
+  @media (max-width: 380px){
+    .knight-section{ padding-inline:10px; }
+  }

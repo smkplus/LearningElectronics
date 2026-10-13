@@ -1,0 +1,72 @@
+.pinout-explorer{
+  display:flex; flex-direction:column; gap:14px;
+  font-family:'Vazirmatn', sans-serif; color:#e6e8ee;
+}
+.pinout-explorer .mono{ font-family:'JetBrains Mono', monospace; }
+
+.pinout-switch{ display:flex; gap:8px; background:#0f1420; border:1px solid #1f2937; border-radius:12px; padding:4px; }
+.pinout-switch-btn{
+  flex:1; padding:9px 10px; border:none; border-radius:9px; background:transparent;
+  color:#8a93a3; font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer;
+  transition:background .18s, color .18s;
+}
+.pinout-switch-btn.active{ background:#1c2434; color:#d4af37; }
+.pinout-switch-btn:not(.active):hover{ color:#c6cad3; }
+
+.pinout-board-name{ text-align:center; font-size:12px; letter-spacing:.04em; color:#57d8a3; direction:ltr; }
+
+.pinout-stage{
+  background:#0b0e14; border:1px solid #1f2937; border-radius:14px; padding:10px;
+  display:flex; justify-content:center; overflow:visible;
+}
+.pinout-stage svg{ width:100%; max-width:420px; height:auto; }
+
+.nano-pin, .esp32-pin{ cursor:pointer; }
+.pinout-stage .pin-pad, .pinout-stage .pin-label{
+  transition:opacity .18s, filter .18s;
+  transform-box:fill-box; transform-origin:center;
+}
+.nano-pin:hover .pin-pad, .esp32-pin:hover .pin-pad,
+.nano-pin:hover .pin-label, .esp32-pin:hover .pin-label{
+  filter:drop-shadow(0 0 5px currentColor);
+}
+.nano-pin.selected .pin-pad, .esp32-pin.selected .pin-pad{
+  filter:drop-shadow(0 0 7px currentColor);
+  transform:scale(1.35);
+}
+.nano-pin.selected .pin-label, .esp32-pin.selected .pin-label{
+  font-weight:700;
+}
+.nano-pin.dim, .esp32-pin.dim{ opacity:.22; }
+
+.pinout-legend{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
+.legend-chip{
+  display:flex; align-items:center; gap:6px;
+  border:1px solid #1f2937; background:#131826; border-radius:999px;
+  padding:5px 10px; font-family:'Vazirmatn', sans-serif; font-size:11.5px; color:#c6cad3;
+  cursor:pointer; transition:border-color .18s, background .18s;
+}
+.legend-chip .legend-dot{ width:9px; height:9px; border-radius:50%; background:var(--chip-color); flex:none; }
+.legend-chip.active{ border-color:var(--chip-color); background:#1a2233; color:#fff; }
+.legend-chip:hover{ border-color:#3a4658; }
+
+.pinout-detail{
+  min-height:64px; border:1px solid #1f2937; border-radius:14px; background:#111726;
+  padding:14px 16px; transition:border-color .2s, background .2s;
+}
+.pinout-detail.show{ border-color:#3a4658; background:#141c2e; }
+.detail-empty{ color:#5f6878; font-size:13px; text-align:center; padding:10px 0; }
+.detail-head{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:8px; }
+.detail-name{ font-size:18px; font-weight:700; color:#d4af37; }
+.detail-sub{ font-size:12.5px; color:#8a93a3; }
+.detail-badge{
+  font-size:11px; font-weight:600; padding:3px 9px; border-radius:999px;
+  color:var(--badge-color); border:1px solid var(--badge-color); background:color-mix(in srgb, var(--badge-color) 14%, transparent);
+}
+.detail-badge.pwm{ --badge-color:#d4af37; }
+.detail-desc{ font-size:13.5px; line-height:1.9; color:#c6cad3; }
+
+@media (max-width:420px){
+  .pinout-switch-btn{ font-size:12.5px; padding:8px 6px; }
+  .detail-name{ font-size:16px; }
+}

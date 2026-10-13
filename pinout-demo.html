@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, viewport-fit=cover">
+<title>پایه‌کاو تعاملی — Arduino & ESP32</title>
+
+<!-- PostHog analytics — tracks page visits -->
+<script>
+    !function(t,e){var o,n,p,r;e.__SV||(window.posthog && window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}p||((p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",p.onerror=function(){p=null},(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r));var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="Tl Ml El Il Al init Xl tu Jl Kl nu ho Yl au Gl capture getExtension eu xl vu calculateEventProperties du register register_once register_for_session unregister unregister_for_session gu Ql cu getFeatureFlag getFeatureFlagPayload getFeatureFlagResult getAllFeatureFlags isFeatureEnabled reloadFeatureFlags updateFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey displaySurvey cancelPendingSurvey canRenderSurvey canRenderSurveyAsync mu identify setPersonProperties unsetPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset yu shutdown setIdentity clearIdentity get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException addExceptionStep captureLog startExceptionAutocapture stopExceptionAutocapture loadToolbar get_property getSessionProperty fu uu createPersonProfile setInternalOrTestUser pu Fl Ol opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing get_explicit_consent_status is_capturing clear_opt_in_out_capturing ou debug do ts getPageViewId captureTraceFeedback captureTraceMetric zl".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+    posthog.init('phc_o4VzVGFgibH5LoccVefAgtMApTK94xjGLMQtYmKgPzLQ', {
+        api_host: 'https://us.i.posthog.com',
+        defaults: '2026-05-30',
+        person_profiles: 'identified_only', // or 'always' to create profiles for anonymous users as well
+    })
+</script>
+
+<!-- Umami analytics — single "enter_site" event per visit -->
+<script defer src="https://cloud.umami.is/script.js" data-website-id="a3858c5e-b96c-43a2-8d03-862a400ed2bf"></script>
+<script defer>
+    window.addEventListener('DOMContentLoaded', function(){
+        if (window.umami) umami.track('enter_site');
+    });
+    function track(event, props){
+        try{ if (window.umami) umami.track(event, props||{}); }catch(e){}
+    }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+html,body{ margin:0; background:#0b0e14; }
+body{ font-family:'Vazirmatn', sans-serif; padding:20px; display:flex; justify-content:center; }
+.page{ width:100%; max-width:460px; }
+.page-title{ color:#d4af37; font-size:18px; font-weight:800; text-align:center; margin-bottom:4px; }
+.page-sub{ color:#8a93a3; font-size:12.5px; text-align:center; margin-bottom:18px; }
+
+.pinout-explorer{
+  display:flex; flex-direction:column; gap:14px;
+  font-family:'Vazirmatn', sans-serif; color:#e6e8ee;
+}
+.pinout-explorer .mono{ font-family:'JetBrains Mono', monospace; }
+
+.pinout-switch{ display:flex; gap:8px; background:#0f1420; border:1px solid #1f2937; border-radius:12px; padding:4px; }
+.pinout-switch-btn{
+  flex:1; padding:9px 10px; border:none; border-radius:9px; background:transparent;
+  color:#8a93a3; font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer;
+  transition:background .18s, color .18s;
+}
+.pinout-switch-btn.active{ background:#1c2434; color:#d4af37; }
+.pinout-switch-btn:not(.active):hover{ color:#c6cad3; }
+
+.pinout-board-name{ text-align:center; font-size:12px; letter-spacing:.04em; color:#57d8a3; direction:ltr; }
+
+.pinout-stage{
+  background:#0b0e14; border:1px solid #1f2937; border-radius:14px; padding:10px;
+  display:flex; justify-content:center; overflow:visible;
+}
+.pinout-stage svg{ width:100%; max-width:420px; height:auto; }
+
+.nano-pin, .esp32-pin{ cursor:pointer; }
+.pinout-stage .pin-pad, .pinout-stage .pin-label{
+  transition:opacity .18s, filter .18s;
+  transform-box:fill-box; transform-origin:center;
+}
+.nano-pin:hover .pin-pad, .esp32-pin:hover .pin-pad,
+.nano-pin:hover .pin-label, .esp32-pin:hover .pin-label{
+  filter:drop-shadow(0 0 5px currentColor);
+}
+.nano-pin.selected .pin-pad, .esp32-pin.selected .pin-pad{
+  filter:drop-shadow(0 0 7px currentColor);
+  transform:scale(1.35);
+}
+.nano-pin.selected .pin-label, .esp32-pin.selected .pin-label{
+  font-weight:700;
+}
+.nano-pin.dim, .esp32-pin.dim{ opacity:.22; }
+
+.pinout-legend{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
+.legend-chip{
+  display:flex; align-items:center; gap:6px;
+  border:1px solid #1f2937; background:#131826; border-radius:999px;
+  padding:5px 10px; font-family:'Vazirmatn', sans-serif; font-size:11.5px; color:#c6cad3;
+  cursor:pointer; transition:border-color .18s, background .18s;
+}
+.legend-chip .legend-dot{ width:9px; height:9px; border-radius:50%; background:var(--chip-color); flex:none; }
+.legend-chip.active{ border-color:var(--chip-color); background:#1a2233; color:#fff; }
+.legend-chip:hover{ border-color:#3a4658; }
+
+.pinout-detail{
+  min-height:64px; border:1px solid #1f2937; border-radius:14px; background:#111726;
+  padding:14px 16px; transition:border-color .2s, background .2s;
+}
+.pinout-detail.show{ border-color:#3a4658; background:#141c2e; }
+.detail-empty{ color:#5f6878; font-size:13px; text-align:center; padding:10px 0; }
+.detail-head{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:8px; }
+.detail-name{ font-size:18px; font-weight:700; color:#d4af37; }
+.detail-sub{ font-size:12.5px; color:#8a93a3; }
+.detail-badge{
+  font-size:11px; font-weight:600; padding:3px 9px; border-radius:999px;
+  color:var(--badge-color); border:1px solid var(--badge-color); background:color-mix(in srgb, var(--badge-color) 14%, transparent);
+}
+.detail-badge.pwm{ --badge-color:#d4af37; }
+.detail-desc{ font-size:13.5px; line-height:1.9; color:#c6cad3; }
+
+@media (max-width:420px){
+  .pinout-switch-btn{ font-size:12.5px; padding:8px 6px; }
+  .detail-name{ font-size:16px; }
+}
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="page-title">🧭 پایه‌کاو تعاملی</div>
+    <div class="page-sub">روی هر پایه بزن، یا با فیلترها یک نوع خاص را برجسته کن</div>
+    <div id="pinoutContainer"></div>
+  </div>
+
+<script>
+/* ---------- Arduino Nano pinout data + renderer ---------- */
+const ARDUINO_NANO_PINS = {
+  left: [
+    { name:'D13', type:'digital', desc:'پایه‌ی دیجیتال ۱۳ — روی خود برد Nano به یک LED کوچک هم وصل است؛ برای تست سریع کد (چشمک‌زدن LED) عالی است.' },
+    { name:'3V3', type:'power', desc:'خروجی ۳٫۳ ولت تنظیم‌شده — برای تغذیه‌ی ماژول‌های حساس ۳٫۳ ولتی؛ جریان خروجی محدود است (حدود ۵۰ میلی‌آمپر).' },
+    { name:'REF', type:'power', desc:'ولتاژ مرجع خارجی برای مبدل آنالوگ‌به‌دیجیتال (ADC) — معمولاً بدون اتصال رها می‌شود و پیش‌فرض ۵ ولت استفاده می‌شود.' },
+    { name:'A0', type:'analog', desc:'ورودی آنالوگ ۰ — ولتاژی بین ۰ تا ۵ ولت را می‌خواند و به عددی بین ۰ تا ۱۰۲۳ تبدیل می‌کند؛ برای پتانسیومتر، حسگر دما و مانند آن.' },
+    { name:'A1', type:'analog', desc:'ورودی آنالوگ ۱ — مثل A0، یک ورودی آنالوگ همه‌منظوره.' },
+    { name:'A2', type:'analog', desc:'ورودی آنالوگ ۲ — مثل A0، یک ورودی آنالوگ همه‌منظوره.' },
+    { name:'A3', type:'analog', desc:'ورودی آنالوگ ۳ — مثل A0، یک ورودی آنالوگ همه‌منظوره.' },
+    { name:'A4', sub:'SDA', type:'analog', desc:'ورودی آنالوگ ۴ / خط داده‌ی I2C — I2C (به‌اختصار «آی‌دو‌سی») یک روش ارتباطی است که با فقط دو سیم می‌شود چند ماژول را هم‌زمان به آردوینو وصل کرد، مثل صفحه‌نمایش OLED یا حسگر شتاب؛ SDA (Serial Data) همان سیمی است که واقعاً داده رویش رد و بدل می‌شود.' },
+    { name:'A5', sub:'SCL', type:'analog', desc:'ورودی آنالوگ ۵ / خط کلاک I2C — SCL (Serial Clock) سیم دوم پروتکل I2C است؛ مثل یک متروموم، ضربان زمانی می‌زند تا آردوینو و ماژول بدانند دقیقاً کِی باید داده روی سیم SDA (پایه‌ی A4) را بخوانند یا بنویسند.' },
+    { name:'A6', type:'analog', desc:'ورودی آنالوگ ۶ — فقط ورودی آنالوگ است؛ برخلاف A0 تا A5 نمی‌تواند به‌عنوان دیجیتال استفاده شود.' },
+    { name:'A7', type:'analog', desc:'ورودی آنالوگ ۷ — مثل A6، فقط ورودی آنالوگ است.' },
+    { name:'5V', type:'power', desc:'خروجی ۵ ولت تنظیم‌شده‌ی روی برد — وقتی از USB یا VIN تغذیه شده باشد، می‌تواند به ماژول‌های ۵ ولتی برق بدهد.' },
+    { name:'RST', type:'control', desc:'با اتصال این پایه به GND، برد ریست می‌شود و برنامه از ابتدا اجرا می‌شود — دکمه‌ی ریست روی برد هم همین کار را می‌کند.' },
+    { name:'GND', type:'ground', desc:'زمین (منفی) مدار — همه‌ی پایه‌های GND روی برد به هم وصل‌اند و باید با زمین مدار بیرونی مشترک باشند.' },
+    { name:'VIN', type:'power', desc:'ورودی ولتاژ خام (معمولاً ۷ تا ۱۲ ولت) — برای تغذیه‌ی برد از باتری یا آداپتور، بدون استفاده از USB.' },
+  ],
+  right: [
+    { name:'D12', type:'digital', desc:'پایه‌ی دیجیتال ۱۲ — ورودی یا خروجی دیجیتال عمومی (HIGH یا LOW).' },
+    { name:'D11', type:'digital', pwm:true, desc:'پایه‌ی دیجیتال ۱۱ (PWM ~) — می‌تواند به‌جای فقط روشن/خاموش، یک سیگنال شبه‌آنالوگ تولید کند؛ برای کنترل روشنایی LED یا سرعت موتور.' },
+    { name:'D10', type:'digital', pwm:true, desc:'پایه‌ی دیجیتال ۱۰ (PWM ~) — مثل D11، خروجی PWM هم دارد.' },
+    { name:'D9', type:'digital', pwm:true, desc:'پایه‌ی دیجیتال ۹ (PWM ~) — مثل D11، خروجی PWM هم دارد.' },
+    { name:'D8', type:'digital', desc:'پایه‌ی دیجیتال ۸ — ورودی/خروجی دیجیتال عمومی.' },
+    { name:'D7', type:'digital', desc:'پایه‌ی دیجیتال ۷ — ورودی/خروجی دیجیتال عمومی.' },
+    { name:'D6', type:'digital', pwm:true, desc:'پایه‌ی دیجیتال ۶ (PWM ~) — خروجی PWM هم دارد.' },
+    { name:'D5', type:'digital', pwm:true, desc:'پایه‌ی دیجیتال ۵ (PWM ~) — خروجی PWM هم دارد.' },
+    { name:'D4', type:'digital', desc:'پایه‌ی دیجیتال ۴ — ورودی/خروجی دیجیتال عمومی.' },
+    { name:'D3', type:'digital', pwm:true, desc:'پایه‌ی دیجیتال ۳ (PWM ~) — خروجی PWM هم دارد.' },
+    { name:'D2', type:'digital', desc:'پایه‌ی دیجیتال ۲ — ورودی/خروجی دیجیتال عمومی؛ معمولاً برای وقفه‌های خارجی (interrupt) هم استفاده می‌شود.' },
+    { name:'GND', type:'ground', desc:'زمین (منفی) مدار — همه‌ی پایه‌های GND روی برد به هم وصل‌اند و باید با زمین مدار بیرونی مشترک باشند.' },
+    { name:'RST', type:'control', desc:'با اتصال این پایه به GND، برد ریست می‌شود و برنامه از ابتدا اجرا می‌شود — دکمه‌ی ریست روی برد هم همین کار را می‌کند.' },
+    { name:'RX0', sub:'D0', type:'digital', desc:'گیرنده‌ی سریال (RX = Receive) / همان D0 — UART یک روش ساده برای رد و بدل داده بین دو دستگاه است، شبیه یک مکالمه‌ی تلفنی دوطرفه؛ این پایه «گوش» آردوینو است و داده‌ی ورودی از دستگاهی مثل ماژول بلوتوث یا GPS را دریافت می‌کند. حین آپلود کد بهتر است چیزی به آن وصل نباشد.' },
+    { name:'TX1', sub:'D1', type:'digital', desc:'فرستنده‌ی سریال (TX = Transmit) / همان D1 — «دهانِ» آردوینو در ارتباط UART؛ داده را به دستگاه دیگر می‌فرستد. برای این‌که ارتباط کار کند، باید این پایه به پایه‌ی RX دستگاه مقابل وصل شود (و برعکس).' },
+  ],
+};
+function nanoPinColor(type){
+  return type==='power' ? '#e8801e' : type==='ground' ? '#8a93a3' : type==='analog' ? '#4aa8ff' : type==='control' ? '#c1554a' : '#57d8a3';
+}
+function buildNanoPinoutSVG(){
+  const VBW=260, VBH=470;
+  const boardX=80, boardY=40, boardW=100, boardH=390;
+  const n=15, spacing=boardH/n, padLen=20, padT=6;
+  function pinsHTML(side){
+    return ARDUINO_NANO_PINS[side].map((pin,i) => {
+      const yc = boardY + spacing*(i+0.5);
+      const color = nanoPinColor(pin.type);
+      let padX, textX, anchor, hitX;
+      if(side==='left'){ padX=boardX-padLen; textX=boardX-padLen-4; anchor='end'; hitX=boardX-72; }
+      else { padX=boardX+boardW; textX=boardX+boardW+padLen+4; anchor='start'; hitX=boardX+boardW; }
+      return `<g class="nano-pin" data-side="${side}" data-idx="${i}">
+        <rect class="pin-hit" x="${hitX}" y="${yc-12}" width="72" height="24" fill="transparent"></rect>
+        <rect class="pin-pad" x="${padX}" y="${(yc-padT/2).toFixed(1)}" width="${padLen}" height="${padT}" rx="2" fill="${color}"></rect>
+        <text class="pin-label" x="${textX}" y="${(yc+3).toFixed(1)}" text-anchor="${anchor}" font-size="9" font-family="JetBrains Mono" fill="${color}" direction="ltr">${pin.name}</text>
+      </g>`;
+    }).join('');
+  }
+  const chipCx = boardX+boardW/2, chipCy = boardY+boardH/2;
+  return `<svg class="nano-svg" viewBox="0 0 ${VBW} ${VBH}" xmlns="http://www.w3.org/2000/svg">
+    <rect x="${boardX}" y="${boardY}" width="${boardW}" height="${boardH}" rx="7" fill="#0f3d2b" stroke="#08251a" stroke-width="2"></rect>
+    <rect x="${chipCx-32}" y="${chipCy-38}" width="64" height="76" rx="3" fill="#161616" stroke="#000" stroke-width="1"></rect>
+    <text x="${chipCx}" y="${chipCy}" transform="rotate(-90 ${chipCx} ${chipCy})" text-anchor="middle" font-size="9" font-family="JetBrains Mono" fill="#9aa0aa" direction="ltr">ATmega328P</text>
+    <rect x="${boardX+boardW/2-14}" y="${boardY-16}" width="28" height="18" rx="2" fill="#b9bec7" stroke="#6b7280" stroke-width="1"></rect>
+    <text x="${boardX+boardW/2}" y="${boardY-20}" text-anchor="middle" font-size="8" font-family="Vazirmatn" fill="#6b7280" direction="ltr">USB</text>
+    <text x="${boardX+boardW/2}" y="${boardY+boardH+18}" text-anchor="middle" font-size="10" font-family="JetBrains Mono" fill="#d4af37" direction="ltr">Arduino Nano</text>
+    ${pinsHTML('left')}
+    ${pinsHTML('right')}
+  </svg>`;
+}
+
+/* ---------- ESP32 (DevKit V1, 30-pin) pinout data + renderer ---------- */
+const ESP32_PINS = {
+  left: [
+    { name:'3V3', type:'power', desc:'خروجی ۳٫۳ ولت تنظیم‌شده روی برد — تغذیه‌ی ماژول‌های حسگر؛ جریان خروجی محدود است، برای بارهای سنگین (مثل موتور) مناسب نیست.' },
+    { name:'EN', type:'control', desc:'پایه‌ی Enable/Reset تراشه — با اتصال به GND، برد ریست می‌شود؛ دکمه‌ی EN روی خود برد همین کار را انجام می‌دهد.' },
+    { name:'VP', sub:'GPIO36', type:'analog', desc:'ورودی آنالوگ فقط‌ورودی — ADC یعنی مبدل آنالوگ‌به‌دیجیتال: ولتاژی بین ۰ تا ۳٫۳ ولت را می‌خواند و به عددی قابل‌فهم برای برنامه تبدیل می‌کند؛ کاربرد معمول: خواندن پتانسیومتر، حسگر نور یا دما. برخلاف بیشتر پایه‌ها، این پایه فقط می‌تواند بخواند و نمی‌تواند خروجی دیجیتال (روشن/خاموش) بدهد.' },
+    { name:'VN', sub:'GPIO39', type:'analog', desc:'ورودی آنالوگ فقط‌ورودی — درست مثل VP/GPIO36 کار می‌کند؛ ولتاژ را می‌خواند اما نمی‌تواند خروجی دیجیتال بدهد.' },
+    { name:'GPIO34', type:'analog', desc:'ورودی آنالوگ فقط‌ورودی — مثل VP و VN، فقط برای خواندن ولتاژ (مثلاً از یک حسگر) به‌کار می‌رود و نمی‌تواند به‌عنوان خروجی دیجیتال استفاده شود.' },
+    { name:'GPIO35', type:'analog', desc:'ورودی آنالوگ فقط‌ورودی — مشابه GPIO34، فقط خواندن ولتاژ را پشتیبانی می‌کند.' },
+    { name:'GPIO32', type:'digital', sub:'ADC1/Touch9', desc:'پایه‌ی همه‌منظوره — هم می‌تواند دیجیتال (روشن/خاموش) باشد، هم ولتاژ آنالوگ بخواند، هم به‌عنوان حسگر لمسی خازنی (Touch) کار کند: یعنی بدون فشردن، فقط با نزدیک‌شدن انگشتت به یک سیم یا صفحه‌ی فلزی وصل به این پایه، تشخیص می‌دهد لمس شده‌ای یا نه — مثل دکمه‌های لمسی روی وسایل امروزی.' },
+    { name:'GPIO33', type:'digital', sub:'ADC1/Touch8', desc:'پایه‌ی همه‌منظوره — مثل GPIO32؛ هم دیجیتال، هم آنالوگ، هم حسگر لمسی (Touch) را پشتیبانی می‌کند.' },
+    { name:'GPIO25', type:'digital', sub:'ADC2/DAC1', desc:'پایه‌ی همه‌منظوره با یک قابلیت ویژه: DAC — برخلاف PWM که فقط با روشن/خاموش سریع وانمود می‌کند آنالوگ است، DAC می‌تواند یک ولتاژ آنالوگ واقعی و پیوسته تولید کند؛ کاربرد: پخش صدای ساده یا تولید یک موج دلخواه.' },
+    { name:'GPIO26', type:'digital', sub:'ADC2/DAC2', desc:'مثل GPIO25، خروجی DAC واقعی دومین کانال (DAC2) دارد — برای تولید سیگنال آنالوگ یا صدای ساده.' },
+    { name:'GPIO27', type:'digital', sub:'ADC2/Touch7', desc:'پایه‌ی همه‌منظوره — هم دیجیتال، هم آنالوگ (ADC2)، هم حسگر لمسی. نکته: پایه‌های ADC2 وقتی Wi-Fi فعال است می‌توانند غیرقابل‌اعتماد شوند؛ برای خواندن دقیق ولتاژ، ترجیحاً از پایه‌های ADC1 (مثل GPIO32 تا 39) استفاده کن.' },
+    { name:'GPIO14', type:'digital', sub:'ADC2/Touch6', desc:'پایه‌ی همه‌منظوره — همچنین می‌تواند خط کلاک (CLK) یک ارتباط SPI دوم (به‌نام HSPI) باشد؛ SPI یک روش ارتباطی سریع و چهارسیمه برای وصل‌کردن ماژول‌هایی مثل کارت‌حافظه یا صفحه‌نمایش است.' },
+    { name:'GPIO12', type:'digital', sub:'ADC2/Touch5', desc:'پایه‌ی همه‌منظوره، اما پایه‌ی «استرپینگ» (Strapping) است — یعنی وضعیت HIGH/LOW آن دقیقاً لحظه‌ی روشن‌شدن برد، تنظیمات داخلی مهمی (مثل ولتاژ حافظه‌ی فلش) را تعیین می‌کند؛ برای جلوگیری از مشکل در بوت، بهتر است حین روشن‌شدن چیزی به آن وصل نباشد.' },
+    { name:'GND', type:'ground', desc:'زمین (منفی) مدار — همه‌ی پایه‌های GND روی برد به هم وصل‌اند و باید با زمین مدار بیرونی مشترک باشند.' },
+    { name:'GPIO13', type:'digital', sub:'ADC2/Touch4', desc:'پایه‌ی همه‌منظوره — هم دیجیتال، هم آنالوگ (ADC2)، هم حسگر لمسی؛ بدون کاربرد ویژه‌ی دیگر، برای استفاده‌ی آزاد در پروژه مناسب است.' },
+  ],
+  right: [
+    { name:'VIN', type:'power', desc:'ورودی ولتاژ خام (معمولاً ۵ ولت، از طریق USB یا مستقیماً این پایه) — برای تغذیه‌ی برد از باتری یا آداپتور.' },
+    { name:'GND', type:'ground', desc:'زمین (منفی) مدار — همه‌ی پایه‌های GND روی برد به هم وصل‌اند و باید با زمین مدار بیرونی مشترک باشند.' },
+    { name:'GPIO23', type:'digital', sub:'VSPI MOSI', desc:'پایه‌ی همه‌منظوره دیجیتال — همچنین خط MOSI (Master Out, Slave In) در پروتکل SPI است. SPI یک روش ارتباطی سریع با چند سیم است؛ ESP32 معمولاً «رئیس» (Master) ارتباط است و MOSI مسیری است که ازش داده به‌سمت ماژول (مثل کارت‌حافظه SD یا صفحه‌نمایش TFT) می‌فرستد.' },
+    { name:'GPIO22', type:'digital', sub:'I2C SCL', desc:'پایه‌ی همه‌منظوره دیجیتال — پیش‌فرض خط کلاک I2C (SCL = Serial Clock) روی اکثر بردهای ESP32. I2C با فقط دو سیم (SCL و SDA) اجازه می‌دهد چند ماژول هم‌زمان به ESP32 وصل شوند؛ SCL مثل یک متروموم، ضربان زمانی ارتباط را می‌زند.' },
+    { name:'TX0', sub:'GPIO1', type:'digital', desc:'فرستنده‌ی سریال اصلی (TXD = Transmit Data، پروتکل UART0) — UART یک روش ساده برای رد و بدل داده بین دو دستگاه است. این پایه هنگام آپلود کد و باز کردن مانیتور سریال، اطلاعات را به کامپیوتر می‌فرستد؛ بهتر است حین آپلود چیزی به آن وصل نباشد.' },
+    { name:'RX0', sub:'GPIO3', type:'digital', desc:'گیرنده‌ی سریال اصلی (RXD = Receive Data، پروتکل UART0) — جفتِ TX0؛ داده‌ی ورودی از کامپیوتر (مثل کد جدید در زمان آپلود) از همین‌جا وارد ESP32 می‌شود.' },
+    { name:'GPIO21', type:'digital', sub:'I2C SDA', desc:'پایه‌ی همه‌منظوره دیجیتال — پیش‌فرض خط داده‌ی I2C (SDA = Serial Data) روی اکثر بردهای ESP32؛ داده‌ی واقعی بین ESP32 و ماژول‌هایی مثل صفحه‌نمایش OLED یا حسگر شتاب از همین سیم رد و بدل می‌شود (همراه با SCL روی GPIO22).' },
+    { name:'GND', type:'ground', desc:'زمین (منفی) مدار — همه‌ی پایه‌های GND روی برد به هم وصل‌اند و باید با زمین مدار بیرونی مشترک باشند.' },
+    { name:'GPIO19', type:'digital', sub:'VSPI MISO', desc:'پایه‌ی همه‌منظوره دیجیتال — همچنین خط MISO (Master In, Slave Out) در پروتکل SPI؛ جفتِ MOSI، ولی برعکس آن، داده را از ماژول به‌سمت ESP32 برمی‌گرداند (مثلاً خواندن فایل از کارت‌حافظه SD).' },
+    { name:'GPIO18', type:'digital', sub:'VSPI CLK', desc:'پایه‌ی همه‌منظوره دیجیتال — همچنین خط کلاک (CLK) پروتکل SPI؛ مثل SCL در I2C، سرعت و زمان‌بندی انتقال داده روی MOSI/MISO را هماهنگ می‌کند.' },
+    { name:'GPIO5', type:'digital', sub:'VSPI CS0', desc:'پایه‌ی همه‌منظوره دیجیتال، هم پایه‌ی استرپینگ — همچنین می‌تواند Chip Select (به‌اختصار CS، گاهی SS) پروتکل SPI باشد: وقتی چند ماژول روی یک باس SPI مشترک‌اند، با پایین‌آوردن این خط به ESP32 می‌گویی «الان فقط با همین ماژول کار کن». چون پایه‌ی استرپینگ هم هست، حین بوت بهتر است حالتش دستکاری نشود.' },
+    { name:'GPIO17', type:'digital', sub:'UART2 TX', desc:'پایه‌ی همه‌منظوره دیجیتال — می‌تواند فرستنده‌ی یک پورت سریال دوم و مستقل (UART2) باشد؛ کاربرد: وقتی هم‌زمان با دو دستگاه سریال (مثلاً GPS و ماژول بلوتوث) کار داری، بدون تداخل با پورت اصلی (TX0/RX0).' },
+    { name:'GPIO16', type:'digital', sub:'UART2 RX', desc:'پایه‌ی همه‌منظوره دیجیتال — گیرنده‌ی همان پورت سریال دوم (UART2)، جفتِ GPIO17.' },
+    { name:'GPIO4', type:'digital', sub:'ADC2/Touch0', desc:'پایه‌ی همه‌منظوره — هم دیجیتال، هم آنالوگ (ADC2)، هم حسگر لمسی؛ بدون کاربرد ویژه‌ی دیگر.' },
+    { name:'GPIO2', type:'digital', sub:'Touch2', desc:'پایه‌ی همه‌منظوره، هم پایه‌ی استرپینگ — روی بیشتر بردهای ESP32 به LED آبی روی خود برد هم وصل است؛ برای تست سریع کد (چشمک‌زدن LED) عالی است، دقیقاً مثل D13 روی Arduino Nano.' },
+  ],
+};
+function esp32PinColor(type){
+  return type==='power' ? '#e8801e' : type==='ground' ? '#8a93a3' : type==='analog' ? '#4aa8ff' : type==='control' ? '#c1554a' : '#57d8a3';
+}
+function buildEsp32PinoutSVG(){
+  const VBW=270, VBH=470;
+  const boardX=85, boardY=44, boardW=100, boardH=382;
+  const n=15, spacing=boardH/n, padLen=20, padT=6;
+  function pinsHTML(side){
+    return ESP32_PINS[side].map((pin,i) => {
+      const yc = boardY + spacing*(i+0.5);
+      const color = esp32PinColor(pin.type);
+      let padX, textX, anchor, hitX;
+      if(side==='left'){ padX=boardX-padLen; textX=boardX-padLen-4; anchor='end'; hitX=boardX-72; }
+      else { padX=boardX+boardW; textX=boardX+boardW+padLen+4; anchor='start'; hitX=boardX+boardW; }
+      return `<g class="esp32-pin" data-side="${side}" data-idx="${i}">
+        <rect class="pin-hit" x="${hitX}" y="${yc-12}" width="72" height="24" fill="transparent"></rect>
+        <rect class="pin-pad" x="${padX}" y="${(yc-padT/2).toFixed(1)}" width="${padLen}" height="${padT}" rx="2" fill="${color}"></rect>
+        <text class="pin-label" x="${textX}" y="${(yc+3).toFixed(1)}" text-anchor="${anchor}" font-size="9" font-family="JetBrains Mono" fill="${color}" direction="ltr">${pin.name}</text>
+      </g>`;
+    }).join('');
+  }
+  const chipCx = boardX+boardW/2, chipCy = boardY+boardH*0.34;
+  const antCx = boardX+boardW/2, antY = boardY+18;
+  return `<svg class="esp32-svg" viewBox="0 0 ${VBW} ${VBH}" xmlns="http://www.w3.org/2000/svg">
+    <rect x="${boardX}" y="${boardY}" width="${boardW}" height="${boardH}" rx="7" fill="#0f2a3d" stroke="#08182a" stroke-width="2"></rect>
+    <rect x="${chipCx-34}" y="${boardY+10}" width="68" height="60" rx="3" fill="#1a2632" stroke="#000" stroke-width="1"></rect>
+    <text x="${chipCx}" y="${boardY+34}" text-anchor="middle" font-size="7.5" font-family="JetBrains Mono" fill="#9aa0aa" direction="ltr">ESP32-WROOM</text>
+    <text x="${chipCx}" y="${boardY+46}" text-anchor="middle" font-size="7" font-family="Vazirmatn" fill="#6b8ba3" direction="ltr">Wi-Fi + BLE</text>
+    <path d="M ${antCx-14} ${antY} q 14 -18 28 0" fill="none" stroke="#4aa8ff" stroke-width="1.4" opacity="0.7"></path>
+    <path d="M ${antCx-9} ${antY+5} q 9 -11 18 0" fill="none" stroke="#4aa8ff" stroke-width="1.4" opacity="0.85"></path>
+    <rect x="${boardX+boardW/2-13}" y="${boardY+boardH-26}" width="26" height="16" rx="2" fill="#b9bec7" stroke="#6b7280" stroke-width="1"></rect>
+    <text x="${boardX+boardW/2}" y="${boardY+boardH-30}" text-anchor="middle" font-size="7.5" font-family="Vazirmatn" fill="#6b7280" direction="ltr">USB</text>
+    <text x="${boardX+boardW/2}" y="${boardY+boardH+18}" text-anchor="middle" font-size="9.5" font-family="JetBrains Mono" fill="#d4af37" direction="ltr">ESP32 DevKit V1</text>
+    ${pinsHTML('left')}
+    ${pinsHTML('right')}
+  </svg>`;
+}
+
+/* ---------- Interactive Pinout Explorer ---------- */
+const PIN_TYPE_LABEL = { power:'تغذیه', ground:'زمین', analog:'آنالوگ', control:'کنترل', digital:'دیجیتال' };
+const PIN_TYPE_ORDER = ['power','ground','digital','analog','control'];
+
+function renderPinoutExplorer(container, initialBoard = 'nano') {
+  const state = { board: initialBoard, side: null, idx: null, filter: null };
+
+  const pinData  = () => state.board === 'nano' ? ARDUINO_NANO_PINS : ESP32_PINS;
+  const pinColor = t   => state.board === 'nano' ? nanoPinColor(t) : esp32PinColor(t);
+  const svgHTML  = ()  => state.board === 'nano' ? buildNanoPinoutSVG() : buildEsp32PinoutSVG();
+  const boardLabel = () => state.board === 'nano' ? 'Arduino Nano' : 'ESP32 DevKit V1';
+  const pinClass = () => state.board === 'nano' ? '.nano-pin' : '.esp32-pin';
+
+  function selectedPin() {
+    if (state.side === null) return null;
+    return pinData()[state.side][state.idx];
+  }
+
+  function render() {
+    const pin = selectedPin();
+    container.innerHTML = `
+      <div class="pinout-explorer">
+        <div class="pinout-switch" role="tablist">
+          <button class="pinout-switch-btn ${state.board === 'nano' ? 'active' : ''}" data-board="nano">Arduino Nano</button>
+          <button class="pinout-switch-btn ${state.board === 'esp32' ? 'active' : ''}" data-board="esp32">ESP32 DevKit</button>
+        </div>
+
+        <div class="pinout-board-name mono">${boardLabel()}</div>
+
+        <div class="pinout-stage">${svgHTML()}</div>
+
+        <div class="pinout-legend">
+          ${PIN_TYPE_ORDER.map(t => `
+            <button class="legend-chip ${state.filter === t ? 'active' : ''}" data-type="${t}" style="--chip-color:${pinColor(t)}">
+              <span class="legend-dot"></span>${PIN_TYPE_LABEL[t]}
+            </button>`).join('')}
+        </div>
+
+        <div class="pinout-detail ${pin ? 'show' : ''}">
+          ${pin ? `
+            <div class="detail-head">
+              <span class="detail-name mono" dir="ltr">${pin.name}</span>
+              ${pin.sub ? `<span class="detail-sub mono" dir="ltr">${pin.sub}</span>` : ''}
+              <span class="detail-badge" style="--badge-color:${pinColor(pin.type)}">${PIN_TYPE_LABEL[pin.type]}</span>
+              ${pin.pwm ? `<span class="detail-badge pwm">PWM ~</span>` : ''}
+            </div>
+            <div class="detail-desc">${pin.desc}</div>
+          ` : `<div class="detail-empty">روی یکی از پایه‌ها بزن تا توضیحش را اینجا ببینی 👆</div>`}
+        </div>
+      </div>`;
+    wire();
+    applyFilter();
+  }
+
+  function selectPin(side, idx) {
+    if (state.side === side && state.idx === idx) { state.side = null; state.idx = null; }
+    else {
+      state.side = side; state.idx = idx;
+      track('pin_selected', { board: state.board, side, idx });
+    }
+    render();
+    if (state.side !== null) {
+      requestAnimationFrame(() => {
+        container.querySelector('.pinout-detail')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    }
+  }
+
+  function wire() {
+    container.querySelectorAll('.pinout-switch-btn').forEach(btn => {
+      btn.onclick = () => {
+        if (btn.dataset.board === state.board) return;
+        state.board = btn.dataset.board;
+        state.side = null; state.idx = null; state.filter = null;
+        track('board_selected', { board: state.board });
+        render();
+      };
+    });
+    container.querySelectorAll(`${pinClass()}`).forEach(g => {
+      g.onclick = () => selectPin(g.dataset.side, +g.dataset.idx);
+    });
+    container.querySelectorAll('.legend-chip').forEach(chip => {
+      chip.onclick = () => {
+        state.filter = state.filter === chip.dataset.type ? null : chip.dataset.type;
+        container.querySelectorAll('.legend-chip').forEach(c => c.classList.toggle('active', c.dataset.type === state.filter));
+        applyFilter();
+      };
+    });
+  }
+
+  function applyFilter() {
+    const data = pinData();
+    container.querySelectorAll(`${pinClass()}`).forEach(g => {
+      const side = g.dataset.side, idx = +g.dataset.idx;
+      const pin = data[side][idx];
+      const selected = state.side === side && state.idx === idx;
+      const dim = !!state.filter && pin.type !== state.filter && !selected;
+      g.classList.toggle('selected', selected);
+      g.classList.toggle('dim', dim);
+    });
+  }
+
+  render();
+}
+
+renderPinoutExplorer(document.getElementById('pinoutContainer'), 'nano');
+</script>
+</body>
+</html>

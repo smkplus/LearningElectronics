@@ -1,0 +1,799 @@
+/* ========================================================================
+   QUEST.CSS — مسیر شوالیه‌ی مدار
+   شوالیه/گفتگو، نقشه‌ی مأموریت‌ها (گره‌ها)، و مودال جزئیات مأموریت.
+   به common.css نیاز دارد.
+   ======================================================================== */
+
+  /* باکس بالای گفتگو (شوالیه/ولتاژ) به dialogue.css منتقل شد. */
+
+  /* the knight dialogue is now a floating overlay under the HUD, not part
+     of normal document flow, so no extra spacing is needed here */
+
+  /* ---------- PATH ---------- */
+  .path-wrap{ max-width:920px; margin:34px auto 60px; padding:0 18px; position:relative; }
+  .path-svg{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+  .path-svg path.trace-bg{ stroke:#1c2330; stroke-width:5; fill:none; }
+  .path-svg path.trace-fg{ stroke:url(#grad); stroke-width:5; fill:none; stroke-linecap:round;
+    filter:drop-shadow(0 0 6px rgba(87,216,163,.55)); transition:stroke-dashoffset .8s ease; }
+
+  .node-row{ position:relative; display:flex; padding:6px 0; z-index:2; }
+  .node-row.right{ justify-content:flex-start; }
+  .node-row.left{ justify-content:flex-end; }
+
+  .node{
+    width:min(78%, 520px);
+    display:flex; align-items:center; gap:14px;
+    background:var(--panel); border:1px solid var(--panel-border);
+    border-radius:14px; padding:14px 16px;
+    cursor:pointer; transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+  }
+  .node:hover{ transform:translateY(-2px); }
+  .node.available{ border-color:var(--trace); box-shadow:0 0 0 1px rgba(87,216,163,.08), 0 8px 22px -12px rgba(87,216,163,.4); }
+  .node.available:hover{ box-shadow:0 0 0 1px rgba(87,216,163,.25), 0 10px 26px -10px rgba(87,216,163,.55); }
+  .node.done{ border-color:var(--gold); }
+  .node.locked{ opacity:.55; cursor:not-allowed; filter:grayscale(.4); }
+  .node.locked:hover{ transform:none; }
+
+  .node-icon{
+    flex:0 0 auto; width:46px; height:46px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center; font-size:22px;
+    background:#1a2130; border:1px solid var(--panel-border);
+  }
+  .node.done .node-icon{ background:radial-gradient(circle, #3a3116, #1a2130); border-color:var(--gold); }
+  .node.available .node-icon{ border-color:var(--trace); }
+
+  .node-info{ flex:1; min-width:0; }
+  .node-title{ font-weight:700; font-size:clamp(15px,3.8vw,18px); margin-bottom:2px; }
+  .node-sub{ font-size:clamp(12.5px,3vw,14.5px); color:var(--muted); }
+  .node-status{ flex:0 0 auto; font-size:11px; }
+  .status-pill{
+    padding:3px 9px; border-radius:20px; font-weight:700; font-size:11px;
+    background:#1a2130; color:var(--muted); border:1px solid var(--panel-border);
+  }
+  .node.available .status-pill{ color:var(--trace-bright); border-color:var(--trace); }
+  .node.done .status-pill{ color:var(--gold); border-color:var(--gold); }
+
+  .boss-node .node-icon{ font-size:26px; }
+  .boss-node{ border-color:var(--danger) !important; }
+  .teaser-node{ border-style:dashed !important; opacity:.7; }
+  .teaser-node:hover{ transform:none; }
+  .boss-node.available{ box-shadow:0 0 0 1px rgba(193,85,74,.15), 0 10px 30px -12px rgba(193,85,74,.5); }
+
+  /* ---------- MODAL ---------- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(5,6,10,.72); backdrop-filter:blur(3px);
+    display:none; align-items:center; justify-content:center; z-index:100;
+    padding:18px; overflow-y:auto;
+  }
+  .overlay.open{ display:flex !important; }
+  .modal{
+    width:100%; max-width:560px;
+    max-height:88vh; max-height:88dvh; overflow-y:auto;
+    background:var(--bg2); border:1px solid var(--panel-border); border-radius:18px;
+    padding:24px; position:relative; margin:auto;
+  }
+  .modal-close{
+    position:absolute; top:14px; left:14px; width:30px; height:30px; border-radius:8px;
+    background:#1a2130; border:1px solid var(--panel-border); color:var(--parchment);
+    cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center;
+  }
+  .modal-close:hover{ border-color:var(--danger); color:var(--danger); }
+  .modal-eyebrow{ font-size:12px; color:var(--gold); font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:6px;}
+  .modal-title{ font-size:clamp(19px,5vw,25px); font-weight:800; margin:0 0 10px; }
+  .modal-desc{ font-size:clamp(14px,3.6vw,16.5px); line-height:1.9; color:#cfc8b6; margin-bottom:16px; white-space:pre-line; }
+  .modal-quote{
+    background:#181d29; border-right:3px solid var(--copper); border-radius:8px;
+    padding:10px 14px; font-size:13.5px; color:#d9c9a8; margin-bottom:18px; line-height:1.8;
+  }
+  .steps{ list-style:none; padding:0; margin:0 0 20px; display:flex; flex-direction:column; gap:8px; }
+  .steps li{
+    display:flex; align-items:flex-start; gap:10px; font-size:14px; line-height:1.8;
+    background:#141924; border:1px solid var(--panel-border); border-radius:10px; padding:10px 12px;
+  }
+  .steps li .num{
+    flex:0 0 auto; width:20px; height:20px; border-radius:6px; background:#1e2635;
+    color:var(--trace-bright); font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono', monospace;
+  }
+  .reward-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
+  .reward{ font-size:13px; color:var(--gold); font-weight:700; display:flex; align-items:center; gap:6px; }
+  .complete-btn{
+    width:100%; padding:13px; border-radius:10px; border:none; cursor:pointer;
+    font-family:'Vazirmatn'; font-weight:700; font-size:15px;
+    background:linear-gradient(90deg, var(--trace), var(--trace-bright)); color:#08150f;
+    transition:opacity .15s ease;
+  }
+  .complete-btn:disabled{ background:#242c3a; color:var(--muted); cursor:default; }
+  .complete-btn:not(:disabled):hover{ opacity:.9; }
+  .complete-btn.next-btn{
+    margin-top:10px;
+    background:linear-gradient(90deg, var(--gold), var(--copper-bright)); color:#241a06;
+  }
+
+  /* ---------- MISSION-1 ARDUINO SIMULATOR ---------- */
+  .modal.has-sim{ max-width:640px; }
+  .modal-sim{ margin-bottom:18px; }
+  .sim-wrap{
+    background:#0d1119; border:1px solid var(--panel-border); border-radius:14px;
+    padding:14px; display:flex; flex-direction:column; gap:10px;
+  }
+  .sim-board-wrap{
+    display:flex; justify-content:center; background:#0a0d13;
+    border:1px solid var(--panel-border); border-radius:10px; padding:6px;
+  }
+  .sim-board-svg{ width:100%; max-width:300px; height:auto; }
+  .sim-board-body{ fill:#151c28; stroke:var(--copper); stroke-width:1.4; }
+  .sim-usb{ fill:#232b3a; stroke:var(--panel-border); }
+  .sim-board-label{ font-family:'JetBrains Mono', monospace; font-size:10px; font-weight:700; fill:var(--copper-bright); letter-spacing:.5px; }
+  .sim-board-sub{ font-family:'JetBrains Mono', monospace; font-size:7.5px; fill:var(--muted); letter-spacing:1px; }
+  .sim-bb-outline{ fill:none; stroke:var(--panel-border); stroke-dasharray:3 3; }
+  .sim-pin-dot{ fill:var(--copper-bright); }
+  .sim-pin-dot.sim-pin-gnd{ fill:var(--muted); }
+  .sim-pin-label{ font-family:'JetBrains Mono', monospace; font-size:9px; fill:var(--parchment); }
+  .sim-pin-label-muted{ fill:var(--muted); font-size:8px; }
+  .sim-wire{ stroke:var(--copper); stroke-width:2; stroke-linecap:round; }
+  .sim-wire-gnd{ stroke:var(--muted); }
+  .sim-wire-live{ stroke:var(--copper-bright); }
+  .sim-wire-in{ stroke:var(--trace); }
+  .sim-pin-live{ fill:var(--copper-bright); }
+  .sim-pin-in{ fill:var(--trace-bright); }
+  .sim-monitor-body{ fill:#151c28; stroke:var(--panel-border); stroke-width:1.2; }
+  .sim-monitor-screen{ fill:#04120c; stroke:var(--trace); stroke-width:1; }
+.sim-monitor-text{
+  font-family:'JetBrains Mono', monospace;
+  font-size:14px;
+  fill:var(--trace-bright);
+
+  direction:ltr;
+  unicode-bidi:isolate;
+  text-anchor:start;
+}
+.sim-monitor-text-sm{
+  font-size:8.5px;
+}
+  .sim-hw-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .sim-push-key{
+    font-family:'Vazirmatn'; font-weight:700; font-size:13px; cursor:pointer; user-select:none;
+    padding:9px 14px; border-radius:9px; border:1px solid var(--panel-border);
+    background:#1a2130; color:var(--parchment); transition:background .1s ease, border-color .1s ease;
+  }
+  .sim-push-key:active{ background:#232b3a; border-color:var(--trace); }
+  .sim-hw-note{ font-size:11.5px; color:var(--muted); }
+  /* The resistor-decoder widget (lab.css: .resistor-stage/.rband-row/.rlcd-flow)
+     is reused as-is inside the compact mission modal; just trim the Lab
+     page's generous top padding so it doesn't leave a big empty gap here. */
+  .sim-wrap .resistor-stage{ padding:6px 0; }
+  /* در مودال مأموریت (بر خلاف تب آزمایشگاه که جای بیشتری دارد)، هر ۴ فیلد
+     نوار رنگی باید در یک ردیف افقی بمانند و به دو خط نشکنند. */
+  .sim-wrap .rband-row{ display:flex; flex-direction:row; flex-wrap:nowrap; gap:6px; }
+  .sim-wrap .rband-field{ flex:1 1 0; min-width:0; }
+  .sim-wrap .rband-field label{
+    font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;
+  }
+  .sim-wrap .rband-dropdown{ width:100%; min-width:0; font-size:11px; padding:6px 2px; }
+  .sim-wrap .rband-readout{ font-size:25px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sim-push-btn{ fill:#3a4356; stroke:var(--copper); stroke-width:1.3; transition:fill .1s ease, stroke .1s ease, transform .08s ease; transform-origin:211px 104px; }
+  .sim-push-base{ fill:#161c28; stroke:var(--panel-border); stroke-width:1.2; }
+  .sim-push-group.is-pressed .sim-push-btn{ fill:#2f7a5a; stroke:var(--trace); transform:scale(.86); }
+  .sim-push-hit{ fill:transparent; cursor:pointer; touch-action:none; }
+  .sim-push-group:hover .sim-push-btn{ stroke:var(--trace); }
+
+  /* ---------- CONCEPT SIM: VOLTAGE & CURRENT (variable resistor + LED) ---------- */
+  .ef-svg{ width:100%; max-width:320px; height:auto; display:block; margin:0 auto; }
+  .ef-wire{ stroke:var(--copper); stroke-width:8; stroke-linecap:round; stroke-linejoin:round; }
+  .ef-batt-outline{ stroke:var(--copper); stroke-width:2; }
+  .ef-batt-plus{ fill:var(--danger); }
+  .ef-batt-minus{ fill:#232b3a; }
+  .ef-batt-divider{ fill:#0a0d13; }
+  .ef-batt-label{ font-family:'Vazirmatn'; font-weight:800; font-size:30px; }
+  .ef-batt-label-plus{ fill:#3a0906; }
+  .ef-batt-label-minus{ fill:var(--parchment); }
+  .ef-electron-dot{ fill:var(--trace-bright); filter:drop-shadow(0 0 5px var(--trace-bright)); }
+  .ef-valve-housing{ fill:#0a0d13; stroke:var(--copper); stroke-width:1.6; }
+  .ef-valve-flap{ fill:var(--copper); }
+  .ef-burn-mark{ font-size:26px; }
+  .sim-controls{ display:flex; flex-direction:column; gap:6px; }
+
+  /* ---------- POTENTIOMETER CONTROL ---------- */
+  .sim-hw-row-pot{ flex-wrap:nowrap; }
+  .sim-pot-icon{ flex:0 0 auto; font-size:16px; line-height:1; }
+  .sim-pot-range{
+    flex:1 1 auto; min-width:110px; height:6px; border-radius:6px;
+    appearance:none; -webkit-appearance:none; background:#1a2130;
+    border:1px solid var(--panel-border); cursor:pointer; outline:none;
+    direction:ltr; /* صفحه RTL است؛ بدون این، مرورگر جهت مقدار کم←زیاد را در اسلایدر برعکس می‌کند */
+  }
+  .sim-pot-range::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:50%;
+    background:var(--trace-bright); border:2px solid #08150f; cursor:pointer;
+    box-shadow:0 0 8px rgba(87,216,163,.5);
+  }
+  .sim-pot-range::-moz-range-thumb{
+    width:18px; height:18px; border-radius:50%; border:2px solid #08150f;
+    background:var(--trace-bright); cursor:pointer; box-shadow:0 0 8px rgba(87,216,163,.5);
+  }
+  .sim-pot-range::-moz-range-track{ height:6px; border-radius:6px; background:#1a2130; }
+
+  /* ---------- مأموریت اول: مقدار پایین=بسته (چپ)، مقدار بالا=باز (راست) + سه محدوده رنگی ---------- */
+  #efRange{
+    direction:ltr; /* چیدمان فیزیکی مقادیر را همیشه قابل پیش‌بینی نگه می‌دارد */
+    --ef-gradient:linear-gradient(to right,
+      #3f7cc4 0%, #3f7cc4 var(--zone-green,38%),
+      var(--trace-bright) var(--zone-green,38%), var(--trace-bright) var(--zone-red,94%),
+      var(--danger) var(--zone-red,94%), var(--danger) 100%);
+    background:var(--ef-gradient);
+  }
+  #efRange::-moz-range-track{ height:6px; border-radius:6px; background:var(--ef-gradient); }
+  #efRange::-webkit-slider-thumb{ background:var(--knob-color, var(--trace-bright)); box-shadow:0 0 8px var(--knob-color, var(--trace-bright)); }
+  #efRange::-moz-range-thumb{ background:var(--knob-color, var(--trace-bright)); box-shadow:0 0 8px var(--knob-color, var(--trace-bright)); }
+
+  /* مأموریت اول برای خیلی‌ها گیج‌کننده است چون اسلایدر پایین صفحه دیده نمی‌شود؛
+     تا اولین بار که کاربر آن را لمس/درگ می‌کند، یک هاله‌ی تپنده دور آن می‌کشیم
+     تا چشم را مستقیم به سمتش ببرد. با اولین input حذف می‌شود (رجوع به quest.js). */
+  #efRange.attn-highlight{
+    border-radius:6px;
+    animation: efSliderAttn 1.15s ease-in-out infinite;
+  }
+  @keyframes efSliderAttn{
+    0%, 100%{ box-shadow:0 0 0 0 rgba(87,216,163,.55); }
+    50%{ box-shadow:0 0 0 9px rgba(87,216,163,0); }
+  }
+  .sim-pot-body{ fill:#2a3346; stroke:var(--copper); stroke-width:1.6; }
+  .sim-pot-ring{ fill:none; stroke:var(--panel-border); stroke-width:1; }
+  .sim-pot-needle{ stroke:var(--trace-bright); stroke-width:2.2; stroke-linecap:round; }
+  .sim-pot-tip{ fill:var(--trace-bright); }
+  .sim-pot-hub{ fill:var(--copper-bright); stroke:#08150f; stroke-width:.6; }
+  .sim-pot-tick{ stroke:var(--muted); stroke-width:1.4; stroke-linecap:round; opacity:.7; }
+  .sim-pot-hit{ fill:transparent; cursor:grab; touch-action:none; }
+  .sim-pot-hit:active{ cursor:grabbing; }
+  .sim-pot-group:hover .sim-pot-ring{ stroke:var(--trace); }
+
+  /* ---------- CONCEPT SIM: PWM SCOPE (pot mission add-on) ---------- */
+  .pwm-svg{ width:100%; max-width:320px; height:auto; display:block; margin:0 auto; }
+  .pwm-board{ display:flex; justify-content:center; }
+  .pwm-scope-bg{ fill:#04120c; stroke:var(--trace); stroke-width:1; }
+  .pwm-scope-label{ font-family:'JetBrains Mono', monospace; font-size:9px; fill:var(--muted); }
+  .pwm-scope-gridline{ stroke:var(--panel-border); stroke-width:1; stroke-dasharray:2 3; }
+  .pwm-scope-caption{ font-family:'Vazirmatn'; font-size:8px; fill:var(--muted); }
+  .pwm-wave{
+    stroke:var(--trace-bright); stroke-width:2; stroke-linejoin:round; stroke-linecap:round;
+    filter:drop-shadow(0 0 4px rgba(87,216,163,.55));
+  }
+
+  /* ---------- CONCEPT SIM: PULL-UP / PULL-DOWN RESISTOR (button mission add-on) ---------- */
+  .pr-svg{ width:100%; max-width:320px; height:auto; display:block; margin:0 auto; }
+  .pr-rail{ stroke:var(--copper); stroke-width:3; stroke-linecap:round; }
+  /* labels sit clearly above (VCC) / below (GND) their rail line in the markup
+     coordinates themselves — kept out of the line's own y so they never overlap it */
+  .pr-rail-label{ font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:700; }
+  .pr-rail-label-vcc{ fill:var(--copper-bright); }
+  .pr-rail-label-gnd{ fill:var(--muted); }
+  .pr-wire{ stroke:#2a3346; stroke-width:2.6; stroke-linecap:round; transition:stroke .15s ease, filter .15s ease; }
+  .pr-wire.is-live{ stroke:var(--trace-bright); filter:drop-shadow(0 0 4px rgba(87,216,163,.6)); }
+  .pr-pin-dot{ fill:var(--muted); stroke:#08150f; stroke-width:1; transition:fill .15s ease, filter .15s ease; }
+  .pr-pin-dot.is-high{ fill:var(--trace-bright); filter:drop-shadow(0 0 5px var(--trace-bright)); }
+  .pr-pin-dot.is-low{ fill:var(--muted); }
+  .pr-resistor-g .sim-resistor-body{ transition:stroke .15s ease, filter .15s ease; }
+  .pr-resistor-g.is-live .sim-resistor-body{ stroke:var(--trace-bright); filter:drop-shadow(0 0 3px rgba(87,216,163,.5)); }
+  /* push-button graphic — its own classes (not the shared .sim-push-* ones),
+     since those hardcode a fixed-pixel transform-origin tied to a different
+     board layout elsewhere; this button can sit at more than one position. */
+  .pr-switch-group{ cursor:pointer; }
+  .pr-switch-base{ fill:#161c28; stroke:var(--panel-border); stroke-width:1.2; }
+  .pr-switch-cap{
+    fill:#3a4356; stroke:var(--copper); stroke-width:1.3;
+    transition:fill .1s ease, stroke .1s ease, transform .08s ease;
+    transform-box:fill-box; transform-origin:center;
+  }
+  .pr-switch-group:hover .pr-switch-cap{ stroke:var(--trace); }
+  .pr-switch-group.is-pressed .pr-switch-cap{ fill:#2f7a5a; stroke:var(--trace); transform:scale(.82); }
+  .pr-switch-hit{ fill:transparent; cursor:pointer; touch-action:none; }
+  .pr-readout-text{ font-size:13px; transition:fill .15s ease; }
+  .pr-readout-text.is-high{ fill:var(--trace-bright); }
+  .pr-readout-text.is-low{ fill:var(--muted); }
+  .pr-readout-caption{ font-family:'JetBrains Mono', monospace; font-size:8px; fill:var(--muted); letter-spacing:.5px; }
+  .pr-mode-row{ display:flex; gap:8px; }
+  .pr-mode-row .sim-btn{ flex:1 1 0; text-align:center; }
+  .pr-hold-btn{ width:100%; }
+
+  /* ---------- SERVO MOTOR ---------- */
+  .sim-servo-body{ fill:#2a3346; stroke:var(--copper); stroke-width:1.4; }
+  .sim-servo-flange{ fill:#161c28; stroke:var(--panel-border); stroke-width:1; }
+  .sim-servo-drum{ fill:#3a4356; stroke:var(--copper); stroke-width:1.2; }
+  .sim-servo-shaft{ fill:var(--copper-bright); }
+  .sim-servo-horn{ stroke:var(--trace-bright); stroke-width:3; stroke-linecap:round; }
+  .sim-servo-horn-tip{ fill:var(--trace-bright); }
+  .sim-resistor-body{ fill:#d8c9a3; stroke:#8a7550; stroke-width:1; }
+  .sim-band{ fill:#b23b2e; }
+  .sim-band-2{ fill:#b23b2e; }
+  .sim-band-3{ fill:#6b4a2a; }
+  .sim-caption{ font-family:'Vazirmatn'; font-size:8.5px; fill:var(--muted); }
+  .sim-led-ray{ stroke:#ffdd88; stroke-width:1.6; stroke-linecap:round; opacity:0; transition:opacity .12s ease; }
+  .sim-led-bulb{
+    --sim-led-ratio:0;
+    fill:#4a1b16; stroke:#7a3a2a; stroke-width:1.4;
+    transition:fill .12s ease, filter .12s ease;
+  }
+  .sim-led-group.is-on .sim-led-ray{ opacity:calc(0.25 + var(--sim-led-ratio, 1) * .75); }
+  .sim-led-group.is-on .sim-led-bulb{
+    fill:#ff5c42; stroke:#ffb27a;
+    filter:url(#simLedGlow) drop-shadow(0 0 6px rgba(255,110,70,.85));
+  }
+  .sim-status{
+    font-size:13px; line-height:1.7; padding:10px 12px; border-radius:9px;
+    background:#141924; border:1px solid var(--panel-border); color:#cfc8b6;
+  }
+  .sim-status[data-state="running"]{ border-color:var(--trace); color:var(--trace-bright); }
+  .sim-status[data-state="success"]{ border-color:var(--gold); color:var(--gold); font-weight:700; }
+  .sim-status[data-state="error"]{ border-color:var(--danger); color:#ff9c92; }
+  .sim-editor-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+  .sim-editor-title{ font-size:12.5px; color:var(--muted); font-weight:700; }
+  .sim-actions{ display:flex; gap:6px; }
+  .sim-btn{
+    font-family:'Vazirmatn'; font-weight:700; font-size:12.5px; cursor:pointer;
+    padding:7px 11px; border-radius:8px; border:1px solid var(--panel-border);
+    background:#1a2130; color:var(--parchment); transition:opacity .15s ease, border-color .15s ease;
+  }
+  .sim-btn:disabled{ opacity:.4; cursor:default; }
+  .sim-btn-ghost:not(:disabled):hover{ border-color:var(--copper); }
+  .sim-btn-run{ background:linear-gradient(90deg, var(--trace), var(--trace-bright)); color:#08150f; border:none; }
+  .sim-btn-run:not(:disabled):hover{ opacity:.9; }
+  .sim-btn-stop{ background:#241a1a; border-color:var(--danger); color:#ff9c92; }
+  .sim-editor{
+    width:100%; min-height:150px; resize:vertical;
+    background:#0a0d13; border:1px solid var(--panel-border); border-radius:9px;
+    color:#d9e6d3; font-size:13px; line-height:1.65; padding:10px 12px;
+    direction:ltr; text-align:left; unicode-bidi:plaintext; tab-size:2;
+  }
+  .sim-editor:focus{ outline:none; border-color:var(--trace); }
+  .sim-console{
+    min-height:44px; max-height:120px; overflow-y:auto;
+    background:#080a10; border:1px solid var(--panel-border); border-radius:9px;
+    padding:8px 10px; font-size:12px; line-height:1.6; color:#9fb0a0;
+    direction:ltr; text-align:left; unicode-bidi:plaintext;
+  }
+  .sim-console:empty::before{ content:'خروجی سریال و پیام‌های خطا این‌جا نشان داده می‌شود.'; color:var(--muted); }
+  .sim-console .sim-error{ color:#ff9c92; }
+  .sim-console .sim-warn{ color:#e7c56a; }
+  .sim-console .sim-ok{ color:var(--trace-bright); }
+  .sim-console .sim-serial{ color:#9fb0a0; }
+  .sim-console .sim-serial-garbled{ color:var(--muted); font-style:italic; letter-spacing:.5px; }
+  .sim-console-wrap{ display:flex; flex-direction:column; gap:6px; }
+  .sim-console-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:11px; color:var(--muted); }
+  .sim-baud-select{
+    font-family:'JetBrains Mono', monospace; font-size:11.5px; cursor:pointer;
+    background:#1a2130; color:var(--parchment); border:1px solid var(--panel-border); border-radius:6px;
+    padding:3px 8px; direction:ltr;
+  }
+  .sim-baud-select:focus{ outline:none; border-color:var(--trace); }
+
+  @media (max-width:520px){
+    .modal.has-sim{ max-width:100%; }
+    .sim-editor{ min-height:130px; }
+  }
+
+  /* ---------- WELCOME MODAL ---------- */
+  .welcome-modal{ text-align:center; }
+  .welcome-avatar{
+    width:84px; height:84px; margin:0 auto 12px; border-radius:16px;
+    background:radial-gradient(circle at 35% 30%, #2a3346, #171c27);
+    border:1px solid var(--copper);
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+    box-shadow:0 0 22px rgba(201,124,61,.25) inset, 0 0 18px rgba(201,124,61,.12);
+  }
+  .welcome-img{ width:100%; height:100%; object-fit:cover; object-position:top center; }
+  .welcome-modal .modal-eyebrow{ justify-content:center; }
+  .welcome-modal .modal-title{ text-align:center; }
+  .welcome-modal .modal-desc{ text-align:right; }
+  .welcome-modal .steps{ text-align:right; }
+
+
+
+  /* انیمیشن تکان‌خوردن آواتار هنگام حرف زدن در dialogue.css است. */
+
+  .node.available .node-icon{ position:relative; }
+  .node.available .node-icon::after{
+    content:""; position:absolute; inset:0; border-radius:inherit;
+    border:2px solid rgba(87,216,163,.5);
+    opacity:0; transform:scale(1);
+    animation:idlePulse 2.4s ease-in-out infinite;
+    will-change:transform, opacity;
+    pointer-events:none;
+  }
+  @keyframes idlePulse{
+    0%{ opacity:.7; transform:scale(1); }
+    100%{ opacity:0; transform:scale(1.35); }
+  }
+
+  .boss-node.available .node-icon::after{
+    border-color:rgba(193,85,74,.55);
+    animation-name:idlePulseDanger;
+    animation-duration:1.8s;
+  }
+  @keyframes idlePulseDanger{
+    0%{ opacity:.75; transform:scale(1); }
+    100%{ opacity:0; transform:scale(1.45); }
+  }
+
+
+  /* ---------- MOBILE: knight / path / modal ---------- */
+  @media (max-width: 640px){
+    /* استایل موبایل باکس گفتگو در dialogue.css است. */
+
+    .path-wrap{ margin:34px auto 60px; padding:0 14px; }
+    .node{ width:100%; padding:18px 18px; border-radius:16px; gap:16px; }
+    .node-icon{ width:58px; height:58px; font-size:28px; border-radius:12px; }
+    .status-pill{ font-size:13px; padding:4px 11px; }
+    .boss-node .node-icon{ font-size:32px; }
+
+    .modal{ padding:22px 18px; border-radius:20px; max-height:92vh; max-height:92dvh; }
+    .modal-eyebrow{ font-size:14px; }
+    .modal-desc{ line-height:2; }
+    .modal-quote{ font-size:15.5px; padding:12px 16px; }
+    .steps li{ font-size:16px; padding:12px 14px; }
+    .steps li .num{ width:24px; height:24px; font-size:13px; }
+    .reward{ font-size:15px; }
+    .complete-btn{ padding:16px; font-size:17px; }
+    .modal-close{ width:36px; height:36px; font-size:19px; }
+  }
+
+  /* ---------- SMALL PHONES ---------- */
+  @media (max-width: 380px){
+    .path-wrap{ padding-inline:10px; }
+    .node{ padding:14px 14px; gap:12px; }
+    .node-icon{ width:48px; height:48px; font-size:22px; }
+  }
+
+/* وقتی ادیتورِ کد تمام‌صفحه است (arduino-sim.js کلاسِ sim-fullscreen-lock را روی
+   body می‌گذارد و ادیتور با z-index:999 رویِ همه‌چیز می‌نشیند)، پارتیکل‌های جشن،
+   فلشِ صفحه و دیالوگِ شوالیه باید بالاترِ آن باشند. */
+body.sim-fullscreen-lock #confettiCanvas,
+body.sim-fullscreen-lock #flashOverlay,
+body.sim-fullscreen-lock #knightSection{ z-index:1200 !important; }
+
+/* کدِ داخلِ دیالوگِ شوالیه: ایزوله و LTR تا پرانتزها جابه‌جا نشوند */
+.knight-code{
+  display:inline-block; direction:ltr; unicode-bidi:isolate; padding:0 6px; border-radius:6px;
+  background:#0d1117; border:1px solid #2a3344; color:#80cbc4;
+  font-family:ui-monospace,Consolas,monospace; font-size:.92em;
+}
+
+
+/* ================= بخش رباتیک ================= */
+.section-divider{ display:flex; align-items:flex-start; gap:18px; margin:26px 8px 12px; padding:18px 20px; border:1px dashed var(--copper); border-radius:14px; background:rgba(201,124,61,.08); }
+.section-divider.locked{ opacity:.55; }
+.section-divider .sd-icon{ flex:0 0 auto; min-width:34px; text-align:center; font-size:28px; line-height:1.3; }
+.section-divider > div:not(.sd-icon){ flex:1 1 auto; min-width:0; }
+.section-divider .sd-title{ font-weight:800; font-size:16px; color:var(--gold); margin-bottom:6px; }
+.section-divider .sd-sub{ font-size:13px; line-height:2.1; color:var(--muted); }
+@media (max-width:640px){
+  .section-divider{ gap:14px; padding:16px 16px; }
+  .section-divider .sd-icon{ min-width:30px; font-size:26px; }
+}
+.ls-svg{ width:100%; height:auto; display:block; touch-action:none; cursor:ew-resize; background:#10151f; border-radius:10px; }
+.ls-read{ display:flex; flex-wrap:wrap; gap:6px 16px; font-size:13px; color:#cfc8b6; }
+.ls-field{ display:flex; flex-direction:column; gap:2px; font-size:12px; color:var(--muted); }
+.ls-field input{ width:100%; accent-color:var(--gold); }
+
+.test-badge{ position:fixed; left:10px; bottom:calc(10px + env(safe-area-inset-bottom,0px)); z-index:9999; padding:6px 12px; border-radius:999px; background:rgba(212,175,55,.92); color:#1a1405; font:700 12px 'Vazirmatn',sans-serif; pointer-events:none; }
+
+/* ===== STM32 + رباتیک ===== */
+.cm-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
+.ls-field select{ background:#141924; color:var(--parchment); border:1px solid var(--panel-border); border-radius:8px; padding:6px; font:13px 'JetBrains Mono',monospace; }
+.cm-row{ padding:6px 10px; border-radius:8px; background:#141924; border:1px solid var(--panel-border); font-size:13px; direction:rtl; }
+.cm-row.bad{ border-color:var(--danger); color:#ff9c92; }
+.ll-row{ display:flex; gap:8px; flex-wrap:wrap; }
+.ll-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.ll-card{ background:#141924; border:1px solid var(--panel-border); border-radius:10px; padding:8px; display:flex; flex-direction:column; gap:6px; }
+.ll-card.ok{ border-color:var(--gold); }
+.ll-card svg{ width:100%; height:auto; display:block; }
+.ll-sel{ background:#1a2130; color:var(--parchment); border:1px solid var(--panel-border); border-radius:8px; padding:6px; font:13px 'Vazirmatn',sans-serif; }
+.ll-mark{ font-size:12px; min-height:18px; color:var(--muted); }
+.hal-ed{ display:flex; background:#1a2228; border-radius:8px; overflow:hidden; direction:ltr; }
+.hal-ed:focus-within{ outline:2px solid var(--gold); }
+.hal-gut{ background:#161d24; border-right:1px solid #2d3840; color:#4b5661; text-align:right; padding:10px 8px 10px 10px; font:14px/1.5 Consolas,'Courier New',monospace; user-select:none; white-space:pre; height:150px; overflow:hidden; }
+.hal-wrap{ position:relative; flex:1; min-width:0; }
+.hal-hl, .hal-src{ margin:0; padding:10px 12px; font:14px/1.5 Consolas,'Courier New',monospace; white-space:pre; overflow:auto; border:0; box-sizing:border-box; tab-size:2; letter-spacing:normal; }
+.hal-hl{ position:absolute; inset:0; color:#e6edf3; pointer-events:none; }
+.hal-src{ position:relative; display:block; width:100%; height:150px; background:transparent; color:transparent; caret-color:#2ea09d; resize:none; outline:none; }
+.hal-src::selection{ background:rgba(46,160,157,.4); color:transparent; }
+.hal-ed .hl-dir{ color:#c792ea; } .hal-ed .hl-struct, .hal-ed .hl-type, .hal-ed .hl-header{ color:#2ea09d; }
+.hal-ed .hl-fn, .hal-ed .hl-class{ color:#e5a467; } .hal-ed .hl-ident, .hal-ed .hl-const{ color:#e6edf3; }
+.hal-ed .hl-str{ color:#80cbc4; unicode-bidi:plaintext; } .hal-ed .hl-num{ color:#67c2ff; } .hal-ed .hl-cm{ color:#5c6370; unicode-bidi:plaintext; }
+
+/* ===== توضیح IR در مأموریت «چشمِ ربات» ===== */
+.ir-wrap{ gap:12px; }
+.ir-h{ font-weight:800; color:var(--gold); font-size:14.5px; margin-top:6px; }
+.ir-p{ font-size:13px; line-height:1.95; color:#cfc8b6; }
+.ir-svg{ width:100%; height:auto; display:block; background:#10151f; border-radius:10px; }
+.ir-svg text{ font-family:'Vazirmatn',sans-serif; fill:#cfc8b6; }
+.ir-presets, .ir-tabs{ display:flex; gap:8px; flex-wrap:wrap; }
+.ir-presets .sim-btn, .ir-tabs .sim-btn{ flex:1 1 0; }
+.ir-chips{ display:flex; gap:8px; flex-wrap:wrap; }
+.ir-chip{ flex:1 1 140px; padding:8px 10px; border-radius:9px; border:1px solid var(--panel-border); background:#141924; font-size:13px; color:var(--muted); text-align:center; transition:border-color .15s ease, color .15s ease; }
+.ir-chip.on{ border-color:var(--trace); color:var(--trace-bright); font-weight:700; }
+.ir-sw-grid{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.ir-sw{ background:#141924; border:1px solid var(--panel-border); border-radius:10px; padding:6px; text-align:center; }
+.ir-sw-box{ height:44px; border-radius:8px; border:1px solid var(--panel-border); transition:background .25s ease; }
+.ir-sw-name{ font-size:12.5px; margin-top:4px; color:#cfc8b6; }
+.ir-sw-val{ font-size:11px; color:var(--muted); min-height:16px; }
+.ir-pairs{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.ir-pair{ background:#141924; border:1px solid var(--panel-border); border-radius:10px; padding:8px; display:flex; flex-direction:column; gap:6px; }
+.ir-pair-title{ font-size:12.5px; font-weight:700; color:#cfc8b6; }
+.ir-pair-boxes{ display:flex; height:46px; border-radius:8px; overflow:hidden; border:1px solid var(--panel-border); direction:ltr; }
+.ir-pair-a, .ir-pair-b{ flex:1; transition:background .25s ease; }
+.ir-pair-note{ font-size:12px; line-height:1.7; color:var(--muted); min-height:40px; }
+.ir-meter{ height:10px; border-radius:6px; background:#1a2130; overflow:hidden; direction:ltr; border:1px solid var(--panel-border); }
+.ir-meter-fill{ height:100%; background:linear-gradient(90deg, var(--trace), var(--trace-bright)); transition:width .3s ease; }
+@media (max-width:420px){ .ir-pairs{ grid-template-columns:1fr; } }
+
+/* ===== CubeMX: نقشه‌ی چیپ و آزمایشگاه ساعت (cube-block.js) ===== */
+.cx-wrap{ display:flex; flex-direction:column; gap:10px; }
+.cx-chip{ width:100%; max-width:560px; margin:0 auto; height:auto; display:block; background:#10151f; border-radius:10px; }
+.cx-board{ fill:#1d4fa6; }
+.cx-chiptxt text{ fill:#fff; opacity:.9; pointer-events:none; font-family:'JetBrains Mono',monospace; }
+.cx-pin{ cursor:pointer; }
+.cx-pin:focus{ outline:none; }
+.cx-pin rect{ stroke:transparent; stroke-width:4; }
+.cx-pin text{ fill:#e8e2d0; font-size:15px; font-family:'JetBrains Mono',monospace; user-select:none; -webkit-user-select:none; }
+.cx-pin.free rect{ fill:#6f7f96; }
+.cx-pin.ok rect{ fill:#35c27a; }
+.cx-pin.pwr rect{ fill:#b8a65a; }
+.cx-pin.spc rect{ fill:#9a953a; }
+.cx-pin:hover rect, .cx-pin:focus-visible rect{ stroke:var(--gold); }
+.cx-pin.sel rect{ stroke:#fff; }
+.cx-pin.want rect{ stroke:var(--gold); animation:cxWant 1.1s ease-in-out infinite; }
+@keyframes cxWant{ 50%{ stroke-opacity:.2; } }
+.cx-fns{ display:flex; flex-wrap:wrap; gap:6px; direction:ltr; margin-top:2px; }
+.cx-fns .sim-btn{ font-family:'JetBrains Mono',monospace; font-size:12px; padding:6px 9px; }
+.cx-want{ outline:3px solid var(--gold); outline-offset:2px; }
+.cx-small{ font-size:11.5px; color:var(--muted); }
+.cx-m{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:2px; }
+.cx-m li{ padding:6px 8px; border-radius:8px; cursor:pointer; font-size:13px; line-height:1.7; color:#cfc8b6; }
+.cx-m li:hover{ background:#1a2130; }
+.cx-m li:focus-visible{ outline:2px solid var(--gold); }
+.cx-m li::before{ content:"○ "; color:var(--muted); }
+.cx-m li.d{ color:var(--trace-bright); }
+.cx-m li.d::before{ content:"✔ "; color:var(--trace-bright); }
+.cx-led{ width:13px; height:13px; border-radius:50%; background:#26405f; display:inline-block; vertical-align:middle; margin-inline-end:6px; }
+.cx-gen.done .cx-led{ animation:cxBlink 1s steps(1) infinite; }
+@keyframes cxBlink{ 50%{ background:#ffd25a; box-shadow:0 0 12px #ffd25a; } }
+@media (prefers-reduced-motion:reduce){ .cx-gen.done .cx-led{ animation:none; background:#ffd25a; } .cx-pin.want rect{ animation:none; } }
+.cx-gut{ height:auto; overflow:visible; }
+.cx-presets{ display:flex; gap:8px; flex-wrap:wrap; }
+.cx-presets .sim-btn{ flex:1 1 140px; }
+.cx-ctl{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
+.cx-rows{ display:flex; flex-direction:column; gap:6px; }
+.cx-row{ display:grid; grid-template-columns:64px 1fr 118px; gap:8px; align-items:center; direction:ltr; font-size:12px; color:#cfc8b6; }
+.cx-bar{ position:relative; height:14px; background:#0a0d13; border-radius:8px; border:1px solid var(--panel-border); }
+.cx-bar i{ position:absolute; inset:0 auto 0 0; border-radius:8px; background:var(--trace); transition:width .15s ease; }
+.cx-bar b{ position:absolute; left:66.6%; top:-3px; bottom:-3px; width:2px; background:var(--parchment); }
+.cx-row.bad .cx-bar i{ background:var(--danger); }
+.cx-row.bad .cx-v{ color:#ff9c92; font-weight:700; }
+.cx-ext{ font-size:12px; }
+
+/* ===== مأموریت‌های کدنویسی STM32 (hal-block.js) ===== */
+.hs-wrap{ gap:12px; }
+.hs-box{ background:#141924; border:1px solid var(--panel-border); border-radius:10px; padding:10px 12px; display:flex; flex-direction:column; gap:8px; }
+.hs-box-t{ font-weight:700; font-size:13px; color:var(--gold); }
+.hs-p{ font-size:12.5px; line-height:1.9; color:#cfc8b6; }
+.hs-det{ background:#141924; border:1px solid var(--panel-border); border-radius:10px; padding:8px 12px; }
+.hs-det > summary{ cursor:pointer; font-weight:700; font-size:13px; color:var(--gold); padding:4px 0; }
+.hs-det[open] > summary{ margin-bottom:8px; }
+.hs-det > .hs-p, .hs-det > .hs-ol, .hs-det > .hs-table{ margin-bottom:8px; }
+.hs-badge{ font-weight:700; font-size:12px; color:var(--trace-bright); margin-inline-start:8px; }
+.hs-ol{ margin:0; padding-inline-start:22px; font-size:12.5px; line-height:2; color:#cfc8b6; }
+.hs-table{ width:100%; border-collapse:collapse; font-size:12px; color:#cfc8b6; }
+.hs-table th, .hs-table td{ padding:6px 8px; border-bottom:1px solid var(--panel-border); text-align:start; vertical-align:top; }
+.hs-table code, .hs-ol code, .hs-p code{ direction:ltr; unicode-bidi:isolate; display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#80cbc4; }
+.hs-pre{ margin:0; padding:10px 12px; font:12.5px/1.6 Consolas,'Courier New',monospace; direction:ltr; text-align:left; white-space:pre; overflow:auto; color:#e6edf3; flex:1; min-width:0; }
+.hs-svg{ width:100%; height:auto; display:block; background:#10151f; border-radius:10px; }
+.hs-svg text{ fill:#cfc8b6; font-family:'Vazirmatn',sans-serif; }
+.hs-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+.hs-chips span{ flex:1 1 140px; padding:6px 10px; border-radius:8px; background:#141924; border:1px solid var(--panel-border); font-size:12px; color:var(--muted); text-align:center; }
+.hs-hw{ display:flex; flex-direction:column; gap:10px; }
+.hs-log{ background:#080a10; border:1px solid var(--panel-border); border-radius:9px; padding:8px 10px; font:12px/1.6 'JetBrains Mono',monospace; direction:ltr; text-align:left; white-space:pre-wrap; min-height:44px; color:#9fb0a0; }
+.hs-log:empty::before{ content:'خروجیِ برنامه (تغییرِ پایه‌ها و هشدارها) این‌جا نشان داده می‌شود.'; color:var(--muted); font-family:'Vazirmatn',sans-serif; direction:rtl; unicode-bidi:plaintext; }
+.hs-edhead{ font-weight:800; font-size:14px; color:var(--gold); margin-top:4px; }
+.hs-wrap .hal-src, .hs-wrap .hal-gut{ height:210px; }
+.hs-wrap .hal-ed.hs-small .hal-src, .hs-wrap .hal-ed.hs-small .hal-gut{ height:70px; }
+.hs-wrap .hs-skel{ max-height:360px; }
+
+/* ===== ادیتورِ STM32: تب‌ها (ساعت / Cube / کد) ===== */
+.hs-bench{ border:1px solid var(--panel-border,#2a3346); border-radius:12px; background:rgba(255,255,255,.02); overflow:hidden; margin:10px 0; }
+.hs-pane{ padding:10px; } .hs-pane[hidden]{ display:none; }
+.hs-tabs{ display:flex; gap:4px; padding:6px 6px 0; background:rgba(0,0,0,.25); border-bottom:1px solid var(--panel-border,#2a3346); overflow-x:auto; }
+.hs-tab{ flex:1 0 auto; display:flex; align-items:center; justify-content:center; gap:6px; padding:9px 12px; border:1px solid transparent; border-bottom:0; border-radius:10px 10px 0 0; background:transparent; color:var(--muted,#8b95a5); font:inherit; font-size:13.5px; font-weight:700; cursor:pointer; position:relative; white-space:nowrap; }
+.hs-tab:hover{ color:var(--parchment,#e9edf5); }
+.hs-tab.on{ background:var(--panel,#161c28); border-color:var(--panel-border,#2a3346); color:var(--gold,#e5a467); }
+.hs-tab-b{ font-style:normal; font-size:11px; min-width:12px; }
+.hs-tab[data-s="ok"] .hs-tab-b::before{ content:"✓"; color:var(--trace-bright,#6ee6b8); }
+.hs-tab[data-s="todo"] .hs-tab-b::before{ content:"●"; color:#ff9c92; }
+.hs-tab.nudge{ animation:hsNudge 1.1s ease-in-out infinite; color:var(--trace-bright,#6ee6b8); }
+@keyframes hsNudge{ 50%{ box-shadow:0 0 0 3px rgba(110,230,184,.35); } }
+.cx-wrap[data-part="pins"] > .cx-part[data-part="clock"], .cx-wrap[data-part="clock"] > .cx-part[data-part="pins"]{ display:none; }
+.hs-strip{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:8px; }
+.hs-chipb{ border:1px solid var(--panel-border,#2a3346); background:#10151f; color:var(--parchment,#e9edf5); border-radius:999px; padding:3px 10px; font-size:12px; cursor:pointer; font-family:inherit; }
+.hs-chipb:hover{ border-color:var(--gold,#e5a467); } .hs-chipb.bad{ border-color:#ff9c92; color:#ff9c92; }
+
+@media (prefers-reduced-motion:reduce){ .cx-gen.done .cx-led{ animation:none; background:#ffd25a; } .cx-pin.want rect{ animation:none; } }
+.cx-gut{ height:auto; overflow:visible; }
+.cx-presets{ display:flex; gap:8px; flex-wrap:wrap; }
+.cx-presets .sim-btn{ flex:1 1 140px; }
+.cx-ctl{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
+.cx-rows{ display:flex; flex-direction:column; gap:6px; }
+.cx-row{ display:grid; grid-template-columns:64px 1fr 118px; gap:8px; align-items:center; direction:ltr; font-size:12px; color:#cfc8b6; }
+.cx-bar{ position:relative; height:14px; background:#0a0d13; border-radius:8px; border:1px solid var(--panel-border); }
+.cx-bar i{ position:absolute; inset:0 auto 0 0; border-radius:8px; background:var(--trace); transition:width .15s ease; }
+.cx-bar b{ position:absolute; left:66.6%; top:-3px; bottom:-3px; width:2px; background:var(--parchment); }
+.cx-row.bad .cx-bar i{ background:var(--danger); }
+.cx-row.bad .cx-v{ color:#ff9c92; font-weight:700; }
+.cx-ext{ font-size:12px; }
+
+/* ===== مأموریت‌های کدنویسی STM32 (hal-block.js) ===== */
+.hs-wrap{ gap:12px; }
+.hs-box{ background:#141924; border:1px solid var(--panel-border); border-radius:10px; padding:10px 12px; display:flex; flex-direction:column; gap:8px; }
+.hs-box-t{ font-weight:700; font-size:13px; color:var(--gold); }
+.hs-p{ font-size:12.5px; line-height:1.9; color:#cfc8b6; }
+.hs-det{ background:#141924; border:1px solid var(--panel-border); border-radius:10px; padding:8px 12px; }
+.hs-det > summary{ cursor:pointer; font-weight:700; font-size:13px; color:var(--gold); padding:4px 0; }
+.hs-det[open] > summary{ margin-bottom:8px; }
+.hs-det > .hs-p, .hs-det > .hs-ol, .hs-det > .hs-table{ margin-bottom:8px; }
+.hs-badge{ font-weight:700; font-size:12px; color:var(--trace-bright); margin-inline-start:8px; }
+.hs-ol{ margin:0; padding-inline-start:22px; font-size:12.5px; line-height:2; color:#cfc8b6; }
+.hs-table{ width:100%; border-collapse:collapse; font-size:12px; color:#cfc8b6; }
+.hs-table th, .hs-table td{ padding:6px 8px; border-bottom:1px solid var(--panel-border); text-align:start; vertical-align:top; }
+.hs-table code, .hs-ol code, .hs-p code{ direction:ltr; unicode-bidi:isolate; display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#80cbc4; }
+.hs-pre{ margin:0; padding:10px 12px; font:12.5px/1.6 Consolas,'Courier New',monospace; direction:ltr; text-align:left; white-space:pre; overflow:auto; color:#e6edf3; flex:1; min-width:0; }
+.hs-svg{ width:100%; height:auto; display:block; background:#10151f; border-radius:10px; }
+.hs-svg text{ fill:#cfc8b6; font-family:'Vazirmatn',sans-serif; }
+.hs-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+.hs-chips span{ flex:1 1 140px; padding:6px 10px; border-radius:8px; background:#141924; border:1px solid var(--panel-border); font-size:12px; color:var(--muted); text-align:center; }
+.hs-hw{ display:flex; flex-direction:column; gap:10px; }
+.hs-log{ background:#080a10; border:1px solid var(--panel-border); border-radius:9px; padding:8px 10px; font:12px/1.6 'JetBrains Mono',monospace; direction:ltr; text-align:left; white-space:pre-wrap; min-height:44px; color:#9fb0a0; }
+.hs-log:empty::before{ content:'خروجیِ برنامه (تغییرِ پایه‌ها و هشدارها) این‌جا نشان داده می‌شود.'; color:var(--muted); font-family:'Vazirmatn',sans-serif; direction:rtl; unicode-bidi:plaintext; }
+.hs-edhead{ font-weight:800; font-size:14px; color:var(--gold); margin-top:4px; }
+.hs-wrap .hal-src, .hs-wrap .hal-gut{ height:210px; }
+.hs-wrap .hal-ed.hs-small .hal-src, .hs-wrap .hal-ed.hs-small .hal-gut{ height:70px; }
+.hs-wrap .hs-skel{ max-height:360px; }
+
+/* ===== ادیتورِ STM32: تب‌ها (ساعت / Cube / کد) ===== */
+.hs-bench{ border:1px solid var(--panel-border,#2a3346); border-radius:12px; background:rgba(255,255,255,.02); overflow:hidden; margin:10px 0; }
+.hs-pane{ padding:10px; } .hs-pane[hidden]{ display:none; }
+.hs-tabs{ display:flex; gap:4px; padding:6px 6px 0; background:rgba(0,0,0,.25); border-bottom:1px solid var(--panel-border,#2a3346); overflow-x:auto; }
+.hs-tab{ flex:1 0 auto; display:flex; align-items:center; justify-content:center; gap:6px; padding:9px 12px; border:1px solid transparent; border-bottom:0; border-radius:10px 10px 0 0; background:transparent; color:var(--muted,#8b95a5); font:inherit; font-size:13.5px; font-weight:700; cursor:pointer; position:relative; white-space:nowrap; }
+.hs-tab:hover{ color:var(--parchment,#e9edf5); }
+.hs-tab.on{ background:var(--panel,#161c28); border-color:var(--panel-border,#2a3346); color:var(--gold,#e5a467); }
+.hs-tab-b{ font-style:normal; font-size:11px; min-width:12px; }
+.hs-tab[data-s="ok"] .hs-tab-b::before{ content:"✓"; color:var(--trace-bright,#6ee6b8); }
+.hs-tab[data-s="todo"] .hs-tab-b::before{ content:"●"; color:#ff9c92; }
+.hs-tab.nudge{ animation:hsNudge 1.1s ease-in-out infinite; color:var(--trace-bright,#6ee6b8); }
+@keyframes hsNudge{ 50%{ box-shadow:0 0 0 3px rgba(110,230,184,.35); } }
+.cx-wrap[data-part="pins"] > .cx-part[data-part="clock"], .cx-wrap[data-part="clock"] > .cx-part[data-part="pins"]{ display:none; }
+.hs-strip{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:8px; }
+.hs-chipb{ border:1px solid var(--panel-border,#2a3346); background:#10151f; color:var(--parchment,#e9edf5); border-radius:999px; padding:3px 10px; font-size:12px; cursor:pointer; font-family:inherit; }
+.hs-chipb:hover{ border-color:var(--gold,#e5a467); } .hs-chipb.bad{ border-color:#ff9c92; color:#ff9c92; }
+
+/* ===== حالتِ بلوکی: همان ادیتورِ Blockly مأموریت‌های آردوینو، داخل یک iframe ===== */
+@media (prefers-reduced-motion:reduce){ .hs-tab.nudge{ animation:none; } }
+
+.hs-chipb.ok::before{ content:"✓ "; color:var(--trace-bright,#6ee6b8); font-weight:700; }
+.hs-chipb.todo{ opacity:.65; border-style:dashed; }
+.hs-chipb.todo::before{ content:"○ "; color:var(--muted,#8b95a5); }
+
+/* ===== تب‌های مسیر: آردوینو / STM32 / رباتیک ===== */
+.qg-bar{ display:flex; gap:8px; max-width:920px; margin:22px auto 0; padding:0 18px; overflow-x:auto; }
+.qg-tab{ flex:1 0 auto; display:flex; align-items:center; justify-content:center; gap:8px; padding:11px 16px; border:1px solid var(--panel-border,#2a3346); border-radius:12px; background:var(--panel,#161c28); color:var(--muted,#8b95a5); font-family:inherit; font-size:14px; font-weight:800; cursor:pointer; white-space:nowrap; transition:border-color .15s, color .15s, background .15s; }
+.qg-tab:hover{ border-color:var(--copper,#c98a4b); color:var(--parchment,#e9edf5); }
+.qg-tab.on{ background:linear-gradient(135deg, rgba(87,216,163,.14), rgba(212,175,55,.12)); border-color:var(--gold,#d4af37); color:var(--gold,#d4af37); }
+.qg-ic{ font-size:18px; }
+.qg-n{ font-size:11.5px; font-weight:700; padding:2px 7px; border-radius:999px; background:rgba(255,255,255,.07); color:var(--muted,#8b95a5); }
+.qg-tab.full .qg-n{ background:rgba(87,216,163,.18); color:var(--trace-bright,#6ee6b8); }
+@media (max-width:720px){ .qg-bar{ padding:0 10px; gap:6px; } .qg-tab{ padding:10px 12px; font-size:13px; } }
+
+/* ===== مأموریت «سرهم‌کردنِ ربات» ===== */
+.ra-svg{ width:100%; height:auto; display:block; background:#10151f; border-radius:10px; user-select:none; -webkit-user-select:none; }
+.ra-chassis{ fill:#12161f; stroke:var(--copper); stroke-width:2; stroke-linejoin:round; transition:stroke .3s ease, filter .3s ease; }
+.ra-bot{ transition:transform .5s ease; }
+.ra-slotg{ transition:opacity .2s ease; }
+.ra-slotg.filled{ opacity:0; pointer-events:none; }
+.ra-slot{ fill:rgba(255,255,255,.03); stroke:var(--muted); stroke-width:1.4; stroke-dasharray:4 3; transition:stroke .15s ease, fill .15s ease; }
+.ra-slot.hot{ stroke:var(--trace-bright); fill:rgba(87,216,163,.18); }
+.ra-slot.hint{ stroke:var(--gold); animation:raHint 1s ease-in-out infinite; }
+@keyframes raHint{ 50%{ fill:rgba(212,175,55,.25); } }
+.ra-slot-t{ font-family:'Vazirmatn',sans-serif; font-size:8.5px; fill:var(--muted); text-anchor:middle; pointer-events:none; }
+.ra-t{ font-family:'Vazirmatn',sans-serif; font-size:8px; fill:#e8e2d0; text-anchor:middle; pointer-events:none; }
+.ra-part{ cursor:grab; touch-action:none; }
+.ra-part:active{ cursor:grabbing; }
+.ra-part.placed{ cursor:default; pointer-events:none; }
+.ra-part.back{ transition:transform .25s ease; }
+.ra-wire{ fill:none; stroke:#2a3346; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; opacity:0; transition:opacity .25s ease, stroke .25s ease; }
+.ra-wire.on{ opacity:1; }
+.ra-wire.live{ stroke:var(--trace-bright); stroke-dasharray:6 5; animation:raFlow .6s linear infinite; filter:drop-shadow(0 0 3px rgba(87,216,163,.6)); }
+@keyframes raFlow{ to{ stroke-dashoffset:-11; } }
+.ra-eye{ fill:#4a1b16; stroke:#ff8a80; transition:fill .2s ease; }
+.ra-bot.powered .ra-eye{ fill:#ff5a4f; filter:drop-shadow(0 0 4px #ff5a4f); }
+@media (prefers-reduced-motion:reduce){ .ra-slot.hint, .ra-wire.live{ animation:none; } .ra-bot, .ra-part.back{ transition:none; } }
+.ra-lbl{ font-family:'Vazirmatn',sans-serif; font-size:8.5px; fill:#e8e2d0; text-anchor:middle; pointer-events:none; }
+.ra-part.placed .ra-lbl{ display:none; }
+.ra-sw-up{ fill:#2d3137; transition:fill .3s ease; }
+.ra-sw-dn{ fill:#1a1c20; transition:fill .3s ease; }
+.ra-sw-mark{ transition:stroke .3s ease; }
+.ra-bot.powered .ra-sw-up{ fill:#1a1c20; }
+.ra-bot.powered .ra-sw-dn{ fill:#2d3137; }
+.ra-bot.powered .ra-sw-mark{ stroke:#6ee6b8; }
+@media (prefers-reduced-motion:reduce){ .ra-sw-up, .ra-sw-dn, .ra-sw-mark{ transition:none; } }
+.ra-pcb-deco circle{ fill:#0a0d13; stroke:#8a7550; stroke-width:1.2; }
+.ra-silk{ font-family:'JetBrains Mono',monospace; font-size:7px; letter-spacing:1.4px; fill:#e8e2d0; fill-opacity:.55; text-anchor:middle; }
+.ra-trace{ fill:none; stroke:#c97c3d; stroke-opacity:.4; stroke-width:1.2; stroke-linecap:round; stroke-linejoin:round; }
+.ra-bot.powered .ra-chassis{ stroke:var(--trace-bright); filter:drop-shadow(0 0 7px rgba(87,216,163,.55)); }
+
+/* ===== مأموریت «اتصال به ST-Link» ===== */
+.sl-svg{ width:100%; height:auto; display:block; background:#10151f; border-radius:10px; user-select:none; -webkit-user-select:none; }
+.sl-silk{ font-family:'JetBrains Mono',monospace; font-size:7.5px; fill:#f0ece0; fill-opacity:.9; pointer-events:none; direction:ltr; unicode-bidi:isolate; }
+.sl-silk.sl-pad-t{ font-size:6.4px; letter-spacing:-.2px; }
+.sl-silk.sl-tiny{ font-size:6px; fill-opacity:.75; }
+.sl-label{ direction:ltr; unicode-bidi:isolate; font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:800; fill:#1a2a4a; text-anchor:middle; pointer-events:none; }
+.sl-hole{ fill:#0b2a63; stroke:#d9b94a; stroke-width:1.3; }
+.sl-pin{ cursor:pointer; }
+.sl-pin-hit{ fill:transparent; }
+.sl-pin-ring{ fill:none; stroke:var(--gold); stroke-width:1.8; opacity:0; }
+.sl-pin.sel .sl-pin-ring{ opacity:1; animation:slSel 1s ease-in-out infinite; }
+.sl-pin:hover .sl-pin-ring{ opacity:.55; }
+.sl-pin.hint .sl-pin-ring{ opacity:1; stroke:var(--trace-bright); stroke-width:2.2; animation:slHint .9s ease-in-out infinite; }
+@keyframes slHint{ 0%,100%{ stroke-opacity:1; } 50%{ stroke-opacity:.25; } }
+@keyframes slSel{ 50%{ stroke-opacity:.35; } }
+.sl-wire-o{ fill:none; stroke:rgba(255,255,255,.28); stroke-width:5.6; stroke-linecap:round; pointer-events:none; }
+.sl-wire{ fill:none; stroke-width:3.4; stroke-linecap:round; pointer-events:none; }
+.sl-wire.bad{ stroke-dasharray:6 4; }
+#slDragDot{ pointer-events:none; }
+.sl-pin.over .sl-pin-ring{ opacity:1; stroke:#fff; stroke-width:2.4; }
+.sl-pin, .sl-pin *{ touch-action:none; }
+.sl-svg{ user-select:none; -webkit-user-select:none; }
+.sl-pc{ fill:#1a2130; stroke:#3a4560; stroke-width:1.4; transition:stroke .2s ease, fill .2s ease; }
+.sl-pc.on{ stroke:var(--trace-bright); fill:#14261f; }
+.sl-pc-t{ font-family:'Vazirmatn',sans-serif; font-size:10px; font-weight:700; fill:#cfc8b6; text-anchor:middle; pointer-events:none; }
+.sl-bridge{ fill:#57d8a3; opacity:0; transition:opacity .25s ease; }
+.sl-bridge.on{ opacity:.9; filter:drop-shadow(0 0 4px rgba(87,216,163,.7)); }
+.sl-pcirc{ fill:none; stroke:#cfe0ff; stroke-opacity:.75; stroke-width:.9; }
+.sl-pin.wired .sl-pcirc{ stroke-opacity:1; stroke-width:1.5; }
+.sl-pnum{ font-family:'JetBrains Mono',monospace; fill:#f0ece0; fill-opacity:.9; text-anchor:middle; pointer-events:none; direction:ltr; unicode-bidi:isolate; }
+.sl-logo{ font-family:'Arial Black',Arial,sans-serif; font-weight:900; font-style:italic; font-size:26px; fill:#d6e4ff; fill-opacity:.85; direction:ltr; unicode-bidi:isolate; pointer-events:none; }
+.sl-silk.sl-model{ font-size:10px; font-weight:800; font-style:italic; fill-opacity:1; }
+.sl-key-ring{ fill:rgba(255,210,90,.16); stroke:#ffd25a; stroke-width:1.6; filter:drop-shadow(0 0 3px rgba(255,210,90,.9)); animation:slKey 1.6s ease-in-out infinite; pointer-events:none; }
+@keyframes slKey{ 50%{ stroke-opacity:.35; fill-opacity:.05; } }
+.sl-pin.sl-key .sl-silk{ fill:#fff; font-weight:800; }
+.sl-pin.sl-key .sl-pcirc{ stroke:#ffd25a; stroke-opacity:1; stroke-width:1.4; }
+.sl-pin.sl-done .sl-key-ring{ display:none; }
+.sl-pin.sl-key.sl-done .sl-silk{ fill:#f0ece0; font-weight:400; }
+.sl-pin.sl-key.sl-done .sl-pcirc{ stroke:#cfe0ff; stroke-opacity:.75; stroke-width:.9; }
+.sl-pin.sl-dim .sl-silk, .sl-pin.sl-dim .sl-pcirc, .sl-pin.sl-dim .sl-pnum, .sl-pin.sl-dim .sl-pinbody{ opacity:.35; }
+@media (prefers-reduced-motion:reduce){ .sl-key-ring{ animation:none; } }
+.sl-stled{ fill:#4a1b16; transition:fill .2s ease, filter .2s ease; }
+.sl-stled.on{ fill:#ff4a3d; filter:drop-shadow(0 0 4px #ff4a3d); }
+.sl-led{ fill:#1f3a24; stroke:rgba(0,0,0,.4); stroke-width:.8; transition:fill .15s ease, filter .15s ease; }
+.sl-pwr{ fill:#4a1b16; }
+.sl-pwr.on{ fill:#ff4a3d; filter:drop-shadow(0 0 4px #ff4a3d); }
+.sl-pc13.on{ fill:#7dffa0; filter:drop-shadow(0 0 6px #7dffa0); }
+.sl-rst{ cursor:pointer; }
+.sl-cap{ fill:#16181c; stroke:#e0b020; stroke-width:1.2; transition:x .12s ease; pointer-events:none; }
+.sl-boot-hit{ fill:transparent; cursor:pointer; }
+.st-steps{ display:flex; gap:6px; flex-wrap:wrap; }
+.st-chip{ flex:1 1 90px; padding:6px 8px; border-radius:8px; border:1px dashed var(--panel-border); background:#141924; font-size:12px; color:var(--muted); text-align:center; }
+.st-chip.ok{ border-style:solid; border-color:var(--trace); color:var(--trace-bright); font-weight:700; }
+.st-chip.ok::before{ content:"✓ "; }
+.st-chip{ white-space:nowrap; }
+.st-btn{ font:inherit; font-size:12px; cursor:pointer; color:var(--parchment); border-style:solid; }
+.st-btn:not(:disabled):hover{ border-color:var(--copper); }
+.st-btn:disabled{ opacity:.4; cursor:default; border-style:dashed; color:var(--muted); }
+.st-chip.next{ border-style:solid; border-color:var(--copper); color:var(--parchment); }
+.st-chip.ok.next{ border-color:var(--trace); color:var(--trace-bright); }
+.st-reset{ flex:0 0 auto; padding:6px 10px; font-size:12px; }
+.st-prog{ height:10px; border-radius:6px; background:#1a2130; overflow:hidden; border:1px solid var(--panel-border); direction:ltr; }
+.st-prog i{ display:block; height:100%; width:0; background:linear-gradient(90deg, var(--trace), var(--trace-bright)); transition:width .09s linear; }
+@media (prefers-reduced-motion:reduce){ .sl-pin.sel .sl-pin-ring, .sl-pin.hint .sl-pin-ring{ animation:none; } .sl-cap, .sl-bridge, .st-prog i{ transition:none; } }
+
+/* ===== مأموریت‌های رباتیکِ STM32: چیپ‌ها بالای تب‌ها، ادیتور همیشه زیرِ تب‌ها ===== */
+.hs-wrap > .hs-strip{ margin-bottom:0; }
+.hs-wrap > .hs-bench{ margin:0; }
+.hs-simmount .sim-wrap > .sim-board-wrap{ order:-1; }

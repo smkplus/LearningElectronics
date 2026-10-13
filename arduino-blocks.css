@@ -1,0 +1,121 @@
+
+/* ========================================================================
+   ARDUINO-BLOCKS.CSS — ظاهرِ ادیتورِ بلوکی: بومِ کارِ تیره (هم‌رنگ با بقیه‌ی
+   سایت) + خودِ بلوک‌ها رنگی و شاد (رندررِ zelos در arduino-blocks.js).
+   ======================================================================== */
+
+.sim-mode-toggle{
+  display:flex; gap:4px; background:#141924; border:1px solid var(--panel-border);
+  border-radius:8px; padding:3px;
+}
+.sim-mode-toggle button{
+  font-family:'Vazirmatn'; font-weight:700; font-size:12px; cursor:pointer;
+  padding:6px 10px; border-radius:6px; border:none; background:transparent;
+  color:var(--muted); transition:background .15s ease, color .15s ease;
+}
+.sim-mode-toggle button.is-active{ background:var(--trace); color:#08150f; }
+.sim-mode-toggle button:disabled{ opacity:.5; cursor:default; }
+
+.sim-blockly-wrap{
+  position:relative; width:100%; min-width:0; height:420px; border:1px solid var(--panel-border);
+  border-radius:9px; overflow:hidden; background:#0d1117;
+}
+.sim-blockly-wrap > *{ min-width:0; }
+.sim-editor-block.is-sim-fullscreen .sim-blockly-wrap{ flex:1 1 auto; height:auto; min-height:0; }
+.sim-blockly-div{ position:absolute; inset:0; }
+
+.sim-blockly-msg{
+  position:absolute; inset:0; z-index:5; display:flex; align-items:center; justify-content:center;
+  text-align:center; padding:24px; font-family:'Vazirmatn'; font-size:13px; line-height:1.8;
+  color:var(--parchment); background:rgba(13,17,23,.94); gap:10px; flex-direction:column;
+}
+.sim-blockly-msg .sim-blockly-spinner{
+  width:26px; height:26px; border-radius:50%; border:3px solid var(--panel-border);
+  border-top-color:var(--trace-bright); animation:sim-blockly-spin .8s linear infinite;
+}
+@keyframes sim-blockly-spin{ to{ transform:rotate(360deg); } }
+.sim-blockly-msg.is-error{ color:#ff9c92; }
+.sim-blockly-msg button{
+  font-family:'Vazirmatn'; font-weight:700; font-size:12.5px; cursor:pointer;
+  padding:7px 14px; border-radius:8px; border:1px solid var(--panel-border);
+  background:#1a2130; color:var(--parchment);
+}
+.sim-blockly-msg button:hover{ border-color:var(--copper); }
+
+.sim-editor-block.is-sim-running .sim-blockly-wrap{ opacity:.55; filter:grayscale(.25); pointer-events:none; }
+
+.ab-toggle-all{
+  position:absolute; z-index:4; top:8px; left:8px;
+  display:flex; align-items:center; gap:6px;
+  background:rgba(20,25,36,.92); border:1px solid var(--panel-border); border-radius:999px;
+  padding:5px 10px 5px 8px; font-family:'Vazirmatn'; font-size:11.5px; font-weight:700;
+  color:var(--parchment); cursor:pointer; user-select:none;
+}
+.ab-toggle-all:hover{ border-color:var(--copper); }
+/* دکمه‌ی «دسته‌ها»: وقتی ستونِ دسته‌ها بعد از کلیک روی یک دسته پنهان شده،
+   از همین‌جا برمی‌گردد. جایش همان گوشه‌ی سوییچِ «دیدنِ همه‌ی بلوک‌ها» است،
+   پس تا وقتی ستون پنهان است آن سوییچ را کنار می‌گذاریم. */
+.ab-back-to-cats{
+  position:absolute; z-index:4; top:8px; left:8px;
+  display:inline-flex; align-items:center; gap:6px;
+  background:rgba(20,25,36,.92); border:1px solid var(--panel-border); border-radius:999px;
+  padding:5px 12px; font-family:'Vazirmatn'; font-size:11.5px; font-weight:700;
+  color:var(--parchment); cursor:pointer; user-select:none;
+}
+.ab-toggle-all input{ margin:0; accent-color:var(--trace-bright); cursor:pointer; }
+
+.ab-launcher{
+  position:absolute; inset:0; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:14px; text-align:center; padding:24px;
+}
+.ab-launcher-btn{
+  font-family:'Vazirmatn', sans-serif; font-weight:800; font-size:15px; cursor:pointer;
+  padding:14px 28px; border-radius:12px; border:1px solid var(--trace);
+  background:linear-gradient(135deg, var(--trace), var(--trace-bright)); color:#08150f;
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+.ab-launcher-btn:hover{ transform:translateY(-2px); box-shadow:0 8px 22px -10px rgba(87,216,163,.55); }
+.ab-launcher-sub{ font-size:12.5px; color:var(--muted); max-width:320px; line-height:1.8; }
+
+/* رندررِ zelos پیش‌فرض یک فلای‌اوت با گوشه‌های خیلی گرد و سایه دارد؛ این‌جا
+   کمی با ظاهرِ تیره‌ی بقیه‌ی سایت هماهنگش می‌کنیم. */
+.blocklyFlyoutBackground{ fill-opacity:.98; }
+.blocklyMainBackground{ stroke:none; }
+.blocklyToolboxDiv{ font-family:'Vazirmatn', sans-serif !important; }
+.blocklyTreeLabel,
+.blocklyToolboxCategoryLabel{
+  font-family:'Vazirmatn', sans-serif !important;
+  font-weight:700 !important;
+  line-height:1.5 !important;
+  white-space:nowrap;
+}
+/* پیش‌فرضِ خودِ Blockly رویِ ردیفِ هر دسته یک ارتفاعِ ثابتِ کوچک می‌گذارد که
+   برایِ فونتِ لاتینِ پیش‌فرض کافی است، ولی متنِ فارسیِ Vazirmatn (به‌خصوص با
+   وزنِ 700) از همان قوطیِ کوچک بلندتر می‌شود و از پایین بیرون می‌زند. اسمِ
+   دقیقِ این کلاس بینِ نسخه‌های مختلفِ Blockly فرق دارد (blocklyTreeRow در
+   نسخه‌های قدیمی‌تر، blocklyToolboxCategory / blocklyTreeRowContentContainer
+   در نسخه‌های جدیدتر) — چون CDNِ ما نسخه را پین نکرده (unpkg بدونِ شماره‌ی
+   نسخه، همیشه آخرین نسخه می‌آید)، هر سه را همزمان پوشش می‌دهیم. */
+.blocklyTreeRow,
+.blocklyToolboxCategory,
+.blocklyTreeRowContentContainer{
+  height:auto !important;
+  min-height:18px !important;
+  line-height:normal !important;
+  display:flex !important;
+  align-items:center !important;
+  box-sizing:border-box !important;
+  overflow:visible !important;
+  padding-top:3px !important;
+  padding-bottom:3px !important;
+}
+.blocklyWidgetDiv .blocklyMenu, .blocklyDropDownDiv{ font-family:'Vazirmatn', sans-serif; }
+
+@media (max-width: 720px){
+  .sim-blockly-wrap{ height:340px; }
+  .sim-mode-toggle button{ padding:6px 8px; font-size:11.5px; }
+}
+
+/* نوارِ خالیِ بالای ادیتورِ بلوکی (#bar با #status داخلش) — پنهان می‌شود؛
+   خودِ #status در DOM می‌ماند تا اسکریپتِ blockly-editor.html خطا ندهد. */
+#bar:has(> #status){ display:none !important; }

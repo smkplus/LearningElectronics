@@ -1,0 +1,727 @@
+/* ========================================================================
+   LAB.CSS — مسیر نگهبان مدار
+   آزمایشگاه الکترونیک: قانون اهم، دایره‌المعارف قطعات، رمزگشای رنگ
+   مقاومت، راهنمای رنگ‌ها و شبیه‌ساز خازن. به common.css نیاز دارد.
+   ======================================================================== */
+
+  /* ---------- LAB TAB ---------- */
+  .lab-intro{
+    max-width:920px; margin:26px auto 18px; padding:0 18px;
+    display:flex; gap:14px; align-items:center;
+  }
+  .lab-intro-icon{
+    flex:0 0 auto; width:54px; height:54px; border-radius:14px; font-size:26px;
+    display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 35% 30%, #2a3346, #171c27); border:1px solid var(--gold);
+  }
+  .lab-intro-title{ font-weight:800; font-size:18px; color:var(--gold); margin-bottom:4px; }
+  .lab-intro-sub{ font-size:13.5px; color:#b9b2a0; line-height:1.8; }
+
+  .lab-card{
+    max-width:920px; margin:18px auto; padding:20px; position:relative; overflow:hidden;
+    background:var(--panel); border:1px solid var(--panel-border); border-radius:16px;
+    transition:border-color .2s ease;
+  }
+  .lab-card-head{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+
+  /* ---------- LOCKED LAB CARDS (unlock via mission progress) ---------- */
+  .lab-card.locked{ border-color:var(--panel-border); }
+  .lab-card.locked > *:not(.lab-lock-overlay){
+    filter:blur(7px) grayscale(.55); opacity:.32;
+    pointer-events:none; user-select:none;
+  }
+  .lab-lock-overlay{
+    display:none; position:absolute; inset:0; z-index:5;
+    flex-direction:column; align-items:center; justify-content:center; gap:8px;
+    text-align:center; padding:22px;
+    background:rgba(11,14,20,.5);
+  }
+  .lab-card.locked .lab-lock-overlay{ display:flex; }
+
+  /* ---------- UNLOCK ANIMATION (card just opened via mission progress) ----------
+     Added by quest.js (runPendingLabUnlocks) for ~1.1s right after the card
+     loses .locked: the lock overlay keeps rendering one last time while it
+     fades/scales away, and the card content blurs back into focus. */
+  .lab-card.unlocking{ animation:labCardUnlockGlow 1.1s ease both; }
+  .lab-card.unlocking .lab-lock-overlay{
+    display:flex; pointer-events:none;
+    animation:labLockFadeOut .9s ease forwards;
+  }
+  .lab-card.unlocking .lab-lock-badge{ animation:labLockPop .9s ease forwards; }
+  .lab-card.unlocking > *:not(.lab-lock-overlay){ animation:labCardReveal .9s ease both; }
+  @keyframes labLockFadeOut{
+    0%{ opacity:1; transform:scale(1); }
+    35%{ opacity:1; transform:scale(1.03); }
+    100%{ opacity:0; transform:scale(1.12); }
+  }
+  @keyframes labLockPop{
+    0%{ transform:rotate(0) scale(1); border-color:var(--locked); }
+    25%{ transform:rotate(-14deg) scale(1.14); border-color:var(--trace-bright); }
+    100%{ transform:rotate(22deg) scale(.6); border-color:var(--trace-bright); }
+  }
+  @keyframes labCardReveal{
+    0%{ filter:blur(7px) grayscale(.55); opacity:.32; }
+    100%{ filter:none; opacity:1; }
+  }
+  @keyframes labCardUnlockGlow{
+    0%{ border-color:var(--panel-border); box-shadow:none; }
+    40%{ border-color:var(--trace-bright); box-shadow:0 0 0 1px var(--trace-bright), 0 0 26px rgba(87,216,163,.35); }
+    100%{ border-color:var(--panel-border); box-shadow:none; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .lab-card.unlocking,
+    .lab-card.unlocking .lab-lock-overlay,
+    .lab-card.unlocking .lab-lock-badge,
+    .lab-card.unlocking > *:not(.lab-lock-overlay){ animation-duration:.15s; }
+  }
+  .lab-lock-badge{
+    width:52px; height:52px; border-radius:50%; font-size:22px;
+    display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 35% 30%, #232b3a, #12161f);
+    border:1px solid var(--locked); color:var(--muted);
+  }
+  .lab-lock-title{ font-weight:800; font-size:14.5px; color:var(--parchment); }
+  .lab-lock-sub{ font-size:12.5px; color:var(--muted); line-height:1.8; max-width:340px; }
+  .lab-lock-cta{
+    margin-top:2px; padding:7px 16px; border-radius:20px; border:1px solid var(--trace);
+    background:transparent; color:var(--trace-bright); font-family:'Vazirmatn'; font-weight:700;
+    font-size:12.5px; cursor:pointer; transition:background .15s ease, color .15s ease;
+  }
+  .lab-lock-cta:hover{ background:var(--trace); color:#08150f; }
+  .lab-icon{
+    flex:0 0 auto; width:42px; height:42px; border-radius:10px; font-size:20px;
+    display:flex; align-items:center; justify-content:center;
+    background:#1a2130; border:1px solid var(--panel-border);
+  }
+  .lab-title{ font-weight:800; font-size:clamp(15px,3.8vw,17px); color:var(--parchment); }
+  .lab-sub{ font-size:12.5px; color:var(--muted); margin-top:2px; }
+  .lab-note{
+    margin-top:14px; font-size:12.5px; line-height:1.9; color:#b9b2a0;
+    background:#181d29; border-right:3px solid var(--trace); border-radius:8px; padding:10px 14px;
+  }
+  .lab-subhead{
+    margin:22px 0 12px; padding-top:16px; border-top:1px dashed var(--panel-border);
+    font-weight:800; font-size:14.5px; color:var(--parchment);
+  }
+
+  .ohm-canvas, .cap-canvas, .scope-canvas, .tesla-canvas, .magnet-canvas{
+    width:100%; height:200px; display:block; border-radius:12px;
+    background:radial-gradient(ellipse at 50% 0%, #141b28, #0c0f16); border:1px solid var(--panel-border);
+  }
+  .tesla-canvas{ cursor:crosshair; touch-action:none; }
+  .magnet-canvas{ cursor:crosshair; touch-action:none; }
+
+  .ohm-mode-tabs{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+  .ohm-mode-btn{
+    flex:1 1 100px; padding:8px 10px; border-radius:9px; border:1px solid var(--panel-border);
+    background:#141924; color:var(--muted); font-family:'Vazirmatn'; font-weight:700; font-size:12px;
+    cursor:pointer; transition:all .15s ease;
+  }
+  .ohm-mode-btn:hover{ border-color:var(--copper); color:var(--copper-bright); }
+  .ohm-mode-btn.active{ background:var(--copper); border-color:var(--copper); color:#08150f; }
+
+  .lab-controls{ display:flex; gap:20px; flex-wrap:wrap; margin-top:16px; }
+  .slider-group{ flex:1 1 200px; display:flex; flex-direction:column; gap:8px; }
+  .slider-group label{ font-size:12.5px; color:var(--muted); display:flex; justify-content:space-between; }
+  .slider-group input[type=range]{
+    -webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:4px;
+    background:linear-gradient(90deg,var(--trace),var(--gold)); outline:none; cursor:pointer;
+  }
+  .slider-group input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
+    background:var(--parchment); border:3px solid var(--trace-bright); cursor:pointer;
+    box-shadow:0 2px 6px rgba(0,0,0,.4);
+  }
+  .slider-group input[type=range]::-moz-range-thumb{
+    width:18px; height:18px; border-radius:50%; background:var(--parchment);
+    border:3px solid var(--trace-bright); cursor:pointer;
+  }
+  /* Danger highlight: lab.js adds/removes this on whichever slider actually
+     caused the last LED burn (too little resistance, or too much voltage),
+     so the person is pointed at the real fix instead of a generic "replace it". */
+  .slider-group{ position:relative; }
+  .slider-group.danger label{
+    color:var(--danger); font-weight:700;
+    justify-content:flex-start; align-items:center; gap:6px;
+  }
+  .slider-group.danger{ animation:ohmDangerGlow 1.4s ease-in-out infinite; border-radius:8px; }
+  /* order:-1 keeps ⚠️ ahead of the value span but after the label's own
+     name text (an anonymous flex item at the default order:0); the value
+     span gets margin-inline-start:auto so it still lands at the far edge,
+     matching the original space-between position. */
+  .slider-group.danger label::before{
+    content:'⚠️'; font-size:12px; line-height:1; order:1;
+  }
+  .slider-group.danger label > *{ margin-inline-start:auto; order:2; }
+  @keyframes ohmDangerGlow{
+    0%, 100%{ box-shadow:0 0 0 0 color-mix(in srgb, var(--danger) 55%, transparent); }
+    50%{ box-shadow:0 0 10px 3px color-mix(in srgb, var(--danger) 55%, transparent); }
+  }
+
+  .ohm-readout{ display:flex; gap:14px; margin-top:16px; flex-wrap:wrap; }
+  .readout-item{
+    flex:1 1 160px; display:flex; flex-direction:column; gap:4px;
+    background:#141924; border:1px solid var(--panel-border); border-radius:10px; padding:10px 14px;
+  }
+  .ro-label{ font-size:11.5px; color:var(--muted); }
+  .ro-val{ font-size:16px; font-weight:700; color:var(--trace-bright); }
+
+  .lab-btn{
+    margin-top:16px; padding:11px 18px; border-radius:10px; border:1px solid var(--copper);
+    background:#1a2130; color:var(--copper-bright); font-family:'Vazirmatn'; font-weight:700; font-size:13.5px;
+    cursor:pointer; transition:all .15s ease;
+  }
+  .lab-btn:hover{ background:var(--copper); color:#08150f; }
+
+  .ohm-switch-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .ohm-switch-row .lab-btn{ margin-top:12px; flex:1 1 150px; }
+  .switch-btn{ border-color:var(--trace-bright); color:var(--trace-bright); }
+  .switch-btn:hover{ background:var(--trace-bright); color:#08150f; }
+  .switch-btn.off{ border-color:var(--danger); color:#e08b82; }
+  .switch-btn.off:hover{ background:var(--danger); color:#08150f; }
+  .no-resistor-btn.active{ background:var(--danger); border-color:var(--danger); color:#08150f; }
+  /* lab.js adds this when the LED burned because resistors were removed
+     entirely — points at the actual fix (put them back) instead of the
+     disabled, now-irrelevant resistance sliders. */
+  .no-resistor-btn.danger-highlight{
+    border-color:var(--danger); color:#e08b82;
+    animation:ohmDangerGlow 1.4s ease-in-out infinite;
+  }
+  .replace-led-btn{
+    border-color:var(--gold); color:var(--gold);
+    position:relative;
+    animation:replaceLedGlow 1.4s ease-in-out infinite;
+  }
+  .replace-led-btn:hover{ background:var(--gold); color:#08150f; animation:none; box-shadow:none; }
+  /* Clearly visible breathing glow: the ring's OPACITY stays constant (60% gold)
+     the whole time — only its size grows/shrinks — plus a warm background tint.
+     The button's own size, position and text opacity never change. */
+  @keyframes replaceLedGlow{
+    0%, 100%{
+      box-shadow:0 0 0 0 color-mix(in srgb, var(--gold) 60%, transparent);
+      background:#1a2130;
+    }
+    50%{
+      box-shadow:0 0 14px 4px color-mix(in srgb, var(--gold) 60%, transparent);
+      background:color-mix(in srgb, var(--gold) 22%, #1a2130);
+    }
+  }
+  .cap-buttons{ display:flex; gap:10px; }
+  .cap-buttons .lab-btn{ flex:1; margin-top:16px; text-align:center; }
+  .cap-buttons .lab-btn.charge{ border-color:var(--trace-bright); color:var(--trace-bright); }
+  .cap-buttons .lab-btn.charge:hover{ background:var(--trace-bright); color:#08150f; }
+  .cap-buttons .lab-btn.discharge{ border-color:var(--danger); color:#e08b82; }
+  .cap-buttons .lab-btn.discharge:hover{ background:var(--danger); color:#08150f; }
+
+  /* ---------- INTERACTIVE COMPONENT ENCYCLOPEDIA ---------- */
+  .component-grid{ display:flex; flex-direction:column; gap:12px; }
+
+  .comp-cat-tabs{ display:flex; gap:8px; flex-wrap:wrap; }
+  .comp-cat-btn{
+    flex:1 1 160px; padding:10px 14px; border-radius:10px; border:1px solid var(--panel-border);
+    background:#171c27; color:var(--muted); font-family:'Vazirmatn'; font-weight:700; font-size:13px;
+    cursor:pointer; transition:all .15s ease;
+  }
+  .comp-cat-btn.active{ background:#1c2a24; border-color:var(--trace-bright); color:var(--trace-bright); }
+
+  .comp-chip-row{ display:flex; gap:8px; flex-wrap:wrap; }
+  .chip{
+    padding:8px 13px; border-radius:20px; border:1px solid var(--panel-border);
+    background:#141924; color:#b9b2a0; font-family:'Vazirmatn'; font-weight:600; font-size:12.5px;
+    cursor:pointer; transition:all .15s ease; white-space:nowrap;
+  }
+  .chip:hover{ border-color:var(--copper); color:var(--copper-bright); }
+  .chip.active{ background:var(--copper); border-color:var(--copper); color:#08150f; }
+  .chip-sm{ font-size:12px; padding:6px 12px; }
+
+  .comp-stage{
+    background:#141924; border:1px solid var(--panel-border); border-radius:14px;
+    padding:16px; display:flex; flex-direction:column; gap:10px; min-height:260px;
+  }
+  .comp-head{ display:flex; align-items:center; gap:10px; }
+  .comp-icon{
+    flex:0 0 auto; width:40px; height:40px; border-radius:10px; font-size:20px;
+    display:flex; align-items:center; justify-content:center;
+    background:#1a2130; border:1px solid var(--panel-border);
+  }
+  .comp-name{ font-weight:800; font-size:15.5px; color:var(--parchment); }
+  .comp-tag{ font-size:11px; color:var(--trace-bright); font-weight:700; margin-top:2px; }
+  .comp-desc{ font-size:12.5px; line-height:1.85; color:#b9b2a0; }
+  .spec-row{ display:flex; flex-wrap:wrap; gap:6px; }
+  .spec-badge{
+    font-size:11px; padding:5px 10px; border-radius:8px; background:#1a2130;
+    border:1px solid var(--panel-border); color:var(--gold);
+  }
+  .comp-demo{
+    background:#0e131c; border:1px solid var(--panel-border); border-radius:10px;
+    padding:16px 12px; min-height:100px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    position:relative; overflow:hidden; gap:8px;
+  }
+  .static-info-demo{ font-size:12.5px; color:var(--muted); text-align:center; line-height:1.8; padding:20px 16px; }
+
+  /* microcontroller concept blocks */
+  .mcu-block-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; width:100%; }
+  .mcu-block{
+    display:flex; flex-direction:column; align-items:center; gap:5px; padding:12px 6px;
+    border-radius:10px; border:1px solid var(--panel-border); background:#141924;
+    color:var(--parchment); font-family:'Vazirmatn'; font-size:11.5px; font-weight:700;
+    cursor:pointer; transition:all .15s ease; text-align:center;
+  }
+  .mcu-block-icon{ font-size:20px; }
+  .mcu-block:hover{ border-color:var(--copper); }
+  .mcu-block.active{ border-color:var(--trace-bright); background:#1c2a24; color:var(--trace-bright); }
+  .mcu-explain{
+    width:100%; background:#0e131c; border:1px solid var(--panel-border); border-radius:10px;
+    padding:12px 14px; font-size:12.5px; color:#b9b2a0; line-height:1.85; text-align:right;
+  }
+  .mcu-explain b{ color:var(--trace-bright); }
+
+  /* Arduino Nano pinout explorer */
+  .nano-demo{ padding:10px 4px; }
+  .nano-svg{ width:100%; max-width:230px; height:auto; display:block; margin:0 auto; touch-action:manipulation; }
+  .nano-pin .pin-hit{ cursor:pointer; touch-action:manipulation; }
+  .nano-pin .pin-pad{ transition:filter .15s ease, opacity .15s ease; }
+  .nano-pin .pin-label{ transition:opacity .15s ease; }
+  .nano-pin.selected .pin-pad{ filter:brightness(1.6); stroke:#fff; stroke-width:1.2; }
+  .nano-pin.selected .pin-label{ font-weight:800; }
+  .nano-pin.dimmed .pin-pad, .nano-pin.dimmed .pin-label{ opacity:.18; }
+  .nano-pin.dimmed .pin-hit{ cursor:default; pointer-events:none; }
+  .nano-readout{
+    width:100%; background:#0e131c; border:1px solid var(--panel-border); border-radius:10px;
+    padding:12px 14px; text-align:center;
+  }
+  .nano-readout .np-name{ font-family:'JetBrains Mono'; font-weight:800; font-size:16px; color:var(--trace-bright); direction:ltr; }
+  .nano-readout .np-type{ font-size:11px; color:var(--gold); font-weight:700; margin:2px 0 8px; }
+  .nano-readout .np-desc{ font-size:12.5px; color:#b9b2a0; line-height:1.85; }
+  .np-type .tag-pwm, .ep-type .tag-pwm, .sp-type .tag-pwm{ color:#ffb454; }
+  .np-type .tag-caution, .ep-type .tag-caution, .sp-type .tag-caution{ color:#ff5c5c; }
+
+  /* ESP32 pinout explorer */
+  .esp32-demo{ padding:10px 4px; }
+  .esp32-svg{ width:100%; max-width:230px; height:auto; display:block; margin:0 auto; touch-action:manipulation; }
+  .esp32-pin .pin-hit{ cursor:pointer; touch-action:manipulation; }
+  .esp32-pin .pin-pad{ transition:filter .15s ease, opacity .15s ease; }
+  .esp32-pin .pin-label{ transition:opacity .15s ease; }
+  .esp32-pin.selected .pin-pad{ filter:brightness(1.6); stroke:#fff; stroke-width:1.2; }
+  .esp32-pin.selected .pin-label{ font-weight:800; }
+  .esp32-pin.dimmed .pin-pad, .esp32-pin.dimmed .pin-label{ opacity:.18; }
+  .esp32-pin.dimmed .pin-hit{ cursor:default; pointer-events:none; }
+  .esp32-readout{
+    width:100%; background:#0e131c; border:1px solid var(--panel-border); border-radius:10px;
+    padding:12px 14px; text-align:center;
+  }
+  .esp32-readout .ep-name{ font-family:'JetBrains Mono'; font-weight:800; font-size:16px; color:var(--trace-bright); direction:ltr; }
+  .esp32-readout .ep-type{ font-size:11px; color:var(--gold); font-weight:700; margin:2px 0 8px; }
+  .esp32-readout .ep-desc{ font-size:12.5px; color:#b9b2a0; line-height:1.85; }
+
+  /* STM32 pinout explorer */
+  .stm32-demo{ padding:10px 4px; }
+  .stm32-svg{ width:100%; max-width:230px; height:auto; display:block; margin:0 auto; touch-action:manipulation; }
+  .stm32-pin .pin-hit{ cursor:pointer; touch-action:manipulation; }
+  .stm32-pin .pin-pad{ transition:filter .15s ease, opacity .15s ease; }
+  .stm32-pin .pin-label{ transition:opacity .15s ease; }
+  .stm32-pin.selected .pin-pad{ filter:brightness(1.6); stroke:#fff; stroke-width:1.2; }
+  .stm32-pin.selected .pin-label{ font-weight:800; }
+  .stm32-pin.dimmed .pin-pad, .stm32-pin.dimmed .pin-label{ opacity:.18; }
+  .stm32-pin.dimmed .pin-hit{ cursor:default; pointer-events:none; }
+  .stm32-readout{
+    width:100%; background:#0e131c; border:1px solid var(--panel-border); border-radius:10px;
+    padding:12px 14px; text-align:center;
+  }
+  .stm32-readout .sp-name{ font-family:'JetBrains Mono'; font-weight:800; font-size:16px; color:var(--trace-bright); direction:ltr; }
+  .stm32-readout .sp-type{ font-size:11px; color:var(--gold); font-weight:700; margin:2px 0 8px; }
+  .stm32-readout .sp-desc{ font-size:12.5px; color:#b9b2a0; line-height:1.85; }
+
+  /* shared pin-type filter row (Nano + ESP32 + STM32) */
+  .pin-filter-row{ display:flex; gap:6px; flex-wrap:wrap; justify-content:center; width:100%; }
+  .pin-filter-row.hidden{ display:none; }
+  .pin-filter-row + .pin-filter-row{ margin-top:-2px; padding-top:6px; border-top:1px dashed var(--panel-border); }
+  .pin-badge-legend{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; font-size:10.5px; color:#8b93a3; font-family:'Vazirmatn'; }
+  .pin-badge-legend .lg-pwm{ color:#ffb454; font-weight:700; }
+  .pin-badge-legend .lg-caution{ color:#ff5c5c; font-weight:700; }
+  .pin-filter-chip{
+    padding:5px 11px; border-radius:16px; border:1px solid var(--panel-border);
+    background:#141924; color:#b9b2a0; font-family:'Vazirmatn'; font-weight:600; font-size:11.5px;
+    cursor:pointer; transition:all .15s ease; touch-action:manipulation;
+  }
+  .pin-filter-chip:not([data-type="all"]){ border-color:color-mix(in srgb, var(--fc) 45%, var(--panel-border)); color:var(--fc); }
+  .pin-filter-chip.active{ background:var(--fc, var(--copper)); border-color:var(--fc, var(--copper)); color:#08150f; font-weight:800; }
+  .pin-filter-chip[data-type="all"].active{ background:var(--copper); border-color:var(--copper); }
+
+  .comp-controls{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .comp-readout{
+    font-size:11.5px; color:var(--muted); display:flex; justify-content:space-between; gap:8px;
+  }
+  .comp-readout .val{ color:var(--trace-bright); font-weight:700; }
+  .comp-toggle-btn{
+    padding:7px 13px; border-radius:8px; border:1px solid var(--copper);
+    background:#1a2130; color:var(--copper-bright); font-family:'Vazirmatn'; font-weight:700; font-size:12px;
+    cursor:pointer; transition:all .15s ease; user-select:none;
+  }
+  .comp-toggle-btn:hover{ background:var(--copper); color:#08150f; }
+  .comp-toggle-btn.on{ background:var(--trace-bright); border-color:var(--trace-bright); color:#08150f; }
+
+  /* generic circuit row used by LED / diode / resistor / etc. demos */
+  .circuit-row{ display:flex; align-items:center; gap:6px; width:100%; justify-content:center; }
+  .circuit-batt{ font-size:20px; display:inline-block; transition:transform .2s ease; }
+  .circuit-wire{
+    flex:1 1 auto; max-width:60px; height:3px; border-radius:2px;
+    background-image:repeating-linear-gradient(90deg, var(--muted) 0 6px, transparent 6px 12px);
+    background-size:14px 3px; opacity:.55;
+  }
+  .circuit-wire.flowing{
+    background-image:repeating-linear-gradient(90deg, var(--trace-bright) 0 6px, transparent 6px 12px);
+    opacity:1; animation:wireflow .5s linear infinite;
+  }
+  .circuit-wire.blocked{ background-image:repeating-linear-gradient(90deg, var(--danger) 0 6px, transparent 6px 12px); opacity:.9; }
+  @keyframes wireflow{ from{ background-position:0 0; } to{ background-position:-14px 0; } }
+
+  .led-bulb{
+    width:34px; height:34px; border-radius:50%; flex:0 0 auto;
+    background:#2a2018; border:2px solid #4a3a28; transition:all .2s ease;
+  }
+  .led-bulb.lit{
+    background:radial-gradient(circle at 40% 35%, #fff6d8, #ffce4d 55%, #d4af37);
+    border-color:#ffe28a; box-shadow:0 0 18px 6px rgba(255,206,77,.55);
+  }
+  .diode-shape{ display:flex; align-items:center; }
+  .diode-tri{
+    width:0; height:0; border-top:11px solid transparent; border-bottom:11px solid transparent;
+    border-right:18px solid var(--muted); transition:border-color .2s ease;
+  }
+  .diode-tri.on{ border-right-color:var(--trace-bright); }
+  .diode-tri.blocked{ border-right-color:var(--danger); }
+  .diode-bar{ width:3px; height:24px; background:var(--muted); border-radius:1px; transition:background .2s ease; }
+  .diode-bar.on{ background:var(--trace-bright); }
+  .diode-bar.blocked{ background:var(--danger); }
+  .diode-x{ font-size:16px; color:var(--danger); margin-inline-start:4px; opacity:0; transition:opacity .2s ease; }
+  .diode-x.show{ opacity:1; }
+
+  .pot-knob-wrap{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .pot-knob{
+    width:64px; height:64px; border-radius:50%; position:relative; cursor:grab; touch-action:none;
+    background:radial-gradient(circle at 35% 30%, #2a3346, #171c27); border:2px solid var(--copper);
+  }
+  .pot-knob:active{ cursor:grabbing; }
+  .pot-pointer{
+    position:absolute; top:4px; left:50%; width:3px; height:24px; background:var(--gold);
+    border-radius:2px; transform-origin:50% 28px; margin-inline-start:-1.5px;
+  }
+  .pot-led{ width:26px; height:26px; border-radius:50%; background:#2a2018; border:2px solid #4a3a28; transition:all .15s ease; }
+
+  .transistor-wrap{ display:flex; flex-direction:column; align-items:center; gap:8px; width:100%; }
+  .transistor-gauge{
+    width:100%; max-width:200px; height:14px; border-radius:8px; background:#1a2130;
+    border:1px solid var(--panel-border); overflow:hidden;
+  }
+  .transistor-gauge-fill{
+    height:100%; width:0%; border-radius:8px;
+    background:linear-gradient(90deg,var(--trace),var(--trace-bright)); transition:width .12s ease;
+  }
+  .cap-mini-tank{
+    width:44px; height:64px; border-radius:8px; border:2px solid #3a4356; position:relative; overflow:hidden;
+    background:#0e131c;
+  }
+  .cap-mini-fill{
+    position:absolute; left:0; right:0; bottom:0; height:0%;
+    background:linear-gradient(#8ff0c4,#3f9d78); transition:height .15s linear;
+  }
+
+  /* capacitor family: distinct bodies + polarity + damage simulation */
+  .cap-demo-row{ display:flex; align-items:center; justify-content:center; gap:4px; width:100%; margin-bottom:8px; }
+  .cap-lead-stub{ width:20px; flex:0 0 auto; }
+  .cap-badge{
+    width:20px; height:20px; border-radius:50%; flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono'; font-weight:700; font-size:12px;
+    background:#1a2130; border:1.5px solid var(--panel-border); color:var(--muted);
+    transition:all .2s ease;
+  }
+  .cap-badge.pos{ color:#57d8a3; border-color:#57d8a3; }
+  .cap-badge.neg{ color:#e08b82; border-color:#c1554a; }
+  .cap-body{ position:relative; flex:0 0 auto; transition:filter .2s ease, border-radius .2s ease; }
+  .cap-body[data-shape="disc"]{
+    width:30px; height:22px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, var(--cap-color-light), var(--cap-color));
+    border:1.5px solid #00000055;
+  }
+  .cap-body[data-shape="box"]{
+    width:34px; height:20px; border-radius:4px;
+    background:linear-gradient(180deg, var(--cap-color-light), var(--cap-color));
+    border:1.5px solid #00000055;
+  }
+  .cap-body[data-shape="drop"]{
+    width:22px; height:26px; border-radius:50% 50% 45% 45% / 60% 60% 40% 40%;
+    background:radial-gradient(circle at 35% 25%, var(--cap-color-light), var(--cap-color));
+    border:1.5px solid #00000055;
+  }
+  .cap-body[data-shape="can"]{
+    width:26px; height:38px; border-radius:6px 6px 3px 3px;
+    background:linear-gradient(90deg, #0c1420, var(--cap-color) 25%, var(--cap-color-light) 55%, var(--cap-color));
+    border:1.5px solid #00000055;
+  }
+  .cap-body[data-shape="bigcan"]{
+    width:36px; height:50px; border-radius:6px 6px 3px 3px;
+    background:linear-gradient(90deg, #0c1420, var(--cap-color) 25%, var(--cap-color-light) 55%, var(--cap-color));
+    border:2px solid #00000055;
+  }
+  .cap-body[data-shape="trimmer"]{
+    width:26px; height:26px; border-radius:5px;
+    background:linear-gradient(160deg, var(--cap-color-light), var(--cap-color));
+    border:1.5px solid #00000055;
+  }
+  .cap-stripe{
+    position:absolute; top:3px; bottom:3px; left:3px; width:5px; border-radius:2px;
+    background:repeating-linear-gradient(180deg, #e9e4d6 0 3px, transparent 3px 6px); opacity:.85;
+  }
+  .cap-body[data-shape="bigcan"] .cap-stripe{ width:6px; left:5px; }
+  .cap-mark{
+    position:absolute; top:-3px; left:50%; transform:translate(-50%,-100%);
+    font-family:'JetBrains Mono'; font-weight:800; font-size:10px; color:#00000099;
+  }
+  .cap-body.damaged{ filter:saturate(.35) brightness(.65); }
+  .cap-body.damaged[data-shape="can"], .cap-body.damaged[data-shape="bigcan"]{
+    border-top-left-radius:50% 35%; border-top-right-radius:50% 35%;
+  }
+  .cap-spark{
+    position:absolute; width:5px; height:5px; border-radius:50%; margin:-2.5px;
+    background:radial-gradient(circle, #fff2c4, #ff8a3d 60%, transparent 75%);
+    pointer-events:none; animation:capSparkFly .65s ease-out forwards; z-index:5;
+  }
+  @keyframes capSparkFly{
+    0%{ transform:translate(0,0) scale(1); opacity:1; }
+    100%{ transform:translate(var(--sx),var(--sy)) scale(.15); opacity:0; }
+  }
+
+  /* ---------- BATTERY (Li-ion / LiPo) SIMULATOR ---------- */
+  .batt-visual-row{ display:flex; align-items:flex-end; justify-content:center; gap:14px; width:100%; margin-bottom:6px; }
+  .batt-body-wrap{ position:relative; flex:0 0 auto; }
+  .batt-body-wrap[data-shape="cylinder"]::before{
+    content:''; position:absolute; top:-8px; left:50%; transform:translateX(-50%); z-index:1;
+    width:18px; height:8px; border-radius:3px 3px 0 0; background:var(--gold);
+  }
+  .batt-body-wrap[data-shape="pouch"]::before{
+    content:''; position:absolute; top:50%; left:-8px; transform:translateY(-50%); z-index:1;
+    width:8px; height:14px; background:linear-gradient(90deg,var(--copper-bright),var(--copper)); border-radius:2px 0 0 2px;
+  }
+  .batt-body-wrap[data-shape="pouch"]::after{
+    content:''; position:absolute; top:50%; right:-8px; transform:translateY(-50%); z-index:1;
+    width:8px; height:14px; background:linear-gradient(90deg,var(--muted),#4a5568); border-radius:0 2px 2px 0;
+  }
+  .batt-body{
+    position:relative; overflow:hidden; transition:filter .25s ease, border-radius .3s ease, box-shadow .25s ease;
+    border:2px solid #00000055; background:#0e131c;
+  }
+  .batt-body[data-shape="cylinder"]{ width:56px; height:112px; border-radius:9px 9px 5px 5px; }
+  .batt-body[data-shape="pouch"]{ width:96px; height:58px; border-radius:8px; }
+  .batt-fill{
+    position:absolute; left:0; right:0; bottom:0; height:50%;
+    background:linear-gradient(#8ff0c4,#3f9d78); transition:height .12s linear, background .3s ease;
+  }
+  .batt-fill.low{ background:linear-gradient(#f5c46b,#c97c3d); }
+  .batt-fill.critical{ background:linear-gradient(#f5a3a3,var(--danger)); }
+  .batt-pct{
+    position:relative; z-index:2; width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono'; font-weight:800; font-size:13px; color:#e8e2d0; text-shadow:0 1px 3px #000a;
+  }
+  .batt-body.danger{ box-shadow:0 0 0 2px var(--danger), 0 0 14px 2px rgba(193,85,74,.6); animation:battDangerPulse 1s ease-in-out infinite; }
+  @keyframes battDangerPulse{ 0%,100%{ filter:brightness(1); } 50%{ filter:brightness(1.35); } }
+  .batt-body.damaged{ filter:saturate(.3) brightness(.6); }
+  .batt-body[data-shape="pouch"].damaged{ border-radius:16px; transform:scale(1.12,1.28); }
+  .batt-body[data-shape="cylinder"].damaged{ border-radius:9px 9px 40% 40% / 9px 9px 60% 60%; }
+  .batt-voltage-row{
+    font-size:11.5px; color:var(--muted); display:flex; justify-content:space-between; width:100%; gap:8px; margin-bottom:2px;
+  }
+  .batt-voltage-row .val{ color:var(--gold); font-weight:700; font-family:'JetBrains Mono'; }
+  .batt-slider-label{
+    font-size:11.5px; color:var(--muted); display:flex; justify-content:space-between; margin-bottom:4px;
+  }
+  .batt-formula{
+    font-size:12px; line-height:1.8; color:var(--trace-bright);
+    background:#181d29; border-right:3px solid var(--gold); border-radius:8px; padding:8px 12px; margin-top:4px;
+  }
+  .batt-converter{
+    width:100%; background:#141924; border:1px solid var(--panel-border); border-radius:10px;
+    padding:12px 14px; margin:2px 0 4px;
+  }
+  .batt-converter-title{ font-size:12.5px; color:var(--gold); font-weight:700; margin-bottom:8px; }
+  .batt-converter-result{
+    margin-top:8px; font-size:13px; color:var(--trace-bright); text-align:center;
+    font-family:'JetBrains Mono'; line-height:1.6;
+  }
+
+  .beam-wrap{ width:100%; display:flex; justify-content:center; padding:14px 0; }
+  .beam{
+    width:140px; height:10px; border-radius:4px; background:linear-gradient(90deg,#8a93a3,#c7cbd1);
+    transform-origin:center; transition:transform .1s ease;
+  }
+
+  .transformer-row{ display:flex; align-items:center; gap:14px; width:100%; justify-content:center; }
+  .coil{ display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .coil-icon{ font-size:24px; }
+  .coil-label{ font-size:10px; color:var(--muted); }
+  .coil-arrow{ font-size:18px; color:var(--trace-bright); }
+
+  .wave-line{
+    width:100%; height:24px; border-radius:4px;
+    background-image:repeating-linear-gradient(90deg, var(--trace-bright) 0 8px, transparent 8px 16px);
+    background-size:24px 24px; opacity:.85;
+  }
+  .wave-line.flowing{ animation:wireflow .6s linear infinite; }
+
+  .iv-svg{ width:100%; max-width:260px; height:110px; }
+  #iv-dot{ transition:cx .08s linear, cy .08s linear; }
+
+  /* speaker (audio transducer) */
+  .spk-explain{ margin-bottom:10px; }
+  .spk-formula-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; width:100%; margin-bottom:14px; }
+  .spk-formula-chip{
+    background:#141924; border:1px solid var(--panel-border); border-radius:10px;
+    padding:9px 10px; font-size:11.5px; line-height:1.65;
+  }
+  .spk-formula-chip .f{ display:block; font-size:14px; font-weight:800; color:var(--trace-bright); direction:ltr; text-align:right; margin-bottom:2px; }
+  .spk-formula-chip .d{ color:var(--muted); }
+  @media (max-width:480px){ .spk-formula-grid{ grid-template-columns:1fr; } }
+  .speaker-cone-svg{ width:100%; max-width:190px; height:auto; display:block; margin:0 auto; }
+  #spk-cone{ transform-origin:100px 100px; }
+  .speaker-wave-canvas{
+    width:100%; max-width:220px; height:46px; border-radius:8px;
+    background:#0a0d13; border:1px solid var(--panel-border);
+  }
+  .comp-demo.danger{
+    border-color:var(--danger); box-shadow:0 0 0 1px rgba(193,85,74,.45), 0 0 18px rgba(193,85,74,.35);
+    animation:battDangerPulse 1s ease-in-out infinite;
+  }
+
+  /* ---------- RESISTOR COLOR GUIDE TABLE ---------- */
+  .resistor-guide-note{ font-size:12.5px; line-height:1.9; color:#b9b2a0; }
+  .resistor-guide-table{
+    display:grid; grid-template-columns:auto minmax(90px,1fr) repeat(3,auto); gap:0; margin-top:12px;
+    border:1px solid var(--panel-border); border-radius:10px;
+    overflow-x:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain;
+  }
+  /* This table intentionally scrolls sideways on narrow phones instead of
+     squeezing its columns to 0 (which the global min-width:0 reset would
+     otherwise allow) - so its cells keep their natural content width. */
+  .rg-row > div{ min-width:max-content; }
+  .rg-row{ display:contents; }
+  .rg-row > div{
+    padding:8px 10px; font-size:12px; display:flex; align-items:center;
+    border-bottom:1px solid var(--panel-border);
+  }
+  .rg-row:last-child > div{ border-bottom:none; }
+  .rg-row.rg-head > div{
+    background:#1a2130; color:var(--gold); font-weight:700; font-size:11px;
+  }
+  .rg-swatch{ width:18px; height:18px; border-radius:4px; margin-inline-end:8px; border:1px solid #00000033; flex:0 0 auto; }
+  .rg-name{ color:var(--parchment); }
+  .rg-row:not(.rg-head):nth-child(odd) > div{ background:#12161f; }
+  .resistor-guide-example{
+    margin-top:12px; font-size:12.5px; line-height:1.9; color:var(--trace-bright);
+    background:#181d29; border-right:3px solid var(--gold); border-radius:8px; padding:10px 14px;
+  }
+
+  /* ---------- RESISTOR ---------- */
+  .resistor-stage{ display:flex; justify-content:center; padding:44px 0 6px; }
+  .resistor-svg{ width:100%; max-width:340px; height:auto; }
+  .rband{ transition:filter .15s ease; }
+
+  /* Dropdown picker (replaces the old click-band -> swatch-palette flow) */
+  .rband-row{ display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin:22px 0 6px; padding:0 4px; }
+  .rband-field{ display:flex; flex-direction:column; gap:6px; width:150px; }
+  .rband-field label{ font-size:11.5px; color:var(--muted); text-align:center; }
+  .rband-readout{
+    text-align:center; font-family:'JetBrains Mono', monospace; font-weight:800;
+    font-size:17px; color:var(--parchment); margin-top:8px; line-height:1.2;
+    min-height:21px; display:flex; align-items:center; justify-content:center; word-break:break-word;
+  }
+  .rband-dropdown{
+    appearance:none; -webkit-appearance:none;
+    width:100%; padding:11px 14px 11px 32px; border-radius:999px; border:1px solid var(--panel-border);
+    font-family:'Vazirmatn'; font-weight:700; font-size:13px; text-align:center;
+    cursor:pointer; transition:filter .15s ease, transform .1s ease;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path fill='%23000' opacity='.55' d='M5 8l5 5 5-5z'/></svg>");
+    background-repeat:no-repeat; background-position:12px center; background-size:14px;
+  }
+  .rband-dropdown:hover{ filter:brightness(1.08); }
+  .rband-dropdown:focus{ outline:2px solid var(--trace-bright); outline-offset:2px; }
+  .rband-dropdown:active{ transform:scale(.98); }
+
+  /* Final LCD-style result readout */
+  .rlcd-flow{ display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:22px; }
+  .rlcd-raw{ font-size:27px; font-weight:700; color:var(--parchment); font-family:'JetBrains Mono', monospace; }
+  .rlcd-unit-inline{ color:var(--trace-bright); }
+  .rlcd-panel{
+    background:#0d1119; border:1px solid var(--panel-border); border-radius:14px;
+    padding:14px 26px; display:flex; align-items:baseline; gap:10px;
+    box-shadow:inset 0 2px 12px rgba(0,0,0,.65); font-family:'JetBrains Mono', monospace;
+  }
+  .rlcd-num{ font-size:27px; font-weight:700; color:var(--parchment); }
+  .rlcd-unit{ font-size:19px; font-weight:700; color:var(--trace-bright); }
+  .rlcd-tol{ font-size:15px; font-weight:700; color:var(--gold); }
+
+
+  /* ---------- TESLA TOWER ---------- */
+  .tesla-objects{
+    display:flex; gap:10px; flex-wrap:wrap; justify-content:center;
+    margin-top:16px;
+  }
+  .tesla-obj{
+    display:flex; flex-direction:column; align-items:center; gap:5px;
+    padding:10px 14px; min-width:74px; border-radius:12px; border:1px solid var(--panel-border);
+    background:#141924; cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none;
+    font-size:24px; transition:transform .12s ease, border-color .15s ease;
+  }
+  .tesla-obj span{ font-size:10px; color:var(--muted); font-family:'Vazirmatn'; font-weight:700; white-space:nowrap; }
+  .tesla-obj:hover{ border-color:var(--copper); transform:translateY(-2px); }
+  .tesla-obj:active{ cursor:grabbing; transform:scale(.94); }
+  .tesla-drag-ghost{
+    position:fixed; top:0; left:0; z-index:60; pointer-events:none;
+    font-size:32px; transform:translate(-50%,-65%);
+    filter:drop-shadow(0 0 10px rgba(255,255,255,.55));
+    will-change:transform;
+    transition:filter .08s ease;
+  }
+  .tesla-drag-ghost.lit{
+    filter:drop-shadow(0 0 8px #fff8d6) drop-shadow(0 0 22px #ffd85c) drop-shadow(0 0 36px #ffb300) brightness(1.5);
+  }
+
+  /* ---------- MOBILE: lab tab ---------- */
+  @media (max-width: 640px){
+    .lab-intro{ padding:0 14px; gap:12px; }
+    .lab-intro-title{ font-size:17px; }
+    .lab-card{ padding:18px 16px; border-radius:18px; margin:16px 14px; }
+    .ohm-canvas, .cap-canvas, .scope-canvas, .tesla-canvas, .magnet-canvas{ height:170px; }
+    .tesla-obj{ min-width:64px; padding:9px 10px; font-size:22px; }
+    .resistor-stage{ padding:20px 0 4px; }
+
+    .rband-row{
+      display:grid; grid-template-columns:repeat(4, 1fr);
+      gap:5px; margin:14px 0 4px; padding:0 2px;
+    }
+    .rband-field{ width:auto; gap:3px; }
+    .rband-field label{ font-size:8px; line-height:1.15; }
+    .rband-readout{ font-size:11px; margin-top:3px; min-height:14px; }
+
+    .rband-dropdown{
+      padding:7px 4px 7px 15px; font-size:9.5px; border-radius:14px;
+      background-position:4px center; background-size:9px;
+    }
+    .rlcd-num, .rlcd-raw{ font-size:23px; }
+    .comp-cat-btn{ flex:1 1 auto; font-size:12px; padding:9px 10px; }
+    .comp-stage{ padding:13px; }
+    .resistor-guide-table{ font-size:11px; }
+    .rg-row > div{ padding:7px 6px; white-space:nowrap; }
+    .batt-body[data-shape="cylinder"]{ width:46px; height:92px; }
+    .batt-body[data-shape="pouch"]{ width:80px; height:48px; }
+  }
+
+  /* ---------- SMALL PHONES ---------- */
+  @media (max-width: 380px){
+    .lab-intro{ padding-inline:10px; }
+    .lab-card{ margin-inline:10px; padding:16px 12px; }
+
+    .rband-row{ gap:4px; }
+    .rband-field label{ font-size:7.5px; }
+    .rband-dropdown{ padding:6px 3px 6px 13px; font-size:8.5px; }
+  }

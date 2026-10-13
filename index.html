@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, viewport-fit=cover, shrink-to-fit=no">
+<title>سفر به دنیای الکترونیک</title>
+
+<!--
+  ریست‌کردنِ کاملِ داده‌های ذخیره‌شده‌ی هر کاربر با هر نسخه‌ی جدید.
+  همه‌ی چیزهایی که این سایت توی localStorage مرورگرِ کاربر می‌گذارد
+  (پیشرفتِ مأموریت‌ها، کدهایی که نوشته، چیدمانِ بلوک‌ها، حالتِ متنی/بلوکی و...)
+  با پیشوندِ «shovalie-madar-» شروع می‌شود. هر وقت نسخه‌ی جدیدی منتشر می‌کنید
+  که می‌خواهید همه از صفر شروع کنند، فقط SITE_VERSION را پایین عوض کنید —
+  هر رشته‌ی متفاوتی کافی است (مثلاً تاریخِ همون روز). این اسکریپت باید همیشه
+  همین‌جا، اول از همه (قبلِ از هر اسکریپتِ دیگری که ممکن است localStorage را
+  بخواند) بماند — نه defer دارد نه async، پس همین‌جا و همین لحظه اجرا می‌شود.
+-->
+<script>
+(function(){
+  var SITE_VERSION = '2026-09-19-1'; // ← با هر نسخه‌ی جدید همین رشته را عوض کن
+  var VERSION_KEY = 'shovalie-madar-site-version';
+  try {
+    if (localStorage.getItem(VERSION_KEY) !== SITE_VERSION) {
+      var toRemove = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('shovalie-madar-') === 0) toRemove.push(k);
+      }
+      toRemove.forEach(function(k){ localStorage.removeItem(k); });
+      localStorage.setItem(VERSION_KEY, SITE_VERSION);
+    }
+  } catch (e) { /* localStorage در دسترس نیست (حالتِ خصوصی و...) — بی‌خیال */ }
+})();
+</script>
+
+<!-- PostHog analytics — tracks page visits -->
+<script>
+    !function(t,e){var o,n,p,r;e.__SV||(window.posthog && window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}p||((p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",p.onerror=function(){p=null},(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r));var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="Tl Ml El Il Al init Xl tu Jl Kl nu ho Yl au Gl capture getExtension eu xl vu calculateEventProperties du register register_once register_for_session unregister unregister_for_session gu Ql cu getFeatureFlag getFeatureFlagPayload getFeatureFlagResult getAllFeatureFlags isFeatureEnabled reloadFeatureFlags updateFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey displaySurvey cancelPendingSurvey canRenderSurvey canRenderSurveyAsync mu identify setPersonProperties unsetPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset yu shutdown setIdentity clearIdentity get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException addExceptionStep captureLog startExceptionAutocapture stopExceptionAutocapture loadToolbar get_property getSessionProperty fu uu createPersonProfile setInternalOrTestUser pu Fl Ol opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing get_explicit_consent_status is_capturing clear_opt_in_out_capturing ou debug do ts getPageViewId captureTraceFeedback captureTraceMetric zl".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+    posthog.init('phc_o4VzVGFgibH5LoccVefAgtMApTK94xjGLMQtYmKgPzLQ', {
+        api_host: 'https://us.i.posthog.com',
+        defaults: '2026-05-30',
+        person_profiles: 'identified_only', // or 'always' to create profiles for anonymous users as well
+    })
+</script>
+
+<!-- Umami analytics — single "enter_site" event per visit -->
+<script defer src="https://cloud.umami.is/script.js" data-website-id="a3858c5e-b96c-43a2-8d03-862a400ed2bf"></script>
+<script defer>
+    window.addEventListener('DOMContentLoaded', function(){
+        if (window.umami) umami.track('enter_site');
+    });
+</script>
+
+<!--
+  CRITICAL INLINE SAFETY CSS — do not remove.
+  This guarantees correct mobile scaling (no "zoomed out" bug) on EVERY phone,
+  even in the split second before the external stylesheets finish loading, and
+  even in the worst case where they fail to load at all (e.g. a wrong
+  file name/case, a CDN hiccup, or a network block). Without this, if the
+  external stylesheets are delayed or missing, the browser has no min-width:0 /
+  overflow-x:hidden rules yet, some element can render wider than the screen,
+  and mobile Chrome/Safari respond by zooming the whole page out to fit it —
+  exactly the symptom being fixed here. Keep this block ABOVE the
+  common.css / quest.css / lab.css <link> tags.
+-->
+<style>
+  html{ width:100%; max-width:100vw; overflow-x:hidden; -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+  body{ width:100%; max-width:100vw; overflow-x:hidden; margin:0; background:#0b0e14; }
+  *, *::before, *::after{ box-sizing:border-box; min-width:0; }
+  img, svg, canvas, video{ max-width:100%; }
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<link rel="stylesheet" href="dialogue.css?v=1">
+<link rel="stylesheet" href="quest.css?v=6">
+<link rel="stylesheet" href="arduino-blocks.css?v=1">
+<link rel="stylesheet" href="lab.css?v=4">
+<style>
+  .support-wrap{
+    display:flex; justify-content:center; margin:32px auto 44px; padding:0 16px;
+  }
+  .support-card{
+    position:relative;
+    display:flex; align-items:center; gap:14px;
+    max-width:420px; width:100%;
+    padding:18px 22px;
+    border-radius:18px;
+    background:linear-gradient(160deg, rgba(87,216,163,0.10), rgba(212,175,55,0.08)), #12161f;
+    border:1px solid rgba(212,175,55,0.35);
+    box-shadow:0 8px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03);
+    text-decoration:none;
+    overflow:hidden;
+    box-shadow:0 8px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03);
+    transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+  .support-card::before{
+    content:"";
+    position:absolute; inset:0;
+    background:radial-gradient(120px 80px at 15% 20%, rgba(212,175,55,0.18), transparent 60%);
+    pointer-events:none;
+  }
+  .support-card::after{
+    content:"";
+    position:absolute; inset:-8px;
+    border-radius:26px;
+    box-shadow:0 0 18px rgba(212,175,55,0.45);
+    opacity:0;
+    transform:scale(.97);
+    animation:glow-pulse 2.6s ease-in-out infinite;
+    pointer-events:none;
+    will-change:transform, opacity;
+  }
+  @keyframes glow-pulse{
+    0%, 100%{ opacity:0; transform:scale(.97); }
+    50%{ opacity:1; transform:scale(1); }
+  }
+  .support-card:hover{
+    transform:translateY(-2px);
+    border-color:rgba(212,175,55,0.6);
+    box-shadow:0 12px 36px rgba(0,0,0,0.45), 0 0 0 1px rgba(212,175,55,0.15);
+  }
+  .support-icon{
+    flex:0 0 auto;
+    width:58px; height:58px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #2a2114, #12161f 70%);
+    box-shadow:0 4px 14px rgba(212,175,55,0.35), inset 0 0 0 2px rgba(212,175,55,0.5);
+    overflow:hidden;
+  }
+  .support-icon img{
+    width:100%; height:100%; object-fit:cover;
+  }
+  .support-text{ display:flex; flex-direction:column; gap:2px; z-index:1; }
+  .support-title{
+    font-family:'Vazirmatn', sans-serif;
+    font-weight:700; font-size:15.5px; color:#f2e9d8;
+  }
+  .support-sub{
+    font-family:'Vazirmatn', sans-serif;
+    font-weight:500; font-size:12.5px; color:#9aa3b0;
+  }
+  .support-arrow{
+    margin-inline-start:auto;
+    color:#d4af37; font-size:18px; z-index:1;
+    transition:transform .18s ease;
+  }
+  .support-card:hover .support-arrow{ transform:translateX(-4px); }
+
+<style>
+  .support-wrap{
+    display:flex;
+    justify-content:center;
+    margin:32px auto 44px;
+    padding:0 16px;
+  }
+
+  .support-card{
+    position:relative;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    max-width:420px;
+    width:100%;
+    padding:18px 22px;
+    border-radius:18px;
+    background:linear-gradient(
+      160deg,
+      rgba(87,216,163,0.10),
+      rgba(212,175,55,0.08)
+    ), #12161f;
+    border:1px solid rgba(212,175,55,0.35);
+    box-shadow:
+      0 8px 30px rgba(0,0,0,0.35),
+      inset 0 1px 0 rgba(255,255,255,0.03);
+    text-decoration:none;
+    overflow:hidden;
+    transition:
+      transform .18s ease,
+      box-shadow .18s ease,
+      border-color .18s ease;
+  }
+
+  .support-card::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:radial-gradient(
+      120px 80px at 15% 20%,
+      rgba(212,175,55,0.18),
+      transparent 60%
+    );
+    pointer-events:none;
+  }
+
+  .support-card::after{
+    content:"";
+    position:absolute;
+    inset:-8px;
+    border-radius:26px;
+    box-shadow:0 0 18px rgba(212,175,55,0.45);
+    opacity:0;
+    transform:scale(.97);
+    animation:glow-pulse 2.6s ease-in-out infinite;
+    pointer-events:none;
+    will-change:transform, opacity;
+  }
+
+  @keyframes glow-pulse{
+    0%, 100%{
+      opacity:0;
+      transform:scale(.97);
+    }
+
+    50%{
+      opacity:1;
+      transform:scale(1);
+    }
+  }
+
+  .support-card:hover{
+    transform:translateY(-2px);
+    border-color:rgba(212,175,55,0.6);
+    box-shadow:
+      0 12px 36px rgba(0,0,0,0.45),
+      0 0 0 1px rgba(212,175,55,0.15);
+  }
+
+  .support-icon{
+    flex:0 0 auto;
+    width:58px;
+    height:58px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:50%;
+    background:radial-gradient(
+      circle at 35% 30%,
+      #2a2114,
+      #12161f 70%
+    );
+    box-shadow:
+      0 4px 14px rgba(212,175,55,0.35),
+      inset 0 0 0 2px rgba(212,175,55,0.5);
+    overflow:hidden;
+  }
+
+  .support-icon img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+  }
+
+  .support-text{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    z-index:1;
+  }
+
+  .support-title{
+    font-family:'Vazirmatn', sans-serif;
+    font-weight:700;
+    font-size:15.5px;
+    color:#f2e9d8;
+  }
+
+  .support-sub{
+    font-family:'Vazirmatn', sans-serif;
+    font-weight:500;
+    font-size:12.5px;
+    color:#9aa3b0;
+  }
+
+  .support-arrow{
+    margin-inline-start:auto;
+    color:#d4af37;
+    font-size:18px;
+    z-index:1;
+    transition:transform .18s ease;
+  }
+
+  .support-card:hover .support-arrow{
+    transform:translateX(-4px);
+  }
+
+
+  /* ================================
+     HEADER / HUD
+     ================================ */
+
+  .hud{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    width:100%;
+    gap:12px;
+  }
+
+  /* عنوان در ردیف جدا */
+  .hud-title{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+  }
+
+  /* XP و Level در ردیف جداگانه */
+  .hud-stats{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="confettiCanvas"></canvas>
+<div class="flash-overlay" id="flashOverlay"></div>
+<audio id="bgMusic" loop autoplay playsinline preload="none"
+  src="Black Knight.mp3"></audio>
+
+<div class="hud">
+  <div class="hud-title">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z" stroke="#c97c3d" stroke-width="1.6"/><path d="M8.5 11.5 11 14l4.5-5" stroke="#57d8a3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    سفر به دنیای الکترونیک
+  </div>
+  <div class="hud-stats">
+    <div class="xp-wrap">
+      <div class="xp-label"><span class="mono" id="xpText">0 / 0 XP</span><span id="pctText">0%</span></div>
+      <div class="xp-bar"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
+    </div>
+    <div class="level-badge">⚜️ سطح <span class="mono" id="levelNum">۰</span></div>
+  </div>
+
+</div>
+
+<div class="tab-nav">
+  <button class="tab-btn active" id="tabQuestBtn">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z" stroke="currentColor" stroke-width="1.6"/></svg>
+    مسیر مأموریت
+  </button>
+  <button class="tab-btn" id="tabLabBtn">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+    آزمایشگاه الکترونیک
+  </button>
+</div>
+
+<div class="knight-section" id="knightSection">
+  <div class="knight-avatar">
+    <img id="knightImg" class="knight-img" src="knight-happy.png" alt="استاد اهم">
+  </div>
+  <div class="speech">
+    <div class="name">استاد اهم</div>
+<div class="line" id="knightLine">
+  ⚔️ سلام ماجراجو! این نقشه مسیر یادگیری توست🗺️
+  هر ایستگاه یک چالش جدید دارد، از روشن‌کردن اولین LED 💡 تا ساخت یک ربات 🤖
+  روی اولین ایستگاه بزن تا مأموریت شروع شود! 🚀
+</div>
+  </div>
+</div>
+
+<div id="questTab">
+  <div class="path-wrap" id="pathWrap">
+    <svg class="path-svg" id="pathSvg">
+      <defs>
+        <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#57d8a3"/>
+          <stop offset="100%" stop-color="#d4af37"/>
+        </linearGradient>
+      </defs>
+      <path class="trace-bg" id="traceBg" d=""></path>
+      <path class="trace-fg" id="traceFg" d=""></path>
+    </svg>
+    <div id="nodesContainer"></div>
+  </div>
+</div>
+
+<div id="labTab" class="lab-tab">
+
+  <div class="lab-intro">
+    <div class="lab-intro-icon">⚡</div>
+    <div>
+      <div class="lab-intro-title">آزمایشگاه الکترونیک</div>
+      <div class="lab-intro-sub">اینجا فرمول حفظ نمی‌کنیم — می‌بینیم که الکترون‌ها چطور می‌دوند، مقاومت چطور رمزگذاری می‌شود، و خازن چطور نفس می‌کشد.</div>
+    </div>
+  </div>
+
+  <div class="lab-card" data-unlock="1">
+    <div class="lab-card-head">
+      <div class="lab-icon">🔋</div>
+      <div>
+        <div class="lab-title">قانون اهم زنده</div>
+        <div class="lab-sub">ولتاژ و مقاومت را جابه‌جا کن و ببین الکترون‌ها چطور واکنش نشان می‌دهند</div>
+      </div>
+    </div>
+    <canvas id="ohmCanvas" class="ohm-canvas"></canvas>
+    <div class="ohm-mode-tabs" id="ohmModeTabs">
+      <button class="ohm-mode-btn active" data-mode="single">تک مقاومت</button>
+      <button class="ohm-mode-btn" data-mode="series">سری (متوالی)</button>
+      <button class="ohm-mode-btn" data-mode="parallel">موازی</button>
+    </div>
+    <div class="ohm-switch-row" id="ohmSwitchRow">
+      <button class="lab-btn switch-btn on" id="ohmSwitchBtn">🔌 کلید: <span id="ohmSwitchLabel">وصل</span></button>
+      <button class="lab-btn no-resistor-btn" id="ohmNoResistorBtn">🚫 مقاومت‌ها را بردار</button>
+      <button class="lab-btn replace-led-btn" id="ohmReplaceBtn" style="display:none;">🔧 LED سوخته را تعویض کن</button>
+    </div>
+    <div class="lab-controls">
+      <div class="slider-group">
+        <label>ولتاژ باتری <span class="mono" id="voltageVal">۵ V</span></label>
+        <input type="range" id="voltageRange" min="1" max="12" step="0.5" value="5">
+      </div>
+      <div class="slider-group">
+        <label id="resistance1Label">مقاومت مسیر <span class="mono" id="resistanceVal">۲۲۰ Ω</span></label>
+        <input type="range" id="resistanceRange" min="0" max="1000" step="10" value="220">
+      </div>
+      <div class="slider-group" id="resistance2Group" style="display:none;">
+        <label id="resistance2Label">مقاومت ۲ (R2) <span class="mono" id="resistance2Val">۴۷۰ Ω</span></label>
+        <input type="range" id="resistance2Range" min="0" max="1000" step="10" value="470">
+      </div>
+    </div>
+    <div class="ohm-readout" id="ohmReadoutRow">
+      <div class="readout-item"><span class="ro-label">جریان &nbsp;I = V ÷ R</span><span class="ro-val mono" id="currentVal">—</span></div>
+      <div class="readout-item"><span class="ro-label">توان &nbsp;P = V × I</span><span class="ro-val mono" id="powerVal">—</span></div>
+    </div>
+    <div class="ohm-readout" id="ohmReadoutRow2" style="display:none;"></div>
+    <div class="lab-note" id="ohmNote">هرچه ولتاژ بیشتر یا مقاومت کمتر باشد، جریان بزرگ‌تر می‌شود و الکترون‌ها تندتر حرکت می‌کنند — لامپ هم داغ‌تر می‌درخشد.</div>
+  </div>
+
+  <div class="lab-card" data-unlock="2">
+    <div class="lab-card-head">
+      <div class="lab-icon">📖</div>
+      <div>
+        <div class="lab-title">راهنما و رمزگشای رنگ مقاومت</div>
+        <div class="lab-sub">جدول مرجع رنگ‌ها را ببین، بعد روی هر نوار بزن و مقدار را آنی بساز</div>
+      </div>
+    </div>
+    <div class="resistor-guide-note">مقاومت معمولاً ۴ نوار رنگی دارد: <b>نوار ۱ و ۲</b> دو رقم اول عدد را می‌سازند، <b>نوار ۳</b> عدد را در یک ضریب (توان ده) ضرب می‌کند، و <b>نوار ۴</b> میزان خطای مجاز (تلورانس) را نشان می‌دهد.</div>
+    <div class="resistor-guide-table" id="resistorGuideTable"></div>
+    <div class="resistor-guide-example" id="resistorGuideExample"></div>
+
+    <div class="lab-subhead">🎨 رمزگشای رنگ مقاومت</div>
+
+    <!-- Widget (SVG body + dropdowns + LCD readout) is built by
+         ResistorDecoder.mount() in resistor-decoder.js — same widget the
+         "محاسبه مقاومت رنگی" mission modal reuses, so there's one copy of
+         the picking/formatting logic for both. -->
+    <div class="resistor-decoder-mount" id="resistorDecoderMount"></div>
+  </div>
+
+  <div class="lab-card" data-unlock="3">
+    <div class="lab-card-head">
+      <div class="lab-icon">🧩</div>
+      <div>
+        <div class="lab-title">با قطعات آشنا شو</div>
+        <div class="lab-sub">یک خانواده و بعد یک نوع را انتخاب کن — هرکدام آزمایش تعاملی خودش را دارد</div>
+      </div>
+    </div>
+    <div class="component-grid" id="componentGrid"></div>
+  </div>
+
+  <div class="lab-card" data-unlock="4">
+    <div class="lab-card-head">
+      <div class="lab-icon">🪫</div>
+      <div>
+        <div class="lab-title">خازن: شارژ و دشارژ</div>
+        <div class="lab-sub">خازن مثل یک سطل کوچک برای ذخیره‌ی بار الکتریکی است</div>
+      </div>
+    </div>
+    <canvas id="capCanvas" class="cap-canvas"></canvas>
+    <div class="lab-controls">
+      <div class="slider-group">
+        <label>مقاومت مسیر <span class="mono" id="capRVal">۱٬۰۰۰ Ω</span></label>
+        <input type="range" id="capRRange" min="100" max="10000" step="100" value="1000">
+      </div>
+      <div class="slider-group">
+        <label>ظرفیت خازن <span class="mono" id="capCVal">۱٬۰۰۰ µF</span></label>
+        <input type="range" id="capCRange" min="10" max="4700" step="10" value="1000">
+      </div>
+    </div>
+    <div class="ohm-readout">
+      <div class="readout-item"><span class="ro-label">ثابت زمانی &nbsp;τ = R × C</span><span class="ro-val mono" id="capTauVal">—</span></div>
+      <div class="readout-item"><span class="ro-label">وضعیت</span><span class="ro-val mono" id="capStateVal">خالی</span></div>
+    </div>
+    <div class="cap-buttons">
+      <button class="lab-btn charge" id="capChargeBtn">⚡ شارژ کن</button>
+      <button class="lab-btn discharge" id="capDischargeBtn">💨 دشارژ کن</button>
+    </div>
+    <div class="lab-note">τ (تاو) یعنی چقدر طول می‌کشد خازن تقریباً ۶۳٪ شارژ شود. مقاومت یا ظرفیت بیشتر → پر و خالی شدن کندتر.</div>
+  </div>
+
+  <div class="lab-card" data-unlock="6">
+    <div class="lab-card-head">
+      <div class="lab-icon">📈</div>
+      <div>
+        <div class="lab-title">اسیلوسکوپ</div>
+        <div class="lab-sub">شکل موج سیگنال را زنده تماشا کن — دامنه، فرکانس و شکل موج را تغییر بده</div>
+      </div>
+    </div>
+    <canvas id="scopeCanvas" class="scope-canvas"></canvas>
+    <div class="ohm-mode-tabs" id="scopeWaveTabs">
+      <button class="ohm-mode-btn active" data-wave="sine">سینوسی</button>
+      <button class="ohm-mode-btn" data-wave="square">مربعی</button>
+      <button class="ohm-mode-btn" data-wave="triangle">مثلثی</button>
+      <button class="ohm-mode-btn" data-wave="sawtooth">دندانه‌اره‌ای</button>
+    </div>
+    <div class="ohm-switch-row">
+      <button class="lab-btn switch-btn on" id="scopeNoiseBtn">📡 نویز خط: <span id="scopeNoiseLabel">خاموش</span></button>
+      <button class="lab-btn switch-btn on" id="scopeRunBtn">▶️ روبش: <span id="scopeRunLabel">در حال اجرا</span></button>
+    </div>
+    <div class="lab-controls">
+      <div class="slider-group">
+        <label>فرکانس <span class="mono" id="scopeFreqVal">۱ Hz</span></label>
+        <input type="range" id="scopeFreqRange" min="0.5" max="20" step="0.5" value="1">
+      </div>
+      <div class="slider-group">
+        <label>دامنه (ولتاژ اوج) <span class="mono" id="scopeAmpVal">۳ V</span></label>
+        <input type="range" id="scopeAmpRange" min="0.5" max="6" step="0.5" value="3">
+      </div>
+      <div class="slider-group">
+        <label>آفست DC <span class="mono" id="scopeOffsetVal">۰ V</span></label>
+        <input type="range" id="scopeOffsetRange" min="-4" max="4" step="0.5" value="0">
+      </div>
+      <div class="slider-group">
+        <label>مقیاس زمان — Time/Div <span class="mono" id="scopeTimeDivVal">۱۰۰ ms</span></label>
+        <input type="range" id="scopeTimeDivRange" min="20" max="500" step="10" value="100">
+      </div>
+    </div>
+    <div class="ohm-readout">
+      <div class="readout-item"><span class="ro-label">دوره تناوب &nbsp;T = 1/f</span><span class="ro-val mono" id="scopePeriodVal">—</span></div>
+      <div class="readout-item"><span class="ro-label">اوج‌به‌اوج &nbsp;Vpp</span><span class="ro-val mono" id="scopeVppVal">—</span></div>
+      <div class="readout-item"><span class="ro-label">مؤثر &nbsp;Vrms</span><span class="ro-val mono" id="scopeRmsVal">—</span></div>
+    </div>
+    <div class="lab-note">محور افقی زمان و محور عمودی ولتاژ است؛ خط زرد وسط، صفر ولت (تریگر) را نشان می‌دهد. با کم‌کردن Time/Div موج‌ها را «باز» و با زیادکردن آن، فشرده می‌بینی — دقیقاً کاری که دکمه‌ی SEC/DIV روی یک اسیلوسکوپ واقعی انجام می‌دهد.</div>
+  </div>
+
+  <div class="lab-card" data-unlock="8">
+    <div class="lab-card-head">
+      <div class="lab-icon">🗼</div>
+      <div>
+        <div class="lab-title">برج تسلا</div>
+        <div class="lab-sub">موس را نزدیک برج ببر، یا یک جسم را با انگشت بکش کنارش — رسانا بودن یا نبودنش را با جرقه کشف کن</div>
+      </div>
+    </div>
+    <canvas id="teslaCanvas" class="tesla-canvas"></canvas>
+    <div class="ohm-switch-row">
+      <button class="lab-btn switch-btn on" id="teslaSwitchBtn">⚡ برج: <span id="teslaSwitchLabel">روشن</span></button>
+    </div>
+    <div class="tesla-objects" id="teslaObjects">
+      <div class="tesla-obj" data-conductive="true" data-emoji="📎" data-label="گیره‌کاغذ">📎<span>گیره‌کاغذ (رسانا)</span></div>
+      <div class="tesla-obj" data-conductive="true" data-emoji="🔑" data-label="کلید">🔑<span>کلید (رسانا)</span></div>
+      <div class="tesla-obj" data-conductive="false" data-emoji="🎈" data-label="بادکنک">🎈<span>بادکنک (عایق)</span></div>
+      <div class="tesla-obj" data-conductive="false" data-emoji="📏" data-label="خط‌کش">📏<span>خط‌کش (عایق)</span></div>
+      <div class="tesla-obj" data-conductive="true" data-light="true" data-emoji="💡" data-label="چراغ">💡<span>چراغ (روشن می‌شود)</span></div>
+    </div>
+    <div class="lab-note" id="teslaNote">اجسام فلزی مثل کلید و گیره‌کاغذ «رسانا»ند — جرقه راحت به آن‌ها می‌رسد. بادکنک و خط‌کش «عایق»ند و جلوی جرقه را می‌گیرند. چراغ را هم نزدیک برج ببر تا با عبور جریان روشن شود! با موس هم نزدیک برج شو و ببین دستِ خودت هم رساناست! نکته: در دنیای واقعی هرگز به دستگاه ولتاژ بالا نزدیک نشو.</div>
+  </div>
+
+  <div class="lab-card" data-unlock="10">
+    <div class="lab-card-head">
+      <div class="lab-icon">🧲</div>
+      <div>
+        <div class="lab-title">آهنربای الکتریکی (الکترومغناطیس)</div>
+        <div class="lab-sub">سیم‌پیچ را روشن کن، میدان مغناطیسی و قطب‌ها را ببین — اجسام را نزدیکش بکش</div>
+      </div>
+    </div>
+    <canvas id="magnetCanvas" class="magnet-canvas"></canvas>
+    <div class="ohm-switch-row">
+      <button class="lab-btn switch-btn on" id="magnetSwitchBtn">⚡ سیم‌پیچ: <span id="magnetSwitchLabel">روشن</span></button>
+      <button class="lab-btn" id="magnetPolarityBtn">🔄 عوض کردن قطب‌ها</button>
+
+
+    <div class="tesla-objects" id="magnetObjects">
+      <div class="tesla-obj" data-magnetic="true" data-emoji="📎" data-label="گیره‌کاغذ">📎<span>گیره‌کاغذ (آهنی)</span></div>
+      <div class="tesla-obj" data-magnetic="true" data-emoji="🔩" data-label="پیچ آهنی">🔩<span>پیچ (آهنی)</span></div>
+      <div class="tesla-obj" data-magnetic="false" data-emoji="🎈" data-label="بادکنک">🎈<span>بادکنک (بی‌اثر)</span></div>
+      <div class="tesla-obj" data-magnetic="false" data-emoji="🥉" data-label="سکه‌ی مسی">🥉<span>مس (بی‌اثر)</span></div>
+      <div class="tesla-obj" data-compass="true" data-label="قطب‌نما">
+        <svg viewBox="0 0 40 40" width="26" height="26" style="display:block;">
+          <circle cx="20" cy="20" r="17" fill="#141924" stroke="#3a4558" stroke-width="2"/>
+          <g stroke="#3a4558" stroke-width="1.4">
+            <line x1="20" y1="4" x2="20" y2="8"/>
+            <line x1="20" y1="32" x2="20" y2="36"/>
+            <line x1="4" y1="20" x2="8" y2="20"/>
+            <line x1="32" y1="20" x2="36" y2="20"/>
+          </g>
+          <polygon points="20,20 15,20 20,7 25,20" fill="#e8574e"/>
+          <polygon points="20,20 15,20 20,33 25,20" fill="#9aa3b0"/>
+          <circle cx="20" cy="20" r="2.6" fill="#0b0e14" stroke="#5b6472" stroke-width="1"/>
+        </svg>
+        <span>قطب‌نما (جهت میدان)</span>
+      </div>
+    </div>
+        </div>
+    <div class="lab-controls">
+      <div class="slider-group">
+        <label>جریان سیم‌پیچ <span class="mono" id="magnetCurrentVal">2.0 A</span></label>
+        <input type="range" id="magnetCurrentRange" min="0" max="5" step="0.1" value="2">
+      </div>
+      <div class="slider-group">
+        <label>تعداد دور سیم‌پیچ <span class="mono" id="magnetTurnsVal">۲۰۰ دور</span></label>
+        <input type="range" id="magnetTurnsRange" min="50" max="400" step="10" value="200">
+      </div>
+    </div>
+        <div class="ohm-readout">
+      <div class="readout-item"><span class="ro-label">شدت میدان (نسبی) &nbsp;B ∝ N × I</span><span class="ro-val mono" id="magnetFieldVal">—</span></div>
+      <div class="readout-item"><span class="ro-label">قطب چپ</span><span class="ro-val mono" id="magnetPoleLeftVal">—</span></div>
+      <div class="readout-item"><span class="ro-label">قطب راست</span><span class="ro-val mono" id="magnetPoleRightVal">—</span></div>
+    </div>
+    <div class="lab-note" id="magnetNote">سیم‌پیچ را روشن نگه‌دار و جریان یا تعداد دورها را زیاد کن تا میدان مغناطیسی قوی‌تر شود. گیره‌کاغذ و پیچ «آهنی»ند و به قطب‌ها جذب می‌شوند؛ بادکنک و سکه‌ی مسی بی‌اثرند. قطب‌نما را هم دور تا دور آهنربا بگردان و ببین عقربه‌اش همیشه هم‌جهت با خط‌های میدان می‌ایستد!</div>
+  </div>
+
+</div>
+
+<footer class="credit">سفر به دنیای الکترونیک — اثری از سید مرتضی کمالی</footer>
+
+<div class="support-wrap">
+  <a class="support-card" href="https://daramet.com/ElectroQuest" target="_blank" rel="noopener">
+    <div class="support-icon"><img src="knight-wink.png" alt="استاد اهم"></div>
+    <div class="support-text">
+      <span class="support-title">از سازنده حمایت کن ⚜️</span>
+      <span class="support-sub">این پروژه رایگان و با عشق ساخته شده — با یه حمایت کوچیک به ادامه‌اش کمک کن</span>
+    </div>
+    <div class="support-arrow">⟵</div>
+  </a>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <button class="modal-close" id="closeModal">✕</button>
+    <div class="modal-eyebrow" id="modalEyebrow">🎯 مأموریت</div>
+    <h2 class="modal-title" id="modalTitle"></h2>
+    <div class="modal-quote" id="modalQuote"></div>
+    <div class="modal-desc" id="modalDesc"></div>
+    <ul class="steps" id="modalSteps"></ul>
+    <div class="modal-sim" id="modalSim" style="display:none"></div>
+    <div class="reward-row">
+      <div class="reward" id="modalReward">✨ +۰ XP</div>
+    </div>
+    <button class="complete-btn" id="completeBtn">مأموریت را تکمیل کردم</button>
+    <button class="complete-btn next-btn" id="nextMissionBtn" style="display:none">مأموریت بعدی ⟶</button>
+  </div>
+</div>
+
+<div class="overlay" id="welcomeOverlay">
+  <div class="modal welcome-modal">
+    <button class="modal-close" id="welcomeClose">✕</button>
+    <div class="welcome-avatar">
+      <img src="knight-happy.png" alt="استاد اُهم" class="welcome-img">
+    </div>
+<div class="modal-eyebrow">⚜️ خوش‌آمدگویی استاد اُهم</div>
+<h2 class="modal-title">به الکتروکوئست خوش آمدی!</h2>
+<div class="modal-desc">
+  الکتروکوئست یک ماجراجویی تعاملی برای یادگیری و ساخت مدارهای الکترونیکی است.اینجا در قالب مأموریت‌های گام‌به‌گام پیش می‌روی و با حل هر معما و تکمیل هر مدار، قطعات و ابزارهای تازه‌ای در «آزمایشگاه» برایت باز می‌شود.
+</div>
+
+    <ul class="steps">
+      <li><span class="num mono">۱</span><span>از تب «مسیر مأموریت» شروع کن و اولین گره را باز کن.</span></li>
+      <li><span class="num mono">۲</span><span>مأموریت‌ها را به ترتیب کامل کن تا XP و سطح بگیری.</span></li>
+      <li><span class="num mono">۳</span><span>هر چند مأموریت، یک بخش جدید در «آزمایشگاه الکترونیک» باز می‌شود.</span></li>
+    </ul>
+    <button class="complete-btn" id="welcomeStartBtn">ماجراجویی را شروع کن ⚔️</button>
+  </div>
+</div>
+
+<script src="arduino-mission-blocks.js"></script>
+<script src="common.js?v=2" defer></script>
+<script src="arduino-lang.js?v=3" defer></script>
+<script src="arduino-blocks.js?v=2" defer></script>
+<script src="arduino-sim.js?v=4" defer></script>
+<script src="dialogue.js?v=1" defer></script>
+<script src="cube-block.js?v=2" defer></script>
+<script src="hal-block.js?v=2" defer></script>
+<script src="quest.js?v=7" defer></script>
+
+<script src="component-library.js?v=2" defer></script>
+<script src="arduino-nano.js?v=2" defer></script>
+<script src="esp32.js?v=2" defer></script>
+<script src="stm32.js?v=2" defer></script>
+<script src="demo-kinds.js?v=2" defer></script>
+<script src="resistor-colors.js?v=2" defer></script>
+<script src="lab.js?v=4" defer></script>
+<script src="resistor-decoder.js?v=2" defer></script>
+</body>
+</html>
