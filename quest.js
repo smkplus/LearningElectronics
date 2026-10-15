@@ -682,6 +682,7 @@ const CONCEPT_SIMS = {
   led_diode: mountLedDiodeSim,
   capacitor: mountCapacitorSim,
   transistor: mountTransistorSim,
+  shift_register: mountShiftRegisterSim,
   // رباتیک — quest-sims-robotics.js
   robot_assemble: mountRobotAssembleSim,
   line_sensor: mountLineSensorMission,

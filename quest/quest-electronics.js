@@ -1,7 +1,7 @@
 /* ========================================================================
    QUEST-ELECTRONICS.JS — بخش الکترونیک
    داده‌ی مأموریت‌ها (QUESTS_ELECTRONICS) + شبیه‌سازها
-   QUESTS_ELECTRONICS + mountVoltCurrentSim / Resistor / LED / Capacitor / Transistor
+   QUESTS_ELECTRONICS + mountVoltCurrentSim / Resistor / LED / Capacitor / Transistor / ShiftRegister
    ======================================================================== */
 
 const QUESTS_ELECTRONICS = [
@@ -56,6 +56,17 @@ const QUESTS_ELECTRONICS = [
       'حالا «با ترانزیستور» را بزن؛ BC547 روی بردبورد می‌نشیند: C به LEDها، E به منفی و B از طریق مقاومت به پین.',
       'ببین هر ۵ LED با تمام نور روشن می‌شود، چون جریان اصلی از باتری می‌آید نه از پین؛ پین فقط چند میلی‌آمپر به Base می‌دهد.',
       'وقتی با ترانزیستور هر ۵ LED روشن شد، مأموریت خودکار تکمیل می‌شود.'
+    ]},
+  { id:'shift_register', icon:'🔢', title:'شیفت رجیستر (74HC595)', sub:'۸ خروجی با فقط ۳ پین — کلاک، لچ و چالش',
+    xp:60,
+    quote:'«شیفت رجیستر مثل یک صف است: با هر کلاک یک بیت تازه وارد صف می‌شود و بقیه یک قدم جلو می‌روند. وقتی صف آماده شد، با LATCH همه‌ی ۸ خروجی را یک‌جا روشن می‌کنی؛ یعنی ۸ LED با فقط ۳ پین آردوینو.»',
+    desc:'آردوینو Uno پین‌های محدودی دارد، ولی تو ۸ تا LED می‌خواهی. تراشه‌ی 74HC595 با فقط سه سیم هشت خروجی (Q0 تا Q7) به تو می‌دهد: DATA (بیتی که می‌فرستی: ۰ یا ۱)، CLOCK (هر پالسش بیت‌ها را یک قدم جلو می‌برد) و LATCH (محتوای آماده را یک‌جا روی خروجی‌ها می‌گذارد).\n\nداخل تراشه دو ردیف هشت‌خانه‌ای هست: ردیف شیفت که بیت‌ها با CLOCK در آن قدم می‌زنند، و ردیف لچ که LEDها به آن وصل‌اند و فقط با LATCH از ردیف شیفت کپی می‌گیرد. به همین خاطر LEDها وسط جابه‌جایی بیت‌ها چشمک نمی‌زنند.\n\nاین مأموریت سه مرحله دارد: اول CLOCK و حرکت بیت‌ها، بعد LATCH، و آخر یک چالش: ساختن الگوی هدف.',
+    steps:[
+      'مرحله ۱ — CLOCK: DATA را ۱ کن و یک بار CLOCK بزن. بعد DATA را ۰ بگذار و CLOCK بزن تا همان ۱ قدم‌به‌قدم به Q7 برسد.',
+      'مرحله ۲ — LATCH: چند بیتِ ۱ داخل رجیستر بفرست و ببین LEDها هنوز خاموش‌اند؛ بعد LATCH بزن تا یک‌جا روشن شوند.',
+      'مرحله ۳ — چالش: ۸ بیت بفرست تا LEDها مثل نقطه‌های «هدف» شوند. اولین بیتی که می‌فرستی به Q7 می‌رسد، پس الگو را از Q7 شروع کن.',
+      'نمودار زمانی پایین شکل را نگاه کن: DATA درست در لحظه‌ی بالا رفتن CLOCK خوانده می‌شود (نقطه‌ی زرد).',
+      'بعد از موفقیت، کد آردوینو معادل را می‌بینی؛ shiftOut همین ۸ کلاک را برایت انجام می‌دهد.'
     ]}
 ];
 
@@ -323,7 +334,7 @@ function mountTransistorSim(container, { onSuccess, alreadyDone } = {}){
   /* برد Arduino Uno R3 از بالا. مختصات داخلی بر حسب mil است (برد ۲٫۷″×۲٫۱″، جهت استاندارد: USB سمت چپ)؛
      کل برد ۱۸۰° چرخیده تا سوکت‌های دیجیتال (D0–D13) رو به بردبورد باشد. S = پیکسل به ازای هر mil. */
   const S = 0.045, UL = 180, UT = -53;
-  const UNO_FILL = '#0b7f8a', UNO_LINE = '#075760', UNO_HOT = '#8a2e22', UNO_HOT_LINE = '#ff5a4f';
+  const UNO_FILL = '#1a6fb5', UNO_LINE = '#0e4a7d', UNO_HOT = '#8a2e22', UNO_HOT_LINE = '#ff5a4f';
   const r2 = v => +v.toFixed(2);
   const uX = m => r2(UL + (2700 - m) * S), uY = m => r2(UT + (2100 - m) * S);
   const d2x = uX(2400), gndx = uX(1100), pinY = uY(100);
@@ -374,16 +385,17 @@ function mountTransistorSim(container, { onSuccess, alreadyDone } = {}){
         <g data-v="pin">${wire('m', '#d9812b', `M${d2x} ${pinY} C${d2x} 130 ${xc} 100 ${xc} 208`)}</g>
         ${wire('n', '#2b2b2b', `M${gndx} ${pinY} C${gndx} 58 ${X(21)} 56 ${X(21)} 77`)}
       </svg>
-      <div class="ir-tabs">
-        <button type="button" class="sim-btn sim-btn-run" data-m="pin">📌 مستقیم از پین</button>
-        <button type="button" class="sim-btn sim-btn-ghost" data-m="tr">🎛️ با ترانزیستور</button>
+      <div class="ir-tabs" style="max-width:360px;margin:8px auto 0;gap:6px">
+        <button type="button" class="sim-btn sim-btn-run" data-m="pin" style="flex:1;padding:7px 10px;font-size:13px;min-height:0;border-radius:10px">📌 مستقیم از پین</button>
+        <button type="button" class="sim-btn sim-btn-ghost" data-m="tr" style="flex:1;padding:7px 10px;font-size:13px;min-height:0;border-radius:10px">🎛️ با ترانزیستور</button>
       </div>
-      <div class="ll-row"><button type="button" class="sim-btn sim-btn-run" id="trSig">⚡ سیگنال پین: خاموش</button></div>
+      <div class="ll-row" style="max-width:360px;margin:6px auto 0"><button type="button" class="sim-btn sim-btn-ghost" id="trSig" style="width:100%;flex:1;padding:7px 10px;font-size:13px;min-height:0;border-radius:10px">⚡ سیگنال پین: خاموش</button></div>
       <div class="ls-read"><span>جریان لازم از پین: <b class="mono" id="trNeed"></b></span><span>حد پین: <b class="mono">${toFa(PIN_MA)} mA</b></span><span>جریان LEDها: <b class="mono" id="trLedI"></b></span></div>
       <div class="ir-meter"><div class="ir-meter-fill" id="trMeter"></div></div>
       <div class="sim-status" id="trStatus" data-state="idle"></div>
     </div>`;
   const q = s => container.querySelector(s);
+  const paintBtn = (el, act, bg, fg) => { el.style.backgroundImage = 'none'; el.style.background = act ? bg : '#1b2330'; el.style.color = act ? fg : '#9aa7b8'; el.style.border = '1px solid ' + (act ? bg : '#2c3748'); };
   const ledEls = Array.from(container.querySelectorAll('.trLed'));
   const st = q('#trStatus'), meter = q('#trMeter');
   let mode = 'pin', on = false, succeeded = !!alreadyDone, lastHint = '';
@@ -396,10 +408,12 @@ function mountTransistorSim(container, { onSuccess, alreadyDone } = {}){
     q('#trNeed').textContent = on ? (tr ? BASE_TXT : toFa(need)) + ' mA' : toFa(0) + ' mA';
     q('#trLedI').textContent = toFa(ledI) + ' mA';
     q('#trSig').textContent = on ? '⚡ سیگنال پین: روشن' : '⚡ سیگنال پین: خاموش';
+    paintBtn(q('#trSig'), on, '#f5b942', '#1b1b1b');
     container.querySelectorAll('[data-v]').forEach(g => { g.style.display = g.dataset.v === mode ? '' : 'none'; });
     container.querySelectorAll('[data-m]').forEach(b => {
       const act = b.dataset.m === mode;
       b.classList.toggle('sim-btn-run', act); b.classList.toggle('sim-btn-ghost', !act);
+      paintBtn(b, act, '#3b82f6', '#fff');
     });
     container.querySelectorAll('.trW').forEach(w => {
       const lit = on && (w.dataset.g === 'm' || (w.dataset.g === 's' && tr));
@@ -430,6 +444,286 @@ function mountTransistorSim(container, { onSuccess, alreadyDone } = {}){
   refresh();
   if(alreadyDone) say('success', '✅ قبلاً این مأموریت را انجام داده‌ای. دوست داری دوباره امتحان کنی؟ حالت و سیگنال را عوض کن.');
   return { stop(){} };
+}
+
+/* ================= ELECTRONICS: شیفت رجیستر (74HC595) =================
+   سه مرحله‌ی تعاملی روی یک SVG:
+   ۱) CLOCK: بیت‌ها با هر پالس یک خانه جلو می‌روند (انیمیشن + نمودار زمانی)
+   ۲) LATCH: ردیف شیفت جدا از ردیف خروجی (لچ) است؛ LEDها فقط با LATCH عوض می‌شوند
+   ۳) چالش: ساختن الگوی هدف (با راهنما، تشخیص خطای رایج، و کد shiftOut معادل) */
+function mountShiftRegisterSim(container, { onSuccess, alreadyDone } = {}){
+  const N = 8, SH_Y = 62, LA_Y = 106;
+  const cx = i => 38 + 35 * i;
+  const C = { on:'#f5b942', off:'#0f1724', line:'#3b4a60', dim:'#667', clk:'#3b82f6', latch:'#8b5cf6', ok:'#57d8a3', bad:'#ff6b5a' };
+  const fa = n => (typeof toFa === 'function' ? toFa(n) : String(n));
+  const sum = a => a.reduce((s, v) => s + v, 0);
+  const same = (a, b) => a.every((v, i) => v === b[i]);
+  const knight = t => { try { if(typeof showKnightLine === 'function') showKnightLine(t, 'happy', 'knight'); } catch(e){} };
+  const reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const DUR_CLK = reduce ? 0 : 330, DUR_LATCH = reduce ? 0 : 420;
+  let TARGET = [1, 0, 1, 1, 0, 0, 1, 0];
+
+  const STAGES = [
+    { tab:'۱ · CLOCK',
+      goal:'🚂 <b>مرحله ۱ — CLOCK (قطار بیت‌ها):</b> تراشه هشت خانه دارد. با هر پالس <b>CLOCK</b>، بیتِ روی سیم <b>DATA</b> از چپ (Q0) وارد می‌شود و بقیه یک خانه به راست می‌روند. <b>هدف:</b> فقط یک بیتِ ۱ بفرست و آن‌قدر CLOCK بزن تا به آخرین خانه (Q7) برسد. ردیف پایین (لچ) فعلاً کاری نمی‌کند.',
+      start:'DATA را ۱ کن و یک بار CLOCK بزن؛ بعد DATA را ۰ بگذار و CLOCK را ادامه بده.',
+      lesson:'💡 <b>یاد گرفتی:</b> بیت‌ها فقط با پالس CLOCK حرکت می‌کنند و DATA درست در لحظه‌ی بالا رفتن CLOCK خوانده می‌شود (نقطه‌ی زرد در نمودار زمانی). ۸ پالس = ۸ بیت؛ اولین بیت به Q7 می‌رسد و پالس نهم آن را از انتها بیرون می‌اندازد (در مدار واقعی به تراشه‌ی بعدی می‌رود، یعنی می‌شود چند تراشه را زنجیر کرد).' },
+    { tab:'۲ · LATCH',
+      goal:'📌 <b>مرحله ۲ — LATCH (ویترین):</b> داخل تراشه دو ردیف هست. ردیف بالا (شیفت) با هر CLOCK عوض می‌شود، ولی LEDها به ردیف پایین (لچ) وصل‌اند که فقط با پالس <b>LATCH</b> از ردیف بالا کپی می‌گیرد. <b>هدف:</b> چند بیتِ ۱ داخل رجیستر بفرست، ببین LEDها تکان نمی‌خورند، بعد LATCH بزن.',
+      start:'چند بار با DATA = ۱ و CLOCK بیت بفرست. به LEDها نگاه کن: هنوز خاموش‌اند. بعد LATCH بزن.',
+      lesson:'💡 <b>یاد گرفتی:</b> بدون لچ، LEDها وسط شیفت‌کردن هر بار یک الگوی نیمه‌کاره نشان می‌دادند و چشمک می‌زدند. لچ می‌گذارد اول هر ۸ بیت را کامل جمع کنی و بعد یک‌جا نشانشان بدهی. امتحان کن: چند CLOCK دیگر بزن؛ ردیف بالا عوض می‌شود ولی LEDها نه، تا LATCH بعدی.' },
+    { tab:'۳ · چالش',
+      goal:'🎯 <b>مرحله ۳ — چالش:</b> LEDها را مثل نقطه‌های «هدف» (زیر LEDها) روشن کن. فکر کن: اولین بیتی که می‌فرستی در آخر کار به کدام خانه می‌رسد؟ اگر گیر کردی دکمه‌ی «راهنما» ترتیب ارسال را نشان می‌دهد.',
+      start:'۸ بیت بفرست (DATA + CLOCK)، بعد LATCH بزن. نقطه‌های هدف سبز می‌شوند اگر درست باشند.',
+      lesson:'' }
+  ];
+  const KNIGHT = ['آفرین! با هر کلاک بیت‌ها یک قدم جلو می‌روند.', 'درسته! لچ یعنی «همه را یک‌جا نشان بده».', 'استادِ شیفت رجیستر شدی! ۸ خروجی فقط با ۳ پین!'];
+
+  const tickCells = Array.from({ length: N }, (_, i) => `
+    <line data-w="clk" x1="${cx(i)}" y1="38" x2="${cx(i)}" y2="47" stroke="${C.dim}" stroke-width="1.8"/>
+    <rect x="${cx(i) - 13}" y="${SH_Y}" width="26" height="24" rx="4" fill="${C.off}" stroke="${C.line}"/>
+    ${i < N - 1 ? `<text x="${cx(i) + 17.5}" y="78" font-size="11" fill="#5a6b82" text-anchor="middle">›</text>` : ''}`).join('');
+  const ghostsSvg = Array.from({ length: N + 1 }, () => `<g class="srG" opacity="0"><rect x="-11" y="-10" width="22" height="20" rx="3"/><text y="5" font-size="13" font-weight="bold" text-anchor="middle">0</text></g>`).join('');
+  const lowerSvg = Array.from({ length: N }, (_, i) => `
+    <line x1="${cx(i)}" y1="86" x2="${cx(i)}" y2="106" stroke="${C.line}" stroke-width="1.2" stroke-dasharray="2 2"/>
+    <rect class="srLCell" x="${cx(i) - 13}" y="${LA_Y}" width="26" height="24" rx="4" stroke="${C.line}"/>
+    <text class="srLBit" x="${cx(i)}" y="${LA_Y + 17}" font-size="13" font-weight="bold" text-anchor="middle">0</text>
+    <line x1="${cx(i)}" y1="130" x2="${cx(i)}" y2="174" stroke="${C.line}" stroke-width="1.5"/>
+    <text x="${cx(i) + 4}" y="160" font-size="7" fill="#7d8da3">Q${i}</text>
+    <circle class="srGlow" cx="${cx(i)}" cy="184" r="15" fill="#ffd25a" opacity="0"/>
+    <circle class="srLed" cx="${cx(i)}" cy="184" r="8" stroke-width="1.5"/>
+    <circle class="srDrop" cx="${cx(i)}" cy="86" r="3.5" fill="${C.latch}" opacity="0"/>`).join('');
+  const targetSvg = Array.from({ length: N }, (_, i) => `<circle class="srTg" cx="${cx(i)}" cy="210" r="5.5" stroke-width="1.8"/>`).join('');
+
+  container.innerHTML = `
+    <div class="sim-wrap">
+      <div id="srTabs" style="display:flex;gap:6px;max-width:360px;margin:0 auto 8px"></div>
+      <div class="sim-hw-note" id="srGoal"></div>
+      <svg class="ls-svg" viewBox="0 0 320 296" style="display:block;width:100%;max-width:360px;height:auto;margin:0 auto" direction="ltr" role="img" aria-label="شیفت رجیستر ۷۴HC595: ردیف شیفت، ردیف لچ، هشت LED و نمودار زمانی">
+        <rect x="4" y="2" width="312" height="20" rx="5" fill="#243044" stroke="${C.line}"/>
+        <text x="84" y="15" font-size="8" fill="#9aa7b8" text-anchor="middle">آردوینو</text>
+        <text x="12" y="15" font-size="8" fill="${C.on}">DATA</text>
+        <text x="160" y="15" font-size="8" fill="${C.clk}" text-anchor="middle">CLOCK</text>
+        <text x="306" y="15" font-size="8" fill="${C.latch}" text-anchor="end">LATCH</text>
+        <rect x="14" y="30" width="290" height="118" rx="8" fill="#1b2330" stroke="${C.line}"/>
+        <text x="298" y="143" font-size="8" fill="#5a6b82" text-anchor="end">74HC595</text>
+        <g fill="none" stroke-linecap="round">
+          <path data-w="data" d="M8 22 V74 H25" stroke="${C.dim}"/>
+          <path data-w="clk" d="M160 22 V38" stroke="${C.dim}"/>
+          <path data-w="clk" d="M${cx(0)} 38 H${cx(N - 1)}" stroke="${C.dim}"/>
+          <path data-w="latch" d="M310 22 V96 H298" stroke="${C.dim}"/>
+        </g>
+        <text x="22" y="58" font-size="7.5" fill="#9aa7b8">ردیف شیفت (بیت‌ها با CLOCK قدم می‌زنند)</text>
+        ${tickCells}
+        <g id="srLower">
+          ${lowerSvg}
+          <rect id="srGate" x="20" y="93" width="278" height="6" rx="3" fill="#2a3547"/>
+          <text x="22" y="141" font-size="7.5" fill="#9aa7b8">ردیف لچ (فقط با LATCH از ردیف شیفت کپی می‌گیرد)</text>
+        </g>
+        <g id="srTarget"><text x="4" y="213" font-size="8" fill="#9aa7b8">هدف</text>${targetSvg}</g>
+        ${ghostsSvg}
+        <g id="srTime"><text x="6" y="232" font-size="7.5" fill="#9aa7b8">نمودار زمانی (۸ رویداد آخر) — ● یعنی DATA در این لحظه خوانده شد</text>
+          <text x="6" y="251" font-size="7" fill="${C.on}">DATA</text><text x="6" y="269" font-size="7" fill="${C.clk}">CLOCK</text><text x="6" y="287" font-size="7" fill="${C.latch}">LATCH</text>
+          <g id="srTimeDyn"></g></g>
+      </svg>
+      <div style="display:flex;gap:6px;max-width:360px;margin:8px auto 0">
+        <button type="button" class="sim-btn" id="srData"></button>
+        <button type="button" class="sim-btn" id="srClk">⏩ CLOCK</button>
+        <button type="button" class="sim-btn" id="srLatch">📌 LATCH</button>
+      </div>
+      <div style="display:flex;gap:6px;max-width:360px;margin:6px auto 0">
+        <button type="button" class="sim-btn sim-btn-ghost" id="srReset">↺ پاک‌کردن</button>
+        <button type="button" class="sim-btn sim-btn-ghost" id="srHint">💡 راهنما</button>
+        <button type="button" class="sim-btn sim-btn-ghost" id="srNew">🎲 الگوی تازه</button>
+      </div>
+      <div id="srSeq" style="display:none;max-width:360px;margin:8px auto 0;font-size:12px"></div>
+      <div class="sim-status" id="srStatus" data-state="idle" aria-live="polite"></div>
+      <div class="sim-hw-note" id="srLesson" style="display:none"></div>
+      <button type="button" class="complete-btn" id="srNext" style="display:none">مرحله‌ی بعد ←</button>
+      <pre id="srCode" style="display:none;direction:ltr;text-align:left;font-size:11px;background:#0f1724;color:#cfe3ff;padding:8px 10px;border-radius:8px;overflow:auto;max-width:360px;margin:8px auto 0"></pre>
+    </div>`;
+
+  const q = s => container.querySelector(s), qa = s => Array.from(container.querySelectorAll(s));
+  const st = q('#srStatus'), dataBtn = q('#srData'), clkBtn = q('#srClk'), latchBtn = q('#srLatch');
+  const ghosts = qa('.srG'), wires = qa('[data-w]'), gate = q('#srGate');
+  const BTN = 'flex:1;padding:8px 6px;font-size:13px;min-height:0;border-radius:10px;border:0;color:#fff;font-weight:bold';
+  dataBtn.style.cssText = BTN; clkBtn.style.cssText = BTN + ';background:' + C.clk; latchBtn.style.cssText = BTN + ';background:' + C.latch;
+  ['srReset', 'srHint', 'srNew'].forEach(id => { q('#' + id).style.cssText = 'flex:1;padding:6px;font-size:12px;min-height:0;border-radius:10px'; });
+  const say = (state, text) => { st.dataset.state = state; st.textContent = text; };
+
+  let reg = Array(N).fill(0), out = Array(N).fill(0), prevReg = reg.slice(), data = 0;
+  let stage = alreadyDone ? 2 : 0, unlocked = alreadyDone ? 2 : 0;
+  const done = [!!alreadyDone, !!alreadyDone, !!alreadyDone];
+  let succeeded = !!alreadyDone, events = [], sent = 0, hintOn = false, checked = false;
+  let clkAnim = null, latchAnim = null, raf = 0;
+
+  /* ---------- انیمیشن ---------- */
+  function setGhost(g, x, v, op){
+    g.setAttribute('transform', `translate(${x.toFixed(1)} 74)`); g.setAttribute('opacity', op.toFixed(2));
+    const r = g.firstElementChild, t = g.lastElementChild;
+    r.setAttribute('fill', v ? C.on : '#16202e'); r.setAttribute('stroke', v ? '#ffe39a' : '#2d3b50');
+    t.textContent = v; t.setAttribute('fill', v ? '#1b1b1b' : '#6f8097');
+  }
+  const ease = p => p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+  function renderBits(){
+    if(clkAnim){
+      const e = ease(Math.min(1, (performance.now() - clkAnim.t0) / Math.max(1, DUR_CLK)));
+      for(let i = 0; i < N; i++) setGhost(ghosts[i], cx(i) + 35 * e, prevReg[i], i === N - 1 ? 1 - e : 1);
+      setGhost(ghosts[N], cx(0) - 35 + 35 * e, reg[0], e);
+    } else {
+      for(let i = 0; i < N; i++) setGhost(ghosts[i], cx(i), reg[i], 1);
+      ghosts[N].setAttribute('opacity', '0');
+    }
+  }
+  function renderLatch(){
+    const drops = qa('.srDrop');
+    if(latchAnim){
+      const e = ease(Math.min(1, (performance.now() - latchAnim.t0) / Math.max(1, DUR_LATCH)));
+      drops.forEach((d, i) => { d.setAttribute('cy', (86 + 20 * e).toFixed(1)); d.setAttribute('opacity', latchAnim.snap[i] ? (1 - e * .4).toFixed(2) : 0); });
+    } else drops.forEach(d => d.setAttribute('opacity', 0));
+  }
+  function paintWires(){
+    wires.forEach(w => {
+      const k = w.dataset.w, hot = (k === 'clk' && clkAnim) || (k === 'latch' && latchAnim);
+      w.setAttribute('stroke', k === 'clk' ? (clkAnim ? C.clk : C.dim) : k === 'latch' ? (latchAnim ? C.latch : C.dim) : (data ? C.on : C.dim));
+      w.setAttribute('stroke-width', hot ? 2.6 : 1.8);
+    });
+    gate.setAttribute('fill', latchAnim ? C.latch : '#2a3547');
+  }
+  function tick(){
+    raf = 0;
+    const now = performance.now();
+    if(clkAnim && now - clkAnim.t0 >= DUR_CLK) clkAnim = null;
+    if(latchAnim && now - latchAnim.t0 >= DUR_LATCH){ out = latchAnim.snap; latchAnim = null; refresh(); return; }
+    renderBits(); renderLatch(); paintWires();
+    if(clkAnim || latchAnim) raf = requestAnimationFrame(tick);
+  }
+  const kick = () => { if(!raf) raf = requestAnimationFrame(tick); };
+  function flush(){ clkAnim = null; if(latchAnim){ out = latchAnim.snap; latchAnim = null; } }
+
+  /* ---------- نمودار زمانی ---------- */
+  function renderTime(){
+    const X0 = 52, W = 32, yD = 248, yC = 266, yL = 284, A = 5, n = events.length;
+    const yv = (c, lv) => lv ? c - A : c + A;
+    let dp = [], cp = [], lp = [], marks = '';
+    for(let k = 0; k < 8; k++){
+      const x0 = X0 + W * k, e = events[k];
+      const lv = e ? e.d : data;
+      dp.push(`${x0} ${yv(yD, lv)}`, `${x0 + W} ${yv(yD, lv)}`);
+      const pulse = (arr, c, on) => on
+        ? arr.push(`${x0} ${c + A}`, `${x0 + 8} ${c + A}`, `${x0 + 8} ${c - A}`, `${x0 + 22} ${c - A}`, `${x0 + 22} ${c + A}`, `${x0 + W} ${c + A}`)
+        : arr.push(`${x0} ${c + A}`, `${x0 + W} ${c + A}`);
+      pulse(cp, yC, e && e.t === 'c'); pulse(lp, yL, e && e.t === 'l');
+      marks += `<line x1="${x0}" y1="238" x2="${x0}" y2="292" stroke="#fff" stroke-opacity=".06"/>`;
+      if(e && e.t === 'c') marks += `<line x1="${x0 + 8}" y1="${yC}" x2="${x0 + 8}" y2="${yv(yD, e.d)}" stroke="#8fa0b5" stroke-dasharray="2 2" opacity=".7"/><circle cx="${x0 + 8}" cy="${yv(yD, e.d)}" r="2.6" fill="${C.on}"/>`;
+    }
+    const hl = n ? `<rect x="${X0 + W * (n - 1)}" y="238" width="${W}" height="54" fill="#fff" fill-opacity=".05"/>` : '';
+    const path = (a, col) => `<path d="M${a.join(' L')}" fill="none" stroke="${col}" stroke-width="1.8" stroke-linejoin="round"/>`;
+    q('#srTimeDyn').innerHTML = hl + marks + path(dp, C.on) + path(cp, C.clk) + path(lp, C.latch);
+  }
+
+  /* ---------- رندر کلی ---------- */
+  function refresh(){
+    const target = stage === 2;
+    qa('.srLCell').forEach((c, i) => c.setAttribute('fill', out[i] ? C.on : C.off));
+    qa('.srLBit').forEach((t, i) => { t.textContent = out[i]; t.setAttribute('fill', out[i] ? '#1b1b1b' : '#8fa0b5'); });
+    qa('.srLed').forEach((c, i) => { c.setAttribute('fill', out[i] ? '#ffd25a' : '#3a2a2a'); c.setAttribute('stroke', out[i] ? '#fff2b8' : '#6b4a4a'); });
+    qa('.srGlow').forEach((c, i) => c.setAttribute('opacity', out[i] ? .35 : 0));
+    qa('.srTg').forEach((c, i) => {
+      c.setAttribute('fill', TARGET[i] ? '#ffd25a' : '#2b3646');
+      c.setAttribute('stroke', checked ? (out[i] === TARGET[i] ? C.ok : C.bad) : C.line);
+    });
+    q('#srTarget').style.display = target ? '' : 'none';
+    q('#srLower').setAttribute('opacity', stage === 0 ? .25 : 1);
+    latchBtn.style.display = stage === 0 ? 'none' : '';
+    dataBtn.textContent = 'DATA = ' + fa(data);
+    dataBtn.style.background = data ? C.on : '#2a3547'; dataBtn.style.color = data ? '#1b1b1b' : '#fff';
+    q('#srGoal').innerHTML = STAGES[stage].goal;
+    q('#srHint').style.display = target ? '' : 'none';
+    q('#srNew').style.display = target && done[2] ? '' : 'none';
+    q('#srTabs').innerHTML = STAGES.map((s, i) => `<button type="button" class="sim-btn" data-tab="${i}" ${i > unlocked ? 'disabled' : ''} style="flex:1;padding:6px 4px;font-size:12px;min-height:0;border-radius:10px;border:1px solid ${i === stage ? '#6aa8ff' : C.line};background:${i === stage ? '#24406b' : '#1b2330'};color:#cfd7e3;opacity:${i > unlocked ? .5 : 1}">${done[i] ? '✓ ' : i > unlocked ? '🔒 ' : ''}${s.tab}</button>`).join('');
+    const seqBox = q('#srSeq');
+    if(target && hintOn){
+      const seq = TARGET.slice().reverse();
+      seqBox.style.display = '';
+      seqBox.innerHTML = '<div style="margin-bottom:4px;color:#9aa7b8">ترتیب ارسال (اول Q7، آخر Q0):</div><div style="display:flex;gap:4px;direction:ltr">' + seq.map((b, k) => `<span style="flex:1;text-align:center;padding:4px 0;border-radius:6px;font-weight:bold;border:1px solid ${k === sent ? '#6aa8ff' : C.line};background:${k === sent ? '#24406b' : '#16202e'};color:${k < sent ? '#5a6b82' : '#fff'}">${fa(b)}</span>`).join('') + '</div>';
+    } else seqBox.style.display = 'none';
+    const les = q('#srLesson'), shown = done[stage] && STAGES[stage].lesson;
+    les.style.display = shown ? '' : 'none'; if(shown) les.innerHTML = STAGES[stage].lesson;
+    q('#srNext').style.display = done[stage] && stage < 2 ? '' : 'none';
+    const code = q('#srCode');
+    code.style.display = target && done[2] ? '' : 'none';
+    code.textContent = `digitalWrite(latchPin, LOW);\nshiftOut(dataPin, clockPin, MSBFIRST, 0b${TARGET.slice().reverse().join('')});\n// MSBFIRST: the first bit sent ends up in Q7\ndigitalWrite(latchPin, HIGH);`;
+    renderTime(); renderBits(); renderLatch(); paintWires();
+  }
+
+  function resetSim(){
+    flush(); reg = Array(N).fill(0); out = Array(N).fill(0); prevReg = reg.slice();
+    events = []; sent = 0; checked = false; refresh();
+  }
+  function goStage(i){
+    if(i > unlocked) return;
+    stage = i; hintOn = false; resetSim(); say('idle', STAGES[i].start);
+  }
+  function completeStage(i){
+    const first = !done[i];
+    done[i] = true; if(i < 2) unlocked = Math.max(unlocked, i + 1);
+    if(first) knight(KNIGHT[i]);
+    if(i === 2 && !succeeded){ succeeded = true; onSuccess && onSuccess(); }
+    refresh();
+  }
+
+  /* ---------- رویدادها ---------- */
+  dataBtn.addEventListener('click', () => { data = data ? 0 : 1; refresh(); });
+  clkBtn.addEventListener('click', () => {
+    flush();
+    prevReg = reg.slice();
+    const fell = reg[N - 1];
+    reg = [data, ...reg.slice(0, N - 1)]; sent++;
+    events.push({ t:'c', d:data }); if(events.length > 8) events.shift();
+    clkAnim = { t0: performance.now() }; kick(); refresh();
+    let msg = `بیت ${fa(data)} وارد Q0 شد و بقیه یک خانه به راست رفتند.`;
+    if(fell) msg += ' بیتِ ۱ که در Q7 بود از انتها بیرون افتاد (در مدار واقعی به تراشه‌ی بعدی می‌رود).';
+    if(stage === 0){
+      if(reg.every((v, i) => v === (i === N - 1 ? 1 : 0))){ say('success', '✅ آن ۱ قدم‌به‌قدم به Q7 رسید! هر CLOCK فقط یک قدم است.'); completeStage(0); return; }
+      if(!sum(reg) && !data) msg += ' همه‌ی خانه‌ها ۰ است؛ DATA را ۱ کن تا یک بیتِ ۱ بفرستی.';
+      else if(sum(reg) > 1) msg += ' الان چند بیتِ ۱ داخل رجیستر است؛ «پاک‌کردن» را بزن و فقط یک ۱ بفرست.';
+    } else if(!same(reg, out)) msg += ' ولی LEDها هنوز عوض نشده‌اند — برای نمایش باید LATCH بزنی.';
+    say('idle', msg);
+  });
+  latchBtn.addEventListener('click', () => {
+    flush();
+    const snap = reg.slice(), before = sent;
+    latchAnim = { t0: performance.now(), snap }; sent = 0;
+    events.push({ t:'l', d:data }); if(events.length > 8) events.shift();
+    kick(); refresh();
+    if(stage === 1){
+      if(!sum(snap)){ say('error', 'ردیف شیفت خالی بود (همه ۰)، پس LEDها همان خاموش ماندند. اول چند بیتِ ۱ بفرست.'); return; }
+      say('success', '✅ با LATCH همه‌ی بیت‌ها یک‌جا از ردیف شیفت به LEDها کپی شدند!'); completeStage(1); return;
+    }
+    checked = true;
+    if(same(snap, TARGET)){ say('success', '✅ LEDها دقیقاً مثل هدف شدند! ۸ بیت را فقط با ۳ سیم فرستادی. کد زیر همین کار را در یک خط انجام می‌دهد.'); completeStage(2); return; }
+    let why;
+    if(same(snap.slice().reverse(), TARGET)) why = 'الگو دقیقاً برعکس شده! اولین بیتی که می‌فرستی به Q7 می‌رسد نه Q0؛ پس باید از Q7 شروع کنی.';
+    else if(before !== N) why = before < N ? `از آخرین LATCH فقط ${fa(before)} بار CLOCK زده‌ای؛ برای ۸ خانه ۸ بیت لازم است.` : `${fa(before)} بار CLOCK زده‌ای؛ فقط ۸ بیت آخر می‌مانند و قدیمی‌ترها از انتها بیرون می‌افتند.`;
+    else why = 'خانه‌های ' + snap.map((v, i) => v !== TARGET[i] ? 'Q' + i : '').filter(Boolean).join('، ') + ' با هدف فرق دارند.';
+    say('error', '⚠️ ' + why + ' «پاک‌کردن» را بزن و دوباره امتحان کن (یا «راهنما»).');
+    refresh();
+  });
+  q('#srReset').addEventListener('click', () => { resetSim(); say('idle', 'رجیستر و LEDها پاک شدند. از اول شروع کن.'); });
+  q('#srHint').addEventListener('click', () => { hintOn = !hintOn; refresh(); });
+  q('#srNew').addEventListener('click', () => {
+    let t;
+    do { t = Array.from({ length: N }, () => Math.random() < .5 ? 1 : 0); }
+    while(sum(t) < 2 || sum(t) > 6 || same(t, TARGET) || same(t.slice().reverse(), t));
+    TARGET = t; resetSim(); say('idle', 'هدف تازه! ۸ بیت بفرست و LATCH بزن.');
+  });
+  q('#srNext').addEventListener('click', () => goStage(stage + 1));
+  q('#srTabs').addEventListener('click', e => { const b = e.target.closest ? e.target.closest('button[data-tab]') : null; if(b && !b.disabled) goStage(Number(b.dataset.tab)); });
+
+  refresh();
+  say(alreadyDone ? 'success' : 'idle', alreadyDone ? '✅ قبلاً این مأموریت را انجام داده‌ای. دوست داری با «الگوی تازه» یا مراحل قبلی دوباره تمرین کنی؟' : STAGES[0].start);
+  return { stop(){ if(raf) cancelAnimationFrame(raf); raf = 0; } };
 }
 
 function mountVoltCurrentSim(container, { onSuccess, alreadyDone } = {}){
