@@ -350,7 +350,7 @@ function mountTransistorSim(container, { onSuccess, alreadyDone } = {}){
   container.innerHTML = `
     <div class="sim-wrap">
       <div class="sim-hw-note">هدف: روی بردبورد ۵ تا LED داریم که روی هم <b>۱۰۰ میلی‌آمپر</b> می‌کشند (هرکدام ۲۰). اول جریانشان را مستقیم از پین بگیر، بعد با ترانزیستور BC547 امتحان کن. پین فقط حدود ۲۰ میلی‌آمپر می‌دهد.</div>
-      <svg class="ls-svg" viewBox="0 -58 316 340" direction="ltr" role="img" aria-label="آردوینو اونو و بردبورد با پنج LED، مقاومت و ترانزیستور BC547">
+      <svg class="ls-svg" viewBox="0 -58 316 340" style="display:block;width:100%;max-width:360px;height:auto;margin:0 auto" direction="ltr" role="img" aria-label="آردوینو اونو و بردبورد با پنج LED، مقاومت و ترانزیستور BC547">
         <defs>${ledRealDefs('tr')}</defs>
         <g transform="translate(0 50)">
         <rect x="4" y="4" width="308" height="210" rx="8" fill="#e6e0d1" stroke="#b8b09c"/>
