@@ -333,28 +333,16 @@ function mountTransistorSim(container, { onSuccess, alreadyDone } = {}){
   const logo = (cx, cy) => `<g fill="none" stroke="#f4fbfb" stroke-linecap="round"><circle cx="${cx - 105}" cy="${cy}" r="92" stroke-width="30"/><circle cx="${cx + 105}" cy="${cy}" r="92" stroke-width="30"/><path d="M${cx - 150} ${cy}h90M${cx + 60} ${cy}h90M${cx + 105} ${cy - 45}v90" stroke-width="22"/></g>`;
   const uno = `<g transform="translate(${r2(UL + 2700 * S)} ${r2(UT + 2100 * S)}) rotate(180) scale(${S})">
           <rect id="trPin" x="0" y="0" width="2700" height="2100" rx="70" fill="${UNO_FILL}" stroke="${UNO_LINE}" stroke-width="30"/>
-          ${[[550, 100], [600, 2000], [2600, 300], [2600, 1400]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="88" fill="#c9a640"/><circle cx="${x}" cy="${y}" r="55" fill="#0a1418"/>`).join('')}
-          <rect x="2440" y="750" width="200" height="300" rx="14" fill="#171a1f"/>
-          <g fill="#d4af37">${[2490, 2590].flatMap(x => [800, 900, 1000].map(y => `<rect x="${x - 28}" y="${y - 28}" width="56" height="56"/>`)).join('')}</g>
-          <rect x="630" y="780" width="340" height="340" fill="none" stroke="#bfc6cd" stroke-width="42" stroke-dasharray="26 22"/>
-          <rect x="650" y="800" width="300" height="300" rx="14" fill="#15171b"/><circle cx="700" cy="850" r="24" fill="#7d858e"/>
-          <rect x="700" y="1290" width="260" height="150" rx="75" fill="#d3d9df" stroke="#8b949e" stroke-width="20"/>
-          ${[820, 1100].map(x => `<circle cx="${x}" cy="1760" r="120" fill="#cfd5db" stroke="#8b949e" stroke-width="20"/><circle cx="${x}" cy="1760" r="62" fill="#aeb6bf"/>`).join('')}
           <g fill="#b9c0c8">${Array.from({ length: 14 }, (_, k) => `<rect x="${1069 + 93 * k}" y="1160" width="42" height="80"/><rect x="${1069 + 93 * k}" y="1540" width="42" height="80"/>`).join('')}</g>
-          <rect x="1050" y="1230" width="1350" height="320" rx="24" fill="#16181d" stroke="#000" stroke-width="16"/>
+          <rect x="1050" y="1230" width="1350" height="320" rx="24" fill="#16181d"/>
           <path d="M1050 1335a55 55 0 0 1 0 110z" fill="#2c3037"/>
-          ${silk(1725, 1415, 'ATMEGA328P', 5.5, { fill: '#aab3bd' })}
-          ${[['#e9b949', 1000], ['#e9b949', 1110], ['#e9b949', 1220], ['#4ee08a', 1330]].map(([c, x]) => `<rect x="${x}" y="480" width="90" height="55" rx="8" fill="${c}"/>`).join('')}
           <rect x="640" y="235" width="220" height="220" rx="24" fill="#b7bec6" stroke="#6d757e" stroke-width="18"/>
-          <circle cx="750" cy="345" r="72" fill="#c93030" stroke="#7a1616" stroke-width="14"/>
+          <circle cx="750" cy="345" r="72" fill="#c93030"/>
           ${sock(1900, 8, 100)}${sock(800, 10, 100)}${sock(1000, 8, 2000)}${sock(1900, 6, 2000)}
           <rect x="-270" y="180" width="690" height="480" rx="30" fill="#c9d0d7" stroke="#8b949e" stroke-width="22"/>
-          <rect x="-270" y="260" width="140" height="320" rx="14" fill="#7d8791"/>
-          <rect x="-80" y="1300" width="640" height="440" rx="36" fill="#1b1d22" stroke="#000" stroke-width="18"/>
-          <rect x="-80" y="1400" width="190" height="240" rx="18" fill="#454b54"/>
+          <rect x="-80" y="1300" width="640" height="440" rx="36" fill="#1b1d22"/>
           ${logo(1700, 620)}
-          ${silk(1700, 850, 'ARDUINO', 5.8, { ls: 8 })}
-          ${silk(1700, 1090, 'UNO', 10.4)}
+          ${silk(1700, 1000, 'UNO', 11)}
           ${silk(2478, 300, 'D2', 6.5, { id: 'trPinT', anchor: 'start', fill: '#fff' })}
           ${silk(1100, 300, 'GND', 6.5, { fill: '#fff' })}
         </g>`;
