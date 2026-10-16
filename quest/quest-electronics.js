@@ -57,11 +57,23 @@ const QUESTS_ELECTRONICS = [
       'ببین هر ۵ LED با تمام نور روشن می‌شود، چون جریان اصلی از باتری می‌آید نه از پین؛ پین فقط چند میلی‌آمپر به Base می‌دهد.',
       'وقتی با ترانزیستور هر ۵ LED روشن شد، مأموریت خودکار تکمیل می‌شود.'
     ]},
+  { id:'voltage_regulator', icon:'🔌', title:'رگولاتور ولتاژ (۷۸۰۵)', sub:'از باتری ۹ ولتی ۵ ولتِ ثابت بگیر — و ببین گرما از کجا می‌آید',
+    xp:60,
+    quote:'«باتری ۹ ولتی را مستقیم به برد ۵ ولتی بزنی می‌سوزد. رگولاتور قطعه‌ای است که هر ولتاژی را (تا حدی) می‌گیرد و یک ولتاژ ثابت و تمیز تحویل می‌دهد؛ مثل شیرِ فشارشکن که هر فشاری از ورودی بیاید، خروجی را روی یک عدد نگه می‌دارد.»',
+    desc:'رگولاتور خطی ۷۸۰۵ سه پایه دارد: ورودی (IN)، زمین (GND) و خروجی (OUT). هر ولتاژی بین حدود ۷ تا ۳۵ ولت به ورودی بدهی، روی خروجی ۵ ولتِ ثابت می‌گیری. برای همین اغلب برد آردوینو و بسیاری از پروژه‌ها با باتری ۹ ولتی یا آداپتور ۱۲ ولتی روشن می‌شوند. برای ۳٫۳ ولتِ STM32 هم نمونه‌ی مشابه (مثل AMS1117-3.3) داریم.\n\nرگولاتور خطی ولتاژِ اضافه را «می‌سوزاند»، یعنی به گرما تبدیل می‌کند: توان تلف‌شده = (ولتاژ ورودی − ولتاژ خروجی) × جریان. هرچه اختلاف یا جریان بیشتر باشد، قطعه داغ‌تر می‌شود و اگر از حدی بگذرد، محافظ حرارتی خروجی را قطع می‌کند. دو خازن کوچک هم کنار آن می‌گذارند تا خروجی نویز نداشته باشد.',
+    steps:[
+      'اول ببین: باتری مستقیم به برد ۵ ولتی وصل است و برد سوخته. ولتاژ را کم و زیاد کن و ببین فقط یک بازه‌ی باریک امن است.',
+      'دکمه‌ی «با رگولاتور ۷۸۰۵» را بزن؛ حالا هر ورودی بین ۷ تا ۱۵ ولت، خروجی را روی ۵ ولتِ ثابت نگه می‌دارد.',
+      'ورودی را زیر ۷ ولت ببر: رگولاتور حدود ۲ ولت اختلاف لازم دارد (افت ولتاژ) و خروجی دیگر ۵ نیست.',
+      'ورودی و جریانِ مصرف را بالا ببر تا رگولاتور داغ شود و محافظ حرارتی خاموشش کند؛ توان تلف‌شده = (Vin − Vout) × I.',
+      'در آخر یک حالتِ سالم بساز: ورودی ۷ تا ۱۰ ولت، خروجی ۵ ولتِ ثابت و دمای کمتر از ۱۰۰ درجه؛ بعد مأموریت خودکار تکمیل می‌شود.'
+    ]},
   { id:'shift_register', icon:'🔢', title:'شیفت رجیستر (74HC595)', sub:'۸ خروجی با فقط ۳ پین — کلاک، لچ و چالش',
     xp:60,
     quote:'«شیفت رجیستر مثل یک صف است: با هر کلاک یک بیت تازه وارد صف می‌شود و بقیه یک قدم جلو می‌روند. وقتی صف آماده شد، با LATCH همه‌ی ۸ خروجی را یک‌جا روشن می‌کنی؛ یعنی ۸ LED با فقط ۳ پین آردوینو.»',
-    desc:'آردوینو Uno پین‌های محدودی دارد، ولی تو ۸ تا LED می‌خواهی. تراشه‌ی 74HC595 با فقط سه سیم هشت خروجی (Q0 تا Q7) به تو می‌دهد: DATA (بیتی که می‌فرستی: ۰ یا ۱)، CLOCK (هر پالسش بیت‌ها را یک قدم جلو می‌برد) و LATCH (محتوای آماده را یک‌جا روی خروجی‌ها می‌گذارد).\n\nداخل تراشه دو ردیف هشت‌خانه‌ای هست: ردیف شیفت که بیت‌ها با CLOCK در آن قدم می‌زنند، و ردیف لچ که LEDها به آن وصل‌اند و فقط با LATCH از ردیف شیفت کپی می‌گیرد. به همین خاطر LEDها وسط جابه‌جایی بیت‌ها چشمک نمی‌زنند.\n\nاین مأموریت سه مرحله دارد: اول CLOCK و حرکت بیت‌ها، بعد LATCH، و آخر یک چالش: ساختن الگوی هدف.',
+    desc:'۷۴HC595 یک «تبدیل‌کننده‌ی سریال به موازی» است: بیت‌ها را از یک سیم می‌گیرد و هم‌زمان روی ۸ خروجی می‌گذارد؛ برای نوار LED، نمایشگر هفت‌قسمتی، ماتریس LED و هر جا که پین کم آورده‌ای.\n\nآردوینو Uno پین‌های محدودی دارد، ولی تو ۸ تا LED می‌خواهی. تراشه‌ی 74HC595 با فقط سه سیم هشت خروجی (Q0 تا Q7) به تو می‌دهد: DATA (بیتی که می‌فرستی: ۰ یا ۱)، CLOCK (هر پالسش بیت‌ها را یک قدم جلو می‌برد) و LATCH (محتوای آماده را یک‌جا روی خروجی‌ها می‌گذارد).\n\nداخل تراشه دو ردیف هشت‌خانه‌ای هست: ردیف شیفت که بیت‌ها با CLOCK در آن قدم می‌زنند، و ردیف لچ که LEDها به آن وصل‌اند و فقط با LATCH از ردیف شیفت کپی می‌گیرد. به همین خاطر LEDها وسط جابه‌جایی بیت‌ها چشمک نمی‌زنند.\n\nاین مأموریت سه مرحله دارد: اول CLOCK و حرکت بیت‌ها، بعد LATCH، و آخر یک چالش: ساختن الگوی هدف.',
     steps:[
+      'اول توضیحِ «این قطعه چیکار می‌کند؟» و مدار را بخوان: سه سیم از آردوینو به پایه‌های ۱۴، ۱۱ و ۱۲ و هر خروجی با مقاومت ۲۲۰Ω به یک LED.',
       'مرحله ۱ — CLOCK: DATA را ۱ کن و یک بار CLOCK بزن. بعد DATA را ۰ بگذار و CLOCK بزن تا همان ۱ قدم‌به‌قدم به Q7 برسد.',
       'مرحله ۲ — LATCH: چند بیتِ ۱ داخل رجیستر بفرست و ببین LEDها هنوز خاموش‌اند؛ بعد LATCH بزن تا یک‌جا روشن شوند.',
       'مرحله ۳ — چالش: ۸ بیت بفرست تا LEDها مثل نقطه‌های «هدف» شوند. اولین بیتی که می‌فرستی به Q7 می‌رسد، پس الگو را از Q7 شروع کن.',
@@ -189,7 +201,7 @@ function mountLedDiodeSim(container, { onSuccess, alreadyDone } = {}){
   container.innerHTML = `
     <div class="sim-wrap">
       <div class="sim-hw-note">هدف: LED الان برعکس وصل شده و روشن نمی‌شود. جهتش را درست کن تا جریان از آند (+، پایه‌ی بلند) به کاتد (−، پایه‌ی کوتاه) برود.</div>
-      <svg class="ls-svg" viewBox="0 0 320 130" direction="ltr" role="img" aria-label="مدار باتری، مقاومت و LED">
+      <svg class="ls-svg" style="cursor:default" viewBox="0 0 320 130" direction="ltr" role="img" aria-label="مدار باتری، مقاومت و LED">
         <defs>${ledRealDefs('ld')}</defs>
         <g id="ldWires" fill="none" stroke="#667" stroke-width="3"><path d="M48 66 H80"/><path d="M130 66 H200"/><path d="M48 86 H200"/></g>
         <rect x="14" y="56" width="34" height="40" rx="5" fill="#2a2f3a" stroke="#667"/>
@@ -234,7 +246,7 @@ function mountCapacitorSim(container, { onSuccess, alreadyDone } = {}){
   container.innerHTML = `
     <div class="sim-wrap">
       <div class="sim-hw-note">هدف: خازن را تا ته شارژ کن، بعد به LED وصلش کن و ببین انرژیِ ذخیره‌شده LED را روشن می‌کند و کم‌کم تمام می‌شود.</div>
-      <svg class="ls-svg" viewBox="0 0 320 185" direction="ltr" role="img" aria-label="باتری، خازن و LED">
+      <svg class="ls-svg" style="cursor:default" viewBox="0 0 320 185" direction="ltr" role="img" aria-label="باتری، خازن و LED">
         <defs>${ledRealDefs('cp')}</defs>
         <rect x="14" y="52" width="34" height="56" rx="5" fill="#2a2f3a" stroke="#667"/>
         <text x="31" y="72" font-size="15" fill="#cfc8b6" text-anchor="middle">+</text><text x="31" y="100" font-size="15" fill="#cfc8b6" text-anchor="middle">−</text>
@@ -361,7 +373,7 @@ function mountTransistorSim(container, { onSuccess, alreadyDone } = {}){
   container.innerHTML = `
     <div class="sim-wrap">
       <div class="sim-hw-note">هدف: روی بردبورد ۵ تا LED داریم که روی هم <b>۱۰۰ میلی‌آمپر</b> می‌کشند (هرکدام ۲۰). اول جریانشان را مستقیم از پین بگیر، بعد با ترانزیستور BC547 امتحان کن. پین فقط حدود ۲۰ میلی‌آمپر می‌دهد.</div>
-      <svg class="ls-svg" viewBox="0 -58 316 340" style="display:block;width:100%;max-width:360px;height:auto;margin:0 auto" direction="ltr" role="img" aria-label="آردوینو اونو و بردبورد با پنج LED، مقاومت و ترانزیستور BC547">
+      <svg class="ls-svg" viewBox="0 -58 316 340" style="cursor:default;display:block;width:100%;max-width:360px;height:auto;margin:0 auto" direction="ltr" role="img" aria-label="آردوینو اونو و بردبورد با پنج LED، مقاومت و ترانزیستور BC547">
         <defs>${ledRealDefs('tr')}</defs>
         <g transform="translate(0 50)">
         <rect x="4" y="4" width="308" height="210" rx="8" fill="#e6e0d1" stroke="#b8b09c"/>
@@ -446,6 +458,157 @@ function mountTransistorSim(container, { onSuccess, alreadyDone } = {}){
   return { stop(){} };
 }
 
+/* ================= ELECTRONICS: رگولاتور ولتاژ (۷۸۰۵) =================
+   باتری با ورودی متغیر → یا مستقیم به برد ۵ولتی، یا از راه ۷۸۰۵.
+   مدل: Vout = ۵ اگر Vin ≥ ۷ وگرنه Vin−۲؛ توان = (Vin−Vout)×I؛ دما = ۲۵ + ۶۵×توان؛ از ۱۲۵° محافظ حرارتی قطع می‌کند. */
+function mountVoltageRegulatorSim(container, { onSuccess, alreadyDone } = {}){
+  const fa = n => (typeof toFa === 'function' ? toFa(n) : String(n));
+  const f = (n, d = 1) => fa(n.toFixed(d).replace('.', '٫'));
+  const knight = t => { try { if(typeof showKnightLine === 'function') showKnightLine(t, 'happy', 'knight'); } catch(e){} };
+  const VOUT = 5, DROP = 2, THETA = 65, T_AMB = 25, T_SHUT = 125, T_SAFE = 100;
+  const C = { ok:'#57d8a3', bad:'#ff6b5a', on:'#f5b942', line:'#667', red:'#c0392b' };
+  const cardCss = 'background:#141b27;border-radius:10px;padding:7px 4px;text-align:center';
+  const lblCss = 'font-size:11px;color:#9aa7b8';
+  const valCss = "font:700 15px 'JetBrains Mono',monospace;direction:ltr";
+
+  container.innerHTML = `
+    <div class="sim-wrap">
+      <div class="sim-hw-note"><b>🔌 این قطعه چیکار می‌کند؟</b><br>رگولاتور ولتاژ هر ولتاژی را (تا حدی) می‌گیرد و یک ولتاژ <b>ثابت</b> تحویل می‌دهد. برد آردوینو ۵ ولت می‌خواهد ولی باتری ۹ ولت است؛ بین این دو یک ۷۸۰۵ می‌گذاریم. <b>هدف:</b> اول ببین بدون رگولاتور چه می‌شود، بعد رگولاتور را وصل کن و حدّ و مرزهایش (افت ولتاژ و گرما) را پیدا کن.</div>
+      <svg class="ls-svg" style="cursor:default;display:block;width:100%;max-width:380px;height:auto;margin:0 auto" viewBox="0 20 340 170" direction="ltr" role="img" aria-label="باتری، رگولاتور ۷۸۰۵ با دو خازن، و برد آردوینو ۵ ولتی">
+        <path id="vrBypass" d="M80 80 V44 H238 V80 H250" fill="none" stroke="${C.red}" stroke-width="3" stroke-linecap="round"/>
+        <g fill="none" stroke="${C.line}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path id="vrIn" d="M44 80 H112"/>
+          <path id="vrOut" d="M200 80 H250"/>
+          <path d="M44 124 H56 V168 H292 V152"/>
+          <path d="M156 122 V168"/>
+          <path d="M80 80 V100 M80 106 V168"/>
+          <path d="M226 80 V100 M226 106 V168"/>
+        </g>
+        <g stroke="#cfc8b6" stroke-width="3"><path d="M70 100 H90 M70 106 H90 M216 100 H236 M216 106 H236"/></g>
+        <text x="86" y="146" font-size="8" fill="#9aa7b8">۰٫۳۳µF</text><text x="220" y="146" font-size="8" fill="#9aa7b8" text-anchor="end">۰٫۱µF</text>
+        <rect x="8" y="70" width="36" height="64" rx="5" fill="#2a2f3a" stroke="#667"/>
+        <text x="26" y="85" font-size="12" fill="#cfc8b6" text-anchor="middle">+</text><text x="26" y="130" font-size="12" fill="#cfc8b6" text-anchor="middle">−</text>
+        <text id="vrBat" x="26" y="106" font-size="11" font-weight="bold" fill="${C.on}" text-anchor="middle">9 V</text>
+        <text x="26" y="150" font-size="10" fill="#cfc8b6" text-anchor="middle">باتری</text>
+        <g id="vrReg">
+          <rect x="124" y="50" width="64" height="12" rx="2" fill="#b7bec6" stroke="#6d757e"/><circle cx="156" cy="56" r="3" fill="#10151f"/>
+          <rect x="112" y="62" width="88" height="60" rx="6" fill="#1b1d22" stroke="#3b4a60"/>
+          <rect id="vrHeat" x="112" y="62" width="88" height="60" rx="6" fill="#ff3b1f" opacity="0"/>
+          <text x="156" y="98" font-size="15" font-weight="bold" fill="#f4fbfb" text-anchor="middle">7805</text>
+          <text x="118" y="75" font-size="8" fill="#9aa7b8">IN</text><text x="194" y="75" font-size="8" fill="#9aa7b8" text-anchor="end">OUT</text><text x="156" y="116" font-size="8" fill="#9aa7b8" text-anchor="middle">GND</text>
+        </g>
+        <g id="vrSmoke" fill="#8a919c" opacity="0"><circle cx="276" cy="48" r="7"/><circle cx="292" cy="40" r="9"/><circle cx="308" cy="30" r="7"/></g>
+        <rect x="250" y="56" width="82" height="96" rx="6" fill="#1a6fb5" stroke="#0e4a7d"/>
+        <text x="291" y="72" font-size="9" font-weight="bold" fill="#f4fbfb" text-anchor="middle">Arduino ۵V</text>
+        <rect x="268" y="82" width="46" height="30" rx="3" fill="#16181d"/>
+        <circle id="vrLedG" cx="291" cy="97" r="14" fill="${C.ok}" opacity="0"/><circle id="vrLed" cx="291" cy="97" r="5" fill="#3a2a2a" stroke="#6b4a4a"/>
+        <text id="vrBoardT" x="291" y="136" font-size="9" font-weight="bold" fill="#f4fbfb" text-anchor="middle"></text>
+      </svg>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-width:380px;margin:8px auto 0">
+        <div style="${cardCss}"><div style="${lblCss}">ورودی</div><div id="vrVin" style="${valCss}"></div></div>
+        <div style="${cardCss}"><div style="${lblCss}">خروجی</div><div id="vrVout" style="${valCss}"></div></div>
+        <div style="${cardCss}"><div style="${lblCss}">گرما</div><div id="vrP" style="${valCss}"></div></div>
+        <div style="${cardCss}"><div style="${lblCss}">دما</div><div id="vrT" style="${valCss}"></div></div>
+      </div>
+      <div style="max-width:380px;margin:6px auto 0;height:8px;border-radius:6px;background:#1a2130;overflow:hidden"><div id="vrTBar" style="height:100%;width:0;background:${C.ok};transition:width .15s"></div></div>
+      <div style="max-width:380px;margin:10px auto 0">
+        <label style="display:block;font-size:13px;color:#cfc8b6">ولتاژ باتری: <b id="vrVinL" dir="ltr"></b></label>
+        <input id="vrVinR" type="range" min="3" max="15" step="0.5" value="9" style="width:100%;accent-color:#f5b942">
+        <label style="display:block;font-size:13px;color:#cfc8b6;margin-top:6px">جریانِ مصرفِ برد: <b id="vrIL" dir="ltr"></b></label>
+        <input id="vrIR" type="range" min="50" max="1000" step="50" value="200" style="width:100%;accent-color:#f5b942">
+      </div>
+      <div style="display:flex;gap:8px;max-width:380px;margin:10px auto 0">
+        <button type="button" class="sim-btn sim-btn-ghost" id="vrDirect" style="flex:1">🔋 بدون رگولاتور</button>
+        <button type="button" class="sim-btn sim-btn-ghost" id="vrUse" style="flex:1">🔌 با رگولاتور ۷۸۰۵</button>
+      </div>
+      <ul class="cx-m" id="vrCheck" style="max-width:380px;margin:10px auto 0"></ul>
+      <div class="sim-status" id="vrStatus" data-state="idle" aria-live="polite"></div>
+      <div class="sim-hw-note" id="vrLesson" style="display:none"></div>
+    </div>`;
+
+  const q = s => container.querySelector(s);
+  const st = q('#vrStatus');
+  const say = (state, text) => { st.dataset.state = state; st.textContent = text; };
+  let reg = !!alreadyDone, vin = 9, load = 200, succeeded = !!alreadyDone;
+  const seen = { burn: !!alreadyDone, stable: !!alreadyDone, drop: !!alreadyDone, shut: !!alreadyDone };
+  const CHECKS = [
+    ['burn', 'بدون رگولاتور، ولتاژِ زیاد برد را سوزاند'],
+    ['stable', 'با رگولاتور، خروجی روی ۵ ولتِ ثابت ماند'],
+    ['drop', 'ورودی زیر ۷ ولت رفت و خروجی افت کرد'],
+    ['shut', 'رگولاتور داغ شد و محافظ حرارتی قطعش کرد']
+  ];
+
+  function model(){
+    if(!reg) return { vout: vin, p: 0, t: T_AMB, shut: false };
+    let vout = vin >= VOUT + DROP ? VOUT : Math.max(0, vin - DROP);
+    const p = (vin - vout) * (load / 1000), t = T_AMB + p * THETA;
+    if(t >= T_SHUT) return { vout: 0, p, t: T_SHUT, shut: true };
+    return { vout, p, t, shut: false };
+  }
+
+  function paint(){
+    const m = model(), burn = m.vout > 5.5, low = m.vout < 4.5, ok = !burn && !low;
+    if(!reg && burn) seen.burn = true;
+    if(reg && ok && !m.shut) seen.stable = true;
+    if(reg && vin < VOUT + DROP && !m.shut) seen.drop = true;
+    if(reg && m.shut) seen.shut = true;
+
+    q('#vrBat').textContent = vin.toFixed(1) + ' V';
+    q('#vrVin').textContent = vin.toFixed(1) + ' V';
+    q('#vrVout').textContent = m.vout.toFixed(1) + ' V';
+    q('#vrVout').style.color = burn ? C.bad : ok ? C.ok : C.on;
+    q('#vrP').textContent = m.p.toFixed(2) + ' W';
+    q('#vrT').textContent = Math.round(m.t) + '°C';
+    q('#vrT').style.color = m.t >= T_SHUT ? C.bad : m.t > T_SAFE ? C.on : '#e9edf5';
+    const bar = q('#vrTBar'); bar.style.width = Math.min(100, (m.t - T_AMB) / (T_SHUT - T_AMB) * 100) + '%';
+    bar.style.background = m.t >= T_SHUT ? C.bad : m.t > T_SAFE ? C.on : C.ok;
+    q('#vrVinL').textContent = vin.toFixed(1) + ' V'; q('#vrIL').textContent = load + ' mA';
+
+    q('#vrReg').setAttribute('opacity', reg ? 1 : .25);
+    q('#vrOut').style.display = reg ? '' : 'none';
+    q('#vrBypass').style.display = reg ? 'none' : '';
+    q('#vrHeat').setAttribute('opacity', reg ? Math.min(.75, Math.max(0, (m.t - 40) / 120)).toFixed(2) : 0);
+    q('#vrSmoke').setAttribute('opacity', burn ? .8 : 0);
+    const led = q('#vrLed'), glow = q('#vrLedG'), bt = q('#vrBoardT');
+    if(burn){ led.setAttribute('fill', C.bad); led.setAttribute('stroke', '#ffb3aa'); glow.setAttribute('fill', C.bad); glow.setAttribute('opacity', .4); bt.textContent = 'سوخت! ✖'; bt.setAttribute('fill', C.bad); }
+    else if(m.vout === 0){ led.setAttribute('fill', '#3a2a2a'); led.setAttribute('stroke', '#6b4a4a'); glow.setAttribute('opacity', 0); bt.textContent = 'خاموش'; bt.setAttribute('fill', '#cfc8b6'); }
+    else if(low){ led.setAttribute('fill', C.on); led.setAttribute('stroke', '#ffe39a'); glow.setAttribute('fill', C.on); glow.setAttribute('opacity', .15); bt.textContent = 'ولتاژ کم'; bt.setAttribute('fill', C.on); }
+    else { led.setAttribute('fill', '#ffd25a'); led.setAttribute('stroke', '#fff2b8'); glow.setAttribute('fill', C.ok); glow.setAttribute('opacity', .45); bt.textContent = 'روشن ✓'; bt.setAttribute('fill', C.ok); }
+
+    q('#vrDirect').className = 'sim-btn ' + (reg ? 'sim-btn-ghost' : 'sim-btn-run');
+    q('#vrUse').className = 'sim-btn ' + (reg ? 'sim-btn-run' : 'sim-btn-ghost');
+    q('#vrCheck').innerHTML = CHECKS.map(([k, t]) => `<li class="${seen[k] ? 'd' : ''}">${t}</li>`).join('');
+
+    if(!reg){
+      if(burn) say('error', `💥 ${f(vin)} ولتِ باتری مستقیم به برد ۵ ولتی رسید و برد سوخت. دکمه‌ی «با رگولاتور ۷۸۰۵» را بزن.`);
+      else if(low) say('idle', `ولتاژ ${f(vin)} ولت برای برد کم است و درست روشن نمی‌شود.`);
+      else say('idle', 'این بازه‌ی باریکِ ۴٫۵ تا ۵٫۵ ولت امن است؛ ولی باتری‌ها با مصرف ولتاژشان پایین می‌آید. ولتاژ را بالا ببر و ببین چه می‌شود.');
+    } else if(m.shut){
+      say('error', `🔥 رگولاتور به ${fa(Math.round(m.t))} درجه رسید و محافظ حرارتی خروجی را قطع کرد. اختلاف ولتاژ × جریان = ${f(m.p, 2)} وات گرما. ورودی یا جریان را کم کن.`);
+    } else if(vin < VOUT + DROP){
+      say('idle', `⚠️ ورودی ${f(vin)} ولت است و ۷۸۰۵ دست‌کم ۷ ولت می‌خواهد (حدود ۲ ولت افت)؛ خروجی فقط ${f(m.vout)} ولت شد.`);
+    } else if(m.t > T_SAFE){
+      say('idle', `خروجی ۵ ولت است ولی رگولاتور ${fa(Math.round(m.t))} درجه داغ شده؛ این سلامت نیست. ورودی یا جریان را کم کن.`);
+    } else {
+      say('success', `✅ خروجی ثابت ۵ ولت است و دمای رگولاتور ${fa(Math.round(m.t))} درجه؛ ورودی را عوض کن، خروجی همان می‌ماند.`);
+    }
+
+    if(reg && !m.shut && vin >= 7 && m.t <= T_SAFE && seen.burn && seen.stable && seen.drop && seen.shut && !succeeded){
+      succeeded = true;
+      const l = q('#vrLesson'); l.style.display = '';
+      l.innerHTML = '💡 <b>یاد گرفتی:</b> رگولاتور خطی ولتاژ اضافه را به گرما تبدیل می‌کند، پس هرچه ورودی به خروجی نزدیک‌تر باشد (ولی دست‌کم ۲ ولت بالاتر) گرمای کمتری دارد. برای ۳٫۳ ولتِ STM32 از رگولاتوری مثل AMS1117-3.3 استفاده می‌کنند. وقتی اختلاف ولتاژ یا جریان زیاد است، رگولاتور سوئیچینگ (Buck) بهتر است.';
+      knight('آفرین! رگولاتور ولتاژِ ثابت می‌دهد، به شرطی که نه خیلی پایین باشی نه خیلی داغ.');
+      onSuccess && onSuccess();
+    }
+  }
+  q('#vrVinR').addEventListener('input', e => { vin = +e.target.value; paint(); });
+  q('#vrIR').addEventListener('input', e => { load = +e.target.value; paint(); });
+  q('#vrDirect').addEventListener('click', () => { reg = false; paint(); });
+  q('#vrUse').addEventListener('click', () => { reg = true; paint(); });
+  paint();
+  return { stop(){} };
+}
+
 /* ================= ELECTRONICS: شیفت رجیستر (74HC595) =================
    سه مرحله‌ی تعاملی روی یک SVG:
    ۱) CLOCK: بیت‌ها با هر پالس یک خانه جلو می‌روند (انیمیشن + نمودار زمانی)
@@ -488,27 +651,95 @@ function mountShiftRegisterSim(container, { onSuccess, alreadyDone } = {}){
     <line x1="${cx(i)}" y1="86" x2="${cx(i)}" y2="106" stroke="${C.line}" stroke-width="1.2" stroke-dasharray="2 2"/>
     <rect class="srLCell" x="${cx(i) - 13}" y="${LA_Y}" width="26" height="24" rx="4" stroke="${C.line}"/>
     <text class="srLBit" x="${cx(i)}" y="${LA_Y + 17}" font-size="13" font-weight="bold" text-anchor="middle">0</text>
-    <line x1="${cx(i)}" y1="130" x2="${cx(i)}" y2="174" stroke="${C.line}" stroke-width="1.5"/>
-    <text x="${cx(i) + 4}" y="160" font-size="7" fill="#7d8da3">Q${i}</text>
-    <circle class="srGlow" cx="${cx(i)}" cy="184" r="15" fill="#ffd25a" opacity="0"/>
-    <circle class="srLed" cx="${cx(i)}" cy="184" r="8" stroke-width="1.5"/>
+    <line x1="${cx(i) + 6}" y1="130" x2="${cx(i) + 6}" y2="150" stroke="${C.line}" stroke-width="1.5"/>
+    <text x="${cx(i) + 11}" y="150" font-size="7" fill="#7d8da3">Q${i}</text>
+    <g class="srLedG" transform="translate(${cx(i)} 188.4) rotate(90) scale(.6)">${ledRealSvg('sr')}</g>
     <circle class="srDrop" cx="${cx(i)}" cy="86" r="3.5" fill="${C.latch}" opacity="0"/>`).join('');
   const targetSvg = Array.from({ length: N }, (_, i) => `<circle class="srTg" cx="${cx(i)}" cy="210" r="5.5" stroke-width="1.8"/>`).join('');
 
+
+  const QY = i => 112 + 30 * i, QPIN = [15, 1, 2, 3, 4, 5, 6, 7];
+  const unoSvg = (() => {
+    const S = 0.045, UL = 4, UT = 0, r2 = v => +v.toFixed(2);
+    const sock = (x0, n, y) => `<rect x="${x0 - 50}" y="${y - 65}" width="${n * 100}" height="130" rx="12" fill="#171a1f" stroke="#000" stroke-width="10"/>` + Array.from({ length: n }, (_, k) => `<rect x="${x0 + 100 * k - 26}" y="${y - 26}" width="52" height="52" fill="#4b525c"/>`).join('');
+    const logo = (cx, cy) => `<g fill="none" stroke="#f4fbfb" stroke-linecap="round"><circle cx="${cx - 105}" cy="${cy}" r="92" stroke-width="30"/><circle cx="${cx + 105}" cy="${cy}" r="92" stroke-width="30"/><path d="M${cx - 150} ${cy}h90M${cx + 60} ${cy}h90M${cx + 105} ${cy - 45}v90" stroke-width="22"/></g>`;
+    return `<g transform="translate(${r2(UL + 2700 * S)} ${r2(UT + 2100 * S)}) rotate(180) scale(${S})">
+      <rect width="2700" height="2100" rx="70" fill="#1a6fb5" stroke="#0e4a7d" stroke-width="30"/>
+      <g fill="#b9c0c8">${Array.from({ length: 14 }, (_, k) => `<rect x="${1069 + 93 * k}" y="1160" width="42" height="80"/><rect x="${1069 + 93 * k}" y="1540" width="42" height="80"/>`).join('')}</g>
+      <rect x="1050" y="1230" width="1350" height="320" rx="24" fill="#16181d"/>
+      <path d="M1050 1335a55 55 0 0 1 0 110z" fill="#2c3037"/>
+      <rect x="640" y="235" width="220" height="220" rx="24" fill="#b7bec6" stroke="#6d757e" stroke-width="18"/><circle cx="750" cy="345" r="72" fill="#c93030"/>
+      ${sock(1900, 8, 100)}${sock(800, 10, 100)}${sock(1000, 8, 2000)}${sock(1900, 6, 2000)}
+      <rect x="-270" y="180" width="690" height="480" rx="30" fill="#c9d0d7" stroke="#8b949e" stroke-width="22"/>
+      <rect x="-80" y="1300" width="640" height="440" rx="36" fill="#1b1d22"/>
+      ${logo(1700, 620)}
+      <text transform="translate(1700 1000) rotate(180)" font-size="${r2(11 / S)}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#f4fbfb">UNO</text>
+      ${[[1300, C.clk], [1400, C.on], [1700, C.latch]].map(([x, c]) => `<rect x="${x - 26}" y="74" width="52" height="52" fill="${c}"/>`).join('')}
+    </g>`;
+  })();
+  const circuitSvg = (() => {
+    const w = (d, c) => `<path d="${d}" fill="none" stroke="${c}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`;
+    const gnd = (x, y) => `<path d="M${x - 8} ${y} H${x + 8} M${x - 5} ${y + 4} H${x + 5} M${x - 2} ${y + 8} H${x + 2}" stroke="#9aa7b8" stroke-width="1.4" stroke-linecap="round"/>`;
+    const CX0 = 200, CX1 = 296, TOP = 92, bot = QY(7) + 22, RAIL = 382, LS = 0.3;
+    let g = unoSvg;
+    [[67, 112, 'D12 · CLOCK', C.clk], [62.5, 142, 'D11 · DATA', C.on], [49, 172, 'D8 · LATCH', C.latch]].forEach(([x0, y1, nm, col]) => {
+      g += w(`M${x0} 90 V${y1} H${CX0}`, col) + `<text x="${(x0 + CX0) / 2 + 10}" y="${y1 - 4}" font-size="7.5" fill="${col}" text-anchor="middle">${nm}</text>`;
+    });
+    g += `<rect x="${CX0}" y="${TOP}" width="${CX1 - CX0}" height="${bot - TOP}" rx="7" fill="#1b2330" stroke="${C.dim}" stroke-width="1.4"/>`;
+    g += `<text x="${(CX0 + CX1) / 2}" y="${bot - 8}" font-size="11" font-weight="bold" fill="#cfe3ff" text-anchor="middle">74HC595</text>`;
+    [[112, 'SRCLK', 11, C.clk], [142, 'SER', 14, C.on], [172, 'RCLK', 12, C.latch], [212, 'OE', 13, '#9aa7b8'], [240, 'SRCLR', 10, '#9aa7b8']].forEach(([y, nm, pn, col]) => {
+      g += `<text x="${CX0 + 4}" y="${y + 3}" font-size="7.5" fill="${col}">${fa(pn)} ${nm}</text>`;
+    });
+    g += w(`M${CX0} 212 H178 V220`, '#6b7a90') + gnd(178, 220) + `<text x="172" y="215" font-size="7" fill="#9aa7b8" text-anchor="end">GND</text>`;
+    g += w(`M${CX0} 240 H178`, C.bad) + `<text x="172" y="243" font-size="7" fill="${C.bad}" text-anchor="end">5V</text>`;
+    const mx = (CX0 + CX1) / 2;
+    g += w(`M${mx} ${TOP} V72`, C.bad) + `<text x="${mx + 6}" y="75" font-size="7.5" fill="${C.bad}">VCC ${fa(16)} → 5V</text>`;
+    g += w(`M${mx} ${bot} V${bot + 10}`, '#6b7a90') + gnd(mx, bot + 10) + `<text x="${mx + 12}" y="${bot + 16}" font-size="7.5" fill="#9aa7b8">GND ${fa(8)}</text>`;
+    for(let i = 0; i < N; i++){
+      const y = QY(i), xA = 350, xL = xA + 10 * LS, yL = y - 64 * LS;
+      g += `<text x="${CX1 - 4}" y="${y - 3}" font-size="7" fill="#9aa7b8" text-anchor="end">Q${i} · ${fa(QPIN[i])}</text>`;
+      g += `<g class="scW">${w(`M${CX1} ${y} H314`, C.line)}</g><rect x="314" y="${y - 5}" width="28" height="10" rx="2" fill="#2a3547" stroke="${C.dim}"/><text x="328" y="${y + 3}" font-size="6.5" fill="#cfe3ff" text-anchor="middle">220Ω</text>`;
+      g += `<g class="scW">${w(`M342 ${y} H${xA}`, C.line)}</g>`;
+      g += `<g class="scLed" transform="translate(${xL} ${yL}) rotate(-90) scale(${LS})">${ledRealSvg('sc')}</g>`;
+      g += `<g class="scW">${w(`M${xL + 10 * LS} ${yL + 44 * LS} H${RAIL}`, C.line)}</g>`;
+    }
+    g += `<g class="scW">${w(`M${RAIL} ${QY(0) - 6} V${QY(7) + 10}`, C.line)}</g>` + gnd(RAIL, QY(7) + 10) + `<text x="${RAIL}" y="${QY(7) + 30}" font-size="7" fill="#9aa7b8" text-anchor="middle">GND</text>`;
+    return g;
+  })();
+  const introHtml = `
+      <div class="sim-hw-note" id="srIntro">
+        <b>🔢 این قطعه چیکار می‌کند؟</b><br>
+        ۷۴HC595 یک «تبدیل‌کننده‌ی سریال به موازی» است: بیت‌ها را یکی‌یکی از <b>یک سیم</b> می‌گیرد و همه را هم‌زمان روی <b>۸ خروجی</b> می‌گذارد. یعنی وقتی پین‌های آردوینو تمام شد، با فقط ۳ پین (DATA، CLOCK، LATCH) ۸ خروجی تازه می‌گیری؛ اگر چند تراشه را پشت هم بزنی (کاسکید) ۱۶ و ۲۴ و … خروجی.<br>
+        <b>کاربردها:</b> نوار LED و چراغ‌های چشمک‌زن · نمایشگر هفت‌قسمتی · ماتریس LED · کنترل چند رله یا موتورِ کوچک · ردیف‌های کیبورد. هر جا خروجی زیاد لازم باشد و پین کم.
+      </div>
+      <svg class="ls-svg" viewBox="0 0 400 372" style="cursor:default;display:block;width:100%;max-width:400px;height:auto;margin:8px auto" direction="ltr" role="img" aria-label="مدار: آردوینو با سه سیم به ۷۴HC595 وصل است و هر خروجی از راه مقاومت ۲۲۰ اهم یک LED را روشن می‌کند"><defs>${ledRealDefs('sc')}</defs>${circuitSvg}</svg>
+      <button type="button" class="sim-btn sim-btn-ghost" id="scSig" aria-pressed="false" style="display:block;width:100%;max-width:400px;margin:0 auto 8px"></button>
+      <div class="sim-hw-note" style="font-size:12.5px">
+        <b>سیم‌کشی:</b>
+        <div dir="ltr" style="display:grid;gap:6px;margin:8px 0">${[
+          ['D11', 'pin 14 · SER', 'DATA', C.on], ['D12', 'pin 11 · SRCLK', 'CLOCK', C.clk], ['D8', 'pin 12 · RCLK', 'LATCH', C.latch],
+          ['5V', 'pin 16 · VCC', 'تغذیه', C.bad], ['GND', 'pin 8 · GND', 'زمین', '#9aa7b8'], ['GND', 'pin 13 · OE', 'فعال‌ساز خروجی', '#9aa7b8'], ['5V', 'pin 10 · SRCLR', 'بدون پاک‌شدن', C.bad]
+        ].map(([a, b, n, col]) => `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:9px;background:#141b27;border-left:4px solid ${col};font:700 13.5px/1.4 'JetBrains Mono',monospace"><span style="color:${col};min-width:40px">${a}</span><span style="color:#6f7f96">→</span><span style="color:#e9edf5">${b}</span><span dir="rtl" style="margin-left:auto;color:${col};font:700 12.5px/1.4 inherit">${n}</span></div>`).join('')}</div>
+        پایه‌ی OE را به GND می‌بندیم تا خروجی‌ها فعال باشند و SRCLR را به 5V تا رجیستر پاک نشود. هر LED یک مقاومت ۲۲۰Ω دارد تا نسوزد. حالا خودت امتحان کن 👇
+      </div>`;
   container.innerHTML = `
     <div class="sim-wrap">
+      ${introHtml}
       <div id="srTabs" style="display:flex;gap:6px;max-width:360px;margin:0 auto 8px"></div>
       <div class="sim-hw-note" id="srGoal"></div>
-      <svg class="ls-svg" viewBox="0 0 320 296" style="display:block;width:100%;max-width:360px;height:auto;margin:0 auto" direction="ltr" role="img" aria-label="شیفت رجیستر ۷۴HC595: ردیف شیفت، ردیف لچ، هشت LED و نمودار زمانی">
-        <rect x="4" y="2" width="312" height="20" rx="5" fill="#243044" stroke="${C.line}"/>
-        <text x="84" y="15" font-size="8" fill="#9aa7b8" text-anchor="middle">آردوینو</text>
-        <text x="12" y="15" font-size="8" fill="${C.on}">DATA</text>
-        <text x="160" y="15" font-size="8" fill="${C.clk}" text-anchor="middle">CLOCK</text>
-        <text x="306" y="15" font-size="8" fill="${C.latch}" text-anchor="end">LATCH</text>
+      <svg class="ls-svg" viewBox="0 0 320 296" style="cursor:default;display:block;width:100%;max-width:360px;height:auto;margin:0 auto" direction="ltr" role="img" aria-label="شیفت رجیستر ۷۴HC595: ردیف شیفت، ردیف لچ، هشت LED و نمودار زمانی">
+        <defs>${ledRealDefs('sr')}</defs>
+        <rect x="4" y="2" width="312" height="20" rx="5" fill="#1a6fb5" stroke="#0e4a7d"/>
+        <g fill="#171a1f" stroke="#000"><rect x="4" y="14" width="12" height="8"/><rect x="154" y="14" width="12" height="8"/><rect x="304" y="14" width="12" height="8"/></g>
+        <g fill="#4b525c"><rect x="8" y="16" width="4" height="4"/><rect x="158" y="16" width="4" height="4"/><rect x="308" y="16" width="4" height="4"/></g>
+        <text x="100" y="12" font-size="9" font-weight="bold" fill="#f4fbfb" text-anchor="middle">ARDUINO UNO</text>
+        <text x="20" y="12" font-size="7.5" font-weight="bold" fill="#ffe08a">D11 · DATA</text>
+        <text x="172" y="12" font-size="7.5" font-weight="bold" fill="#bcd6ff">D12 · CLOCK</text>
+        <text x="300" y="12" font-size="7.5" font-weight="bold" fill="#d9c7ff" text-anchor="end">D8 · LATCH</text>
         <rect x="14" y="30" width="290" height="118" rx="8" fill="#1b2330" stroke="${C.line}"/>
         <text x="298" y="143" font-size="8" fill="#5a6b82" text-anchor="end">74HC595</text>
         <g fill="none" stroke-linecap="round">
-          <path data-w="data" d="M8 22 V74 H25" stroke="${C.dim}"/>
+          <path data-w="data" d="M10 22 V74 H25" stroke="${C.dim}"/>
           <path data-w="clk" d="M160 22 V38" stroke="${C.dim}"/>
           <path data-w="clk" d="M${cx(0)} 38 H${cx(N - 1)}" stroke="${C.dim}"/>
           <path data-w="latch" d="M310 22 V96 H298" stroke="${C.dim}"/>
@@ -527,8 +758,8 @@ function mountShiftRegisterSim(container, { onSuccess, alreadyDone } = {}){
           <g id="srTimeDyn"></g></g>
       </svg>
       <div style="display:flex;gap:6px;max-width:360px;margin:8px auto 0">
-        <button type="button" class="sim-btn" id="srD0">DATA = ۰</button>
-        <button type="button" class="sim-btn" id="srD1">DATA = ۱</button>
+        <button type="button" class="sim-btn" id="srD0" dir="ltr">DATA = 0</button>
+        <button type="button" class="sim-btn" id="srD1" dir="ltr">DATA = 1</button>
       </div>
       <div style="display:flex;gap:6px;max-width:360px;margin:6px auto 0">
         <button type="button" class="sim-btn" id="srClk">⏩ CLOCK</button>
@@ -547,9 +778,20 @@ function mountShiftRegisterSim(container, { onSuccess, alreadyDone } = {}){
     </div>`;
 
   const q = s => container.querySelector(s), qa = s => Array.from(container.querySelectorAll(s));
+  const sigBtn = q('#scSig');
+  let sigOn = false;
+  const sigPaint = () => {
+    qa('.scLed').forEach(g => ledRealSet(g, sigOn ? 1 : 0));
+    qa('.scW path').forEach(pth => pth.setAttribute('stroke', sigOn ? '#ffd25a' : C.line));
+    sigBtn.setAttribute('aria-pressed', sigOn);
+    sigBtn.textContent = sigOn ? '⚡ سیگنال: روشن — بزن تا خاموش شود' : '⚡ سیگنال: خاموش — بزن تا LEDها روشن شوند';
+    sigBtn.className = 'sim-btn ' + (sigOn ? 'sim-btn-run' : 'sim-btn-ghost');
+  };
+  sigBtn.addEventListener('click', () => { sigOn = !sigOn; sigPaint(); });
+  sigPaint();
   const st = q('#srStatus'), d0Btn = q('#srD0'), d1Btn = q('#srD1'), clkBtn = q('#srClk'), latchBtn = q('#srLatch');
   const ghosts = qa('.srG'), wires = qa('[data-w]'), gate = q('#srGate');
-  const BTN = 'flex:1;padding:8px 6px;font-size:13px;min-height:0;border-radius:10px;border:0;color:#fff;font-weight:bold';
+  const BTN = 'flex:1;white-space:nowrap;padding:8px 6px;font-size:13px;min-height:0;border-radius:10px;border:0;color:#fff;font-weight:bold';
   d0Btn.style.cssText = BTN; d1Btn.style.cssText = BTN; clkBtn.style.cssText = BTN + ';background:' + C.clk; latchBtn.style.cssText = BTN + ';background:' + C.latch;
   ['srReset', 'srHint', 'srNew'].forEach(id => { q('#' + id).style.cssText = 'flex:1;padding:6px;font-size:12px;min-height:0;border-radius:10px'; });
   const say = (state, text) => { st.dataset.state = state; st.textContent = text; };
@@ -630,8 +872,7 @@ function mountShiftRegisterSim(container, { onSuccess, alreadyDone } = {}){
     const target = stage === 2;
     qa('.srLCell').forEach((c, i) => c.setAttribute('fill', out[i] ? C.on : C.off));
     qa('.srLBit').forEach((t, i) => { t.textContent = out[i]; t.setAttribute('fill', out[i] ? '#1b1b1b' : '#8fa0b5'); });
-    qa('.srLed').forEach((c, i) => { c.setAttribute('fill', out[i] ? '#ffd25a' : '#3a2a2a'); c.setAttribute('stroke', out[i] ? '#fff2b8' : '#6b4a4a'); });
-    qa('.srGlow').forEach((c, i) => c.setAttribute('opacity', out[i] ? .35 : 0));
+    qa('.srLedG').forEach((g, i) => ledRealSet(g, out[i] ? 1 : 0));
     qa('.srTg').forEach((c, i) => {
       c.setAttribute('fill', TARGET[i] ? '#ffd25a' : '#2b3646');
       c.setAttribute('stroke', checked ? (out[i] === TARGET[i] ? C.ok : C.bad) : C.line);

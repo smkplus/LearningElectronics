@@ -69,7 +69,7 @@ function halHighlight(s){
    خروجی: { isPinsOk(), isClockOk(), isOk(), refresh(), showPart(p), focus(pin, fn), stop() } */
 function mountCubeMx(container, opts = {}){
   const required = opts.required || [], showClock = !!opts.showClock, clockReq = showClock && opts.clockRequired !== false;
-  let sel = null, hint = null, interacted = false;
+  let sel = null, hint = null, interacted = false, part = 'all';
   const clockHtml = showClock ? `
     <div class="hs-box cx-clock">
       <div class="hs-box-t">⏱️ آزمایشگاه ساعت (Clock)</div>
@@ -94,6 +94,7 @@ function mountCubeMx(container, opts = {}){
   container.innerHTML = `
     <div class="cx-wrap" data-part="all">
       ${opts.goal ? `<div class="sim-hw-note">${opts.goal}</div>` : ''}
+      ${opts.guide ? '<div class="cx-guide" aria-live="polite" hidden></div>' : ''}
       <div class="cx-part" data-part="pins">
       <svg class="cx-chip" viewBox="0 0 760 760" direction="ltr" role="img" aria-label="نقشه‌ی پایه‌های STM32F103C8Tx"></svg>
       <div class="hs-box"><label class="ls-field">پایه را از فهرست هم می‌توانی انتخاب کنی<select class="cx-pinsel" dir="ltr"></select></label></div>
@@ -121,6 +122,12 @@ function mountCubeMx(container, opts = {}){
       const want = hint && hint.pin === n && CUBE.cfg[n] !== hint.fn;
       h += `<g class="cx-pin ${cl}${sel === n ? ' sel' : ''}${want ? ' want' : ''}" data-n="${n}" data-s="${si}" data-i="${i}" tabindex="0" role="button" aria-label="${n}"><rect ${r} rx="3"/>${t}</g>`;
     }));
+    let spot = null;
+    CX_SIDES.forEach((s, si) => s.forEach((n, i) => {
+      if(hint && hint.pin === n && CUBE.cfg[n] !== hint.fn){ const c = 160 + 40 * i; spot = si % 2 ? [si === 1 ? 124 : 636, c] : [c, si === 0 ? 124 : 636]; }
+    }));
+    if(spot) h += `<g class="cx-spot" pointer-events="none"><circle cx="${spot[0]}" cy="${spot[1]}" r="38" class="cx-halo"/><circle cx="${spot[0]}" cy="${spot[1]}" r="30" class="cx-ring"/></g>`;
+    chip.classList.toggle('has-want', !!spot);
     chip.innerHTML = h;
   }
   function panel(){
@@ -151,7 +158,52 @@ function mountCubeMx(container, opts = {}){
     q('.cx-gut').textContent = c.split('\n').map((_, i) => i + 1).join('\n');
     q('.cx-gen').classList.toggle('done', required.length ? required.every(done) : true);
   }
-  function upd(){ pinsel.value = sel || ''; draw(); panel(); missions(); }
+  /* ---------- راهنمای قدم‌به‌قدم (فقط وقتی opts.guide روشن باشد) ---------- */
+  const guideEl = q('.cx-guide');
+  function guideStep(){
+    const r = required.find(x => !done(x));
+    if(part === 'pins' && r) return { kind: 'pin', r };
+    if(clockReq && !cxClock(CUBE.clk).ready) return { kind: 'clock' };
+    return r ? { kind: 'pin', r } : null;
+  }
+  function guideRender(){
+    if(!guideEl) return;
+    const g = guideStep();
+    if(!g){ guideEl.hidden = true; return; }
+    const total = (clockReq ? 1 : 0) + required.length;
+    const n = g.kind === 'clock' ? 1 : (clockReq ? 1 : 0) + required.indexOf(g.r) + 1;
+    let title, body;
+    if(g.kind === 'clock'){
+      const c = cxClock(CUBE.clk);
+      title = `⏱️ مرحله ${toFa(n)} از ${toFa(total)} — ساعتِ چیپ`;
+      body = c.sys === 72 && !c.ok
+        ? 'SYSCLK درست است ولی یکی از نوارها قرمز است. دکمه‌ی «استاندارد ۷۲ مگاهرتز» را بزن تا همه‌چیز درست شود.'
+        : 'روی دکمه‌ی «استاندارد ۷۲ مگاهرتز» بزن. دستی هم می‌شود: منبع PLL روی HSE و ضریب PLL روی ۹ (۸ × ۹ = ۷۲).';
+    } else {
+      const r = g.r, d = CX_D[r.pin];
+      title = `🧩 مرحله ${toFa(n)} از ${toFa(total)} — پایه‌ی ${r.pin}`;
+      body = sel === r.pin
+        ? `پایه‌ی <b dir="ltr">${r.pin}</b> انتخاب شد. حالا از دکمه‌های پایین، <b dir="ltr">${r.fn}</b> را بزن (قابِ طلایی دارد).`
+        : `اول روی پایه‌ی <b dir="ltr">${r.pin}</b> در نقشه‌ی چیپ بزن (طلایی است)${d ? `؛ ${d}` : ''}. بعد کارش را انتخاب می‌کنیم.`;
+    }
+    const need = g.kind === 'clock' ? 'clock' : 'pins';
+    const off = part !== 'all' && part !== need;
+    guideEl.hidden = false;
+    guideEl.innerHTML = `<div class="cx-guide-t">${title}</div><div class="cx-guide-b">${body}</div>`
+      + (off ? `<button type="button" class="sim-btn sim-btn-run" data-go="${need}">برو به تبِ ${need === 'clock' ? 'ساعت' : 'پایه‌ها (Cube)'} ←</button>` : '');
+  }
+  if(guideEl) guideEl.addEventListener('click', e => {
+    const b = e.target.closest('button[data-go]'); if(!b) return;
+    if(b.dataset.go === 'clock'){ if(opts.onGoClock) opts.onGoClock(); }
+    else if(opts.onGoPins) opts.onGoPins();
+  });
+  function applyGuide(){
+    if(!opts.guide) return;
+    const g = guideStep();
+    hint = !g ? null : g.kind === 'clock' ? { clock: 1 } : { pin: g.r.pin, fn: g.r.fn };
+    guideRender();
+  }
+  function upd(){ pinsel.value = sel || ''; applyGuide(); draw(); panel(); missions(); }
 
   /* ---------- ساعت ---------- */
   const fm = x => (+x.toFixed(1)) + ' MHz';
@@ -190,7 +242,10 @@ function mountCubeMx(container, opts = {}){
   function changed(){ interacted = true; cxSave(); upd(); calc(); notify(); }
 
   /* ---------- رویدادها ---------- */
-  chip.addEventListener('click', e => { const g = e.target.closest('.cx-pin'); if(g){ sel = g.dataset.n; hint = hint && hint.pin === sel ? hint : null; upd(); } });
+  chip.addEventListener('click', e => {
+    const g = e.target.closest('.cx-pin');
+    if(g){ sel = g.dataset.n; hint = hint && hint.pin === sel ? hint : null; upd(); if(opts.guide) info.scrollIntoView({ block: 'nearest' }); }
+  });
   chip.addEventListener('keydown', e => {
     if(e.key === 'Enter' || e.key === ' '){
       const g = e.target.closest('.cx-pin');
@@ -235,7 +290,7 @@ function mountCubeMx(container, opts = {}){
     isClockOk: () => state().clockOk,
     isOk: () => { const s = state(); return s.pinsOk && s.clockOk; },
     refresh(){ reflectClock(); upd(); calc(); notify(); },
-    showPart(p){ q('.cx-wrap').dataset.part = p || 'all'; },
+    showPart(p){ part = p || 'all'; q('.cx-wrap').dataset.part = part; if(opts.guide){ applyGuide(); draw(); panel(); } },
     /* پایه را انتخاب و دکمه‌ی درست را با قابِ طلایی نشان می‌دهد (مثلاً از هشدارِ بلوک‌ها) */
     focus(pin, fn){
       hint = { pin, fn }; sel = pin; upd();
@@ -287,7 +342,7 @@ function mountStm32CubeSim(container, { onSuccess, alreadyDone } = {}){
   let succeeded = !!alreadyDone, cx = null;
   container.innerHTML = `
     <div class="sim-wrap hs-wrap">
-      <div class="sim-hw-note">هدف: در تبِ <b>Cube</b> پایه‌ی <b>PC13</b> (LED روی برد) را <b>GPIO_Output</b> کن و در تبِ <b>ساعت</b>، ساعت را روی <b>۷۲ مگاهرتز</b> بدون هیچ نوار قرمزی بگذار. پایه‌های سبزِ SWD و کریستال را CubeMX خودش تنظیم کرده است.</div>
+      <div class="sim-hw-note">هدف: اول در تبِ <b>ساعت</b>، ساعت را روی <b>۷۲ مگاهرتز</b> بدون هیچ نوار قرمزی بگذار؛ بعد در تبِ <b>Cube</b> پایه‌ی <b>PC13</b> (LED روی برد) را <b>GPIO_Output</b> کن. کادرِ طلاییِ زیر قدم‌به‌قدم می‌گوید کجا بزنی. پایه‌های سبزِ SWD و کریستال را CubeMX خودش تنظیم کرده است.</div>
       <div class="hs-bench"><div class="hs-tabsHost"></div><div class="hs-pane hs-cxhost"></div></div>
     </div>`;
   const tabs = cxTabs(container.querySelector('.hs-tabsHost'), [
@@ -298,15 +353,19 @@ function mountStm32CubeSim(container, { onSuccess, alreadyDone } = {}){
     required: [{ pin: 'PC13', fn: 'GPIO_Output', label: 'PC13 را GPIO_Output کن (LED روی برد)' }],
     showClock: true,
     showCode: false,
+    showList: false,
+    guide: true,
     status: true,
     successMsg: '✅ درسته! PC13 خروجی شد و ساعت روی ۷۲ مگاهرتز بدون خطاست. CubeMX الان کدِ راه‌اندازی را می‌نویسد.',
     onGoClock: () => tabs.set('clock'),
+    onGoPins: () => tabs.set('cube'),
     onChange(st){
       tabs.mark('cube', st.pinsOk ? 'ok' : 'todo'); tabs.mark('clock', st.clockOk ? 'ok' : 'todo');
+      if(st.clockOk && !st.pinsOk && tabs.get() === 'clock') tabs.nudge('cube');
       if(!succeeded && st.interacted && st.pinsOk && st.clockOk){ succeeded = true; onSuccess && onSuccess(); }
     }
   });
-  tabs.set('cube');
+  tabs.set('clock');
   if(alreadyDone){
     const el = container.querySelector('.cx-status');
     if(el){ el.dataset.state = 'success'; el.textContent = '✅ قبلاً این مأموریت را انجام داده‌ای. می‌توانی دوباره با نقشه و ساعت کار کنی.'; }

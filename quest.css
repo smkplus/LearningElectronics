@@ -541,9 +541,15 @@ body.sim-fullscreen-lock #knightSection{ z-index:1200 !important; }
 .cx-pin.pwr rect{ fill:#b8a65a; }
 .cx-pin.spc rect{ fill:#9a953a; }
 .cx-pin:hover rect, .cx-pin:focus-visible rect{ stroke:var(--gold); }
-.cx-pin.sel rect{ stroke:#fff; }
-.cx-pin.want rect{ stroke:var(--gold); animation:cxWant 1.1s ease-in-out infinite; }
-@keyframes cxWant{ 50%{ stroke-opacity:.2; } }
+.cx-pin.sel rect{ stroke:#fff; stroke-width:6; }
+.cx-pin.sel text{ fill:#fff; font-weight:700; font-size:20px; }
+.cx-pin.want rect{ fill:#ffd25a; stroke:#fff; stroke-width:5; animation:cxWant 1.1s ease-in-out infinite; }
+.cx-pin.want text{ fill:#ffd25a; font-weight:700; font-size:22px; }
+.has-want .cx-pin:not(.want) text{ opacity:.4; }
+.cx-halo{ fill:#ffd25a; fill-opacity:.22; }
+.cx-ring{ fill:none; stroke:#ffd25a; stroke-width:6; animation:cxRing 1.1s ease-in-out infinite; }
+@keyframes cxRing{ 50%{ stroke-opacity:.3; stroke-width:10; } }
+@keyframes cxWant{ 50%{ stroke:var(--gold); stroke-opacity:.35; } }
 .cx-fns{ display:flex; flex-wrap:wrap; gap:6px; direction:ltr; margin-top:2px; }
 .cx-fns .sim-btn{ font-family:'JetBrains Mono',monospace; font-size:12px; padding:6px 9px; }
 .cx-want{ outline:3px solid var(--gold); outline-offset:2px; }
@@ -558,7 +564,7 @@ body.sim-fullscreen-lock #knightSection{ z-index:1200 !important; }
 .cx-led{ width:13px; height:13px; border-radius:50%; background:#26405f; display:inline-block; vertical-align:middle; margin-inline-end:6px; }
 .cx-gen.done .cx-led{ animation:cxBlink 1s steps(1) infinite; }
 @keyframes cxBlink{ 50%{ background:#ffd25a; box-shadow:0 0 12px #ffd25a; } }
-@media (prefers-reduced-motion:reduce){ .cx-gen.done .cx-led{ animation:none; background:#ffd25a; } .cx-pin.want rect{ animation:none; } }
+@media (prefers-reduced-motion:reduce){ .cx-gen.done .cx-led{ animation:none; background:#ffd25a; } .cx-pin.want rect, .cx-ring{ animation:none; } }
 .cx-gut{ height:auto; overflow:visible; }
 .cx-presets{ display:flex; gap:8px; flex-wrap:wrap; }
 .cx-presets .sim-btn{ flex:1 1 140px; }
@@ -616,7 +622,7 @@ body.sim-fullscreen-lock #knightSection{ z-index:1200 !important; }
 .hs-chipb{ border:1px solid var(--panel-border,#2a3346); background:#10151f; color:var(--parchment,#e9edf5); border-radius:999px; padding:3px 10px; font-size:12px; cursor:pointer; font-family:inherit; }
 .hs-chipb:hover{ border-color:var(--gold,#e5a467); } .hs-chipb.bad{ border-color:#ff9c92; color:#ff9c92; }
 
-@media (prefers-reduced-motion:reduce){ .cx-gen.done .cx-led{ animation:none; background:#ffd25a; } .cx-pin.want rect{ animation:none; } }
+@media (prefers-reduced-motion:reduce){ .cx-gen.done .cx-led{ animation:none; background:#ffd25a; } .cx-pin.want rect, .cx-ring{ animation:none; } }
 .cx-gut{ height:auto; overflow:visible; }
 .cx-presets{ display:flex; gap:8px; flex-wrap:wrap; }
 .cx-presets .sim-btn{ flex:1 1 140px; }
@@ -797,3 +803,9 @@ body.sim-fullscreen-lock #knightSection{ z-index:1200 !important; }
 .hs-wrap > .hs-strip{ margin-bottom:0; }
 .hs-wrap > .hs-bench{ margin:0; }
 .hs-simmount .sim-wrap > .sim-board-wrap{ order:-1; }
+
+.cx-guide{ border:2px solid var(--gold); border-radius:12px; background:#1d1a0e; padding:10px 12px; margin:8px 0; line-height:1.9; }
+.cx-guide[hidden]{ display:none; }
+.cx-guide-t{ font-weight:700; color:var(--gold); margin-bottom:4px; }
+.cx-guide-b{ font-size:14px; color:#efe9d6; }
+.cx-guide .sim-btn{ margin-top:8px; }
