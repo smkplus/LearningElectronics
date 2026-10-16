@@ -396,10 +396,12 @@ function mountHalMission(container, cfg, { onSuccess, alreadyDone } = {}){
         <div class="hs-tabsHost"></div>
         <div class="hs-pane"><div class="hs-cubemount"></div></div>
       </div>
+      <div class="hs-box hs-pins"><div class="hs-box-t">📋 وضعیتِ پایه‌ها (همان‌طور که در CubeMX تنظیم کرده‌ای)</div><div class="hs-pins-body"></div></div>
       <div class="hs-simmount"></div>
     </div>`;
   const q = s => container.querySelector(s);
   const strip = q('.hs-strip');
+  const pinsBody = q('.hs-pins-body');
   let tabs = null, cx = null, sim = null, succeeded = !!alreadyDone;
 
   const pinProblem = () => {
@@ -421,7 +423,31 @@ function mountHalMission(container, cfg, { onSuccess, alreadyDone } = {}){
       items.push(`<button type="button" class="hs-chipb ok" data-go="${n}" data-fn="${f}" dir="ltr">${label(n, f)}</button>`);
     });
     strip.innerHTML = items.join('');
+    paintPins();
   }
+  /* جدول وضعیتِ پایه‌ها: هر پایه‌ی لازم، کارِ مورد نیاز، کارِ فعلی و درست/نادرست؛ روی هر ردیف بزنی در نقشه‌ی چیپ نشانش می‌دهد. */
+  function paintPins(){
+    const role = r => { const m = (r.label || '').match(/\(([^)]*)\)/); return m ? m[1].replace(/[؛;].*$/, '').trim() : ''; };
+    const cell = 'padding:6px 8px;';
+    const rowsReq = required.map(r => {
+      const cur = CUBE.cfg[r.pin] || '', ok = cur === r.fn;
+      const st = ok ? '<span style="color:#57d8a3">✅ درست</span>'
+        : cur ? `<span style="color:#ff8a80">⚠️ اشتباه (الان ${cur})</span>`
+        : '<span style="color:#d4af37">○ هنوز تنظیم نشده</span>';
+      return `<tr data-go="${r.pin}" data-fn="${r.fn}" tabindex="0" style="cursor:pointer"><td dir="ltr" style="${cell}text-align:left"><b>${r.pin}</b></td><td style="${cell}">${role(r) || '—'}</td><td dir="ltr" style="${cell}text-align:left">${r.fn}</td><td dir="ltr" style="${cell}text-align:left">${cur || 'Reset_State'}</td><td style="${cell}">${st}</td></tr>`;
+    });
+    const seen = new Set(required.map(r => r.pin));
+    const rowsExtra = Object.entries(CUBE.cfg).filter(([n, f]) => !/^(SYS|RCC)_/.test(f) && !seen.has(n)).map(([n, f]) =>
+      `<tr data-go="${n}" data-fn="${f}" tabindex="0" style="cursor:pointer;opacity:.8"><td dir="ltr" style="${cell}text-align:left"><b>${n}</b></td><td style="${cell}">—</td><td dir="ltr" style="${cell}text-align:left">—</td><td dir="ltr" style="${cell}text-align:left">${f}</td><td style="${cell}">ℹ️ برای این مأموریت لازم نیست</td></tr>`);
+    const left = required.filter(r => CUBE.cfg[r.pin] !== r.fn).length;
+    const sum = !required.length ? '' : left
+      ? `<div class="hs-p" style="margin-top:8px">⏳ ${toFa(left)} پایه از ${toFa(required.length)} پایه هنوز درست تنظیم نشده. روی هر ردیف بزنی همان پایه در نقشه‌ی بالا انتخاب می‌شود.</div>`
+      : `<div class="hs-p" style="margin-top:8px;color:#57d8a3">✅ هر ${toFa(required.length)} پایه درست تنظیم شده؛ حالا کد بنویس.</div>`;
+    pinsBody.innerHTML = `<table class="hs-table" style="width:100%"><tr><th>پایه</th><th>کار در ربات</th><th>باید باشد</th><th>الان</th><th>وضعیت</th></tr>${rowsReq.concat(rowsExtra).join('')}</table>${sum}`;
+  }
+  const goPin = tr => { if(!tr || !tr.dataset.go) return; tabs.set('cube'); cx.focus(tr.dataset.go, tr.dataset.fn); };
+  pinsBody.addEventListener('click', e => goPin(e.target.closest('tr[data-go]')));
+  pinsBody.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); goPin(e.target.closest('tr[data-go]')); } });
   strip.addEventListener('click', e => {
     const b = e.target.closest('[data-go]'); if(!b) return;
     if(b.dataset.go === 'clock') tabs.set('clock'); else { tabs.set('cube'); cx.focus(b.dataset.go, b.dataset.fn); }
@@ -595,13 +621,13 @@ function hsBrainHw(root, api){
 /* ---------- سخت‌افزار ۲ (ربات متحرک): سه سنسور روی مسیر + سه چراغ تصمیم (PB12/PB13/PB14) ----------
    خودِ برنامه‌ی کاربر ربات را می‌راند: چراغ PB13 روشن ← مستقیم، PB12 ← چپ، PB14 ← راست و اگر هیچ‌کدام
    روشن نبود ← ایست. سنسورها از روی جای ربات روی مسیر خوانده می‌شوند (PA0 چپ، PA1 وسط، PA2 راست).
-   مأموریت وقتی کامل می‌شود که ربات با کدِ کاربر دو مسیر را تا 🏁 برود. */
+   مأموریت وقتی کامل می‌شود که ربات با کدِ کاربر خط را تا 🏁 برود (یک مسیر کافی است). */
 function hsBrainRobotHw(root, api){
-  const TR = LL3_TRACKS, NEED = LL3_NEED, BASE = 60;
+  const TR = LL3_TRACKS, NEED = 1, BASE = 60;   // رسیدن به 🏁 در یک مسیر کافی است
   const lampPins = { 12: 0, 13: 1, 14: 2 };
   const DEC = { straight: '⬆️ مستقیم', left: '⬅️ به چپ', right: '➡️ به راست', stop: '⏹️ ایست (هیچ چراغی روشن نیست)' };
   const sensorDots = LL3_OFF.map(o => `<circle class="hbr-s" cx="15" cy="${o}" r="3.2" fill="#555"/>`).join('');
-  root.innerHTML = `
+  root.innerHTML = `<div class="hbr-wrap" style="width:100%;min-width:0;flex:1 1 100%">
     <div class="ir-tabs">${TR.map((t, i) => `<button type="button" class="sim-btn ${i ? 'sim-btn-ghost' : 'sim-btn-run'}" data-t="${i}">${t.name}</button>`).join('')}<button type="button" class="sim-btn sim-btn-ghost" data-a="restart">↺ ربات از اول</button></div>
     <svg class="ls-svg" viewBox="0 0 320 190" direction="ltr" role="img" aria-label="ربات سه‌سنسوره که کدِ تو را روی مسیر اجرا می‌کند" style="cursor:default">
       <rect width="320" height="190" fill="#e9e6dc"/>
@@ -618,8 +644,7 @@ function hsBrainRobotHw(root, api){
         ${sensorDots}
       </g>
     </svg>
-    <div class="hs-chips hbr-chips"></div>
-    <div class="hs-chips hbr-tr"></div>`;
+    </div>`;
   const q = x => root.querySelector(x);
   const trackEl = q('.hbr-track'), trailEl = q('.hbr-trail'), flagEl = q('.hbr-flag'), bot = q('.hbr-bot');
   const dots = Array.from(root.querySelectorAll('.hbr-s'));
@@ -628,7 +653,6 @@ function hsBrainRobotHw(root, api){
   const actOf = () => lamps[1] ? 'straight' : lamps[0] ? 'left' : lamps[2] ? 'right' : 'stop';
   const note = (st, t) => { const k = st + '|' + t; if(k !== lastMsg){ lastMsg = k; api.say(st, t); } };
   const decide = () => actOf();
-  const mark = v => v ? '■' : '□';
   function loadTrack(i){
     ti = i; s = fresh(); lastMsg = '';
     const tr = TR[i], e = tr.pts[tr.pts.length - 1];
@@ -640,10 +664,6 @@ function hsBrainRobotHw(root, api){
     bot.setAttribute('transform', `translate(${s.x.toFixed(1)} ${s.y.toFixed(1)}) rotate(${(s.phi * 180 / Math.PI).toFixed(1)})`);
     dots.forEach((c, k) => c.setAttribute('fill', s.vals[k] ? '#ff5a4f' : '#555'));
     trailEl.setAttribute('points', s.trail.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' '));
-    q('.hbr-chips').innerHTML = `<span dir="ltr">PA0 ${mark(s.vals[0])} · PA1 ${mark(s.vals[1])} · PA2 ${mark(s.vals[2])}</span>`
-      + HS_LAMP.map((n, k) => `<span>${lamps[k] ? '💡' : '○'} ${n}</span>`).join('')
-      + `<span>${DEC[actOf()]}</span>`;
-    q('.hbr-tr').innerHTML = TR.map((t, k) => `<span>${finished.has(k) ? '✅' : '○'} ${t.name}</span>`).join('');
   }
   function failText(){
     if(s.fail === 'stuck'){
@@ -683,8 +703,7 @@ function hsBrainRobotHw(root, api){
       if(act !== lastAct){ lastAct = act; api.log('تصمیمِ کد: ' + DEC[act].replace(/^\S+\s/, '')); }
       if(finished.size >= NEED) return;
       if(s.fail) note('error', failText());
-      else if(s.done) note('success', `✅ ربات مسیرِ «${TR[ti].name}» را با کدِ تو رفت! ${toFa(NEED - finished.size)} مسیرِ دیگر را هم انتخاب کن (دکمه‌های بالای ربات).`);
-      else note('running', `🤖 ربات کدِ تو را اجرا می‌کند… ${toFa(finished.size)} از ${toFa(NEED)} مسیر انجام شد.`);
+      else note('running', '🤖 ربات کدِ تو را اجرا می‌کند… باید خط را تا 🏁 دنبال کند.');
     },
     isDone: () => finished.size >= NEED
   };
@@ -829,7 +848,7 @@ const HAL_CFG = {
     hw: hsReadHw
   },
   line_logic: {
-    goal: 'هدف: برنامه‌ای بنویس که ربات را با سه سنسور روی مسیر ببرد: وسط دید ← چراغِ «مستقیم» (PB13)، چپ دید ← «چپ» (PB12)، راست دید ← «راست» (PB14)، هیچ‌کدام ← همه خاموش (ربات می‌ایستد). ربات همان چراغی را اجرا می‌کند که تو روشن کنی؛ دو مسیر را تا 🏁 برسان.',
+    goal: 'هدف: برنامه‌ای بنویس که ربات را با سه سنسور روی مسیر ببرد: وسط دید ← چراغِ «مستقیم» (PB13)، چپ دید ← «چپ» (PB12)، راست دید ← «راست» (PB14)، هیچ‌کدام ← همه خاموش (ربات می‌ایستد). ربات همان چراغی را اجرا می‌کند که تو روشن کنی؛ ربات را تا 🏁 برسان.',
     required: [
       { pin: 'PA0', fn: 'GPIO_Input', label: 'PA0 را GPIO_Input کن (سنسور چپ)' },
       { pin: 'PA1', fn: 'GPIO_Input', label: 'PA1 را GPIO_Input کن (سنسور وسط)' },
@@ -863,7 +882,7 @@ else if (right == 1)
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
 }`,
     successMsg: '✅ عالی! ربات با کدِ خودت خط را دنبال کرد: با if و else if اولویت‌بندی کردی و برای هر حالتِ سنسورها تصمیمِ درست گرفتی. گام بعد تصمیم را به موتورها می‌رسانی.',
-    idleMsg: '🧠 اول پایه‌ها را در تبِ «Cube» تنظیم کن، بعد کد را بنویس، «اجرا» را بزن و ربات را روی مسیر ببین؛ بعد یک مسیرِ دیگر را هم امتحان کن.',
+    idleMsg: '🧠 اول پایه‌ها را در تبِ «Cube» تنظیم کن، بعد کد را بنویس، «اجرا» را بزن و ربات را روی مسیر ببین؛ اگر خواستی مسیرِ دیگری هم امتحان کن.',
     hw: hsBrainRobotHw
   },
   line_motors: {

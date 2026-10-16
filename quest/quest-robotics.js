@@ -57,46 +57,15 @@ const QUESTS_ROBOTICS = [
   { id:'line_logic', icon:'🧠', title:'ربات تعقیب خط — گام ۴: مغزِ ربات', sub:'سه سنسور و if / else if',
     xp:110,
     quote:'«یک سنسور فقط می‌گوید روی خط هستم یا نه. با سه سنسور کنار هم (چپ، وسط، راست) ربات می‌فهمد خط به کدام سمت رفته. قاعده ساده است: هر سمتی که خط را می‌بیند، ربات به همان سمت می‌چرخد تا خط دوباره زیر سنسور وسط بیاید.»',
-    desc:'سه سنسور کنار هم هشت حالت می‌سازند؛ چهار حالتِ اصلی را حل می‌کنیم. در کد، هر حالت یک شرط است و ترتیبِ شرط‌ها اولویت را می‌سازد: اول وسط، بعد چپ، بعد راست. اگر هیچ‌کدام نبود، همه‌ی چراغ‌ها خاموش می‌ماند (ربات بایستد).\n\nبه‌جای موتور، سه LED (PB12، PB13 و PB14) تصمیمِ ربات را نشان می‌دهند. گام بعد همین تصمیم‌ها را به موتورها می‌رسانی.',
+    desc:'اول مغزِ ربات را روی یک ربات متحرک می‌بینی: ربات سه سنسور جلو دارد (چپ، وسط، راست) و تصمیمش را با چند قانونِ if / else if می‌گیرد. هر قانون را که روشن کنی، ربات همان کار را بلد می‌شود و ردیفِ سبز نشان می‌دهد همان لحظه کدام قانون انجام می‌شود. این بخش برای فهمیدن است.\n\nبعد همین قانون‌ها را خودت با کد می‌نویسی و ربات کدِ تو را روی مسیر اجرا می‌کند. سه سنسور هشت حالت می‌سازند؛ چهار حالتِ اصلی را حل می‌کنیم و ترتیبِ شرط‌ها اولویت را می‌سازد: اول وسط، بعد چپ، بعد راست. اگر هیچ‌کدام نبود، همه‌ی چراغ‌ها خاموش می‌ماند (ربات بایستد). به‌جای موتور، سه LED تصمیمِ ربات را نشان می‌دهند: PB13 مستقیم، PB12 چپ و PB14 راست؛ گام بعد همین تصمیم‌ها را به موتورها می‌رسانی.',
     steps:[
-      'در مرحله‌ی ۱، `PA0` و `PA1` و `PA2` را `GPIO_Input` و `PB12` و `PB13` و `PB14` را `GPIO_Output` کن.',
+      'اول در ربات متحرک «شروع» را بزن؛ فقط با قانونِ «مستقیم» ربات از پیچ بیرون می‌رود.',
+      'قانونِ چپ و راست را روشن کن و ردیف سبز را هنگام حرکت ببین تا بفهمی هر قانون چه می‌کند.',
+      'حالا کدش را بنویس. در مرحله‌ی ۱، `PA0` و `PA1` و `PA2` را `GPIO_Input` و `PB12` و `PB13` و `PB14` را `GPIO_Output` کن.',
       'سه سنسور را در سه متغیر بخوان: `uint8_t left = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0);` و همین‌طور `center` و `right`.',
       'اول همه‌ی چراغ‌ها را خاموش کن تا چراغِ حالتِ قبل روشن نماند.',
       'با `if (center == 1)` چراغِ مستقیم، با `else if (left == 1)` چراغِ چپ و با `else if (right == 1)` چراغِ راست را روشن کن.',
-      'چهار حالت (وسط، چپ، راست، گم‌شدنِ خط) را با دکمه‌ها امتحان کن؛ وقتی هر چهار حالت درست بود، مأموریت خودکار تکمیل می‌شود.'
-    ]},
-  { id:'line_motors', icon:'⚙️', title:'ربات تعقیب خط — گام ۵: پاهای ربات (جهت)', sub:'درایور موتور و HAL_GPIO_WritePin',
-    xp:110,
-    quote:'«پایه‌های میکروکنترلر جریان کافی برای راندن موتور ندارند؛ پس بین برد و موتور یک درایور (مثل TB6612 یا L298N) می‌گذاریم. برد فقط یک سیگنال PWM برای سرعت و دو پایه برای جهت می‌دهد و درایور جریان اصلی را از باتری می‌گیرد. ربات با دو موتورِ مستقل می‌چرخد: موتورها که یک‌جور نباشند، پیچیدن اتفاق می‌افتد.»',
-    desc:'هر موتور با دو پایه‌ی جهت (IN1 و IN2) به درایور وصل است: (SET، RESET) یعنی جلو، (RESET، SET) یعنی عقب و (RESET، RESET) یعنی ایست. موتور چپ: PB0 و PB1، موتور راست: PB10 و PB11.\n\nاین گام فقط جهت است و موتورها با سرعتِ کامل می‌چرخند. چهار حرکتِ پایه: مستقیم (هر دو جلو)، چپ (موتور چپ ایستاده و راست جلو)، راست (برعکس) و ایست.',
-    steps:[
-      'در مرحله‌ی ۱، چهار پایه‌ی `PB0` و `PB1` و `PB10` و `PB11` را `GPIO_Output` کن.',
-      'برای «جلو» دو پایه‌ی هر موتور را (SET، RESET) کن و با `HAL_Delay(1000)` صبر کن.',
-      'برای «چپ» موتور چپ را بایستان (هر دو پایه‌اش RESET) و موتور راست را جلو نگه دار.',
-      'برای «راست» برعکس: موتور راست بایستد و موتور چپ جلو برود.',
-      'آخر هر چهار پایه را RESET کن تا ربات بایستد؛ وقتی هر چهار حرکت دیده شد، مأموریت خودکار تکمیل می‌شود.'
-    ]},
-  { id:'motor_pwm', icon:'🎚️', title:'ربات تعقیب خط — گام ۶: سرعتِ موتورها با PWM', sub:'تایمر، HAL_TIM_PWM_Start و __HAL_TIM_SET_COMPARE',
-    xp:120,
-    quote:'«PWM یعنی پایه را خیلی سریع روشن و خاموش کنیم: هرچه درصدِ روشن‌ماندن بیشتر باشد موتور تندتر می‌چرخد. تایمرِ چیپ این کار را خودش می‌کند؛ تو فقط یک عدد (compare) را عوض می‌کنی. دو موتور با سرعت‌های متفاوت یعنی پیچیدن، و پیچیدن یعنی تعقیب خط.»',
-    desc:'تایمر ۱ از صفر تا ۹۹۹ می‌شمارد و تا عددِ compare پایه را روشن نگه می‌دارد: ۰ یعنی ایست، ۵۰۰ نیمِ سرعت، ۹۹۹ سرعتِ کامل. موتور چپ از TIM_CHANNEL_1 (پایه‌ی PA8) و موتور راست از TIM_CHANNEL_2 (پایه‌ی PA9) سرعت می‌گیرد؛ جهت هنوز با پایه‌های IN است.\n\nدو کار در CubeMX (پایه‌ها را TIM1_CH1 و TIM1_CH2 کن) و دو کار در کد دارد: PWM را قبل از حلقه با HAL_TIM_PWM_Start روشن کن و داخل حلقه با __HAL_TIM_SET_COMPARE سرعت را عوض کن.',
-    steps:[
-      'در مرحله‌ی ۱ علاوه بر چهار پایه‌ی جهت (خروجی)، `PA8` را `TIM1_CH1` و `PA9` را `TIM1_CH2` کن؛ در main.c خطِ `MX_TIM1_Init();` ظاهر می‌شود.',
-      'در ادیتورِ «قبل از حلقه» با `HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);` و همین‌طور کانال ۲، PWM را روشن کن.',
-      'داخل حلقه جهتِ هر دو موتور را «جلو» بگذار و با `__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 300);` سرعت بده (۳۰۰ آهسته، ۸۰۰ تند).',
-      'برای خمِ چپ موتور راست را تندتر از چپ و برای خمِ راست موتور چپ را تندتر از راست کن.',
-      'بین حالت‌ها `HAL_Delay` بگذار؛ وقتی آهسته، تند، خمِ چپ و خمِ راست دیده شد، مأموریت خودکار تکمیل می‌شود.'
-    ]},
-  { id:'line_follow', icon:'🏁', title:'ربات تعقیب خط — گام ۷: تعقیب خط', sub:'چشم، مغز و پا کنار هم',
-    xp:150,
-    quote:'«تعقیب خط یک حلقه‌ی ساده است: سنسورها را بخوان، تصمیم بگیر، موتورها را تنظیم کن و دوباره از اول. دو عدد همه‌چیز را کنترل می‌کنند: سرعت پایه و شدت پیچیدن. اگر پیچیدن ضعیف باشد ربات از پیچ‌ها بیرون می‌رود و اگر سرعت زیاد باشد، فرصت واکنش ندارد.»',
-    desc:'حالا چشم، مغز و پا را به هم وصل می‌کنی. ربات سه سنسور جلو دارد و مسیر موج‌دار است. با دو اسلایدر سرعت و شدت پیچیدن را تنظیم کن تا ربات خط را تا خط پایان دنبال کند.\n\nاین همان فکر اصلی کد واقعی است: خروجی تصمیم (چپ یا راست) در شدت پیچیدن ضرب می‌شود و به موتورها می‌رسد.',
-    steps:[
-      '«شروع» را بزن و ببین ربات با تنظیم‌های اولیه چه می‌کند.',
-      'اگر از پیچ‌ها بیرون رفت، شدت پیچیدن را بیشتر کن یا سرعت را کم کن.',
-      'هرچه سرعت بیشتر باشد، ربات به پیچیدن قوی‌تری نیاز دارد.',
-      'ربات باید بدون گم‌شدن بیش از یک ثانیه به خط پایان برسد.',
-      'وقتی رسید، مأموریت خودکار تکمیل می‌شود و ربات تعقیب خطِ تو کامل شده است.'
+      '«اجرا» را بزن و ببین ربات با کدِ تو چه می‌کند؛ اگر خطا یا مشکلی بود، پیامِ زیرِ ربات می‌گوید چرا. وقتی ربات تا خط پایان رسید، مأموریت خودکار تکمیل می‌شود.'
     ]}
 ];
 
@@ -180,7 +149,7 @@ function mountLineIntroSim(container, { onSuccess, alreadyDone } = {}){
       </div>
 
       <div class="ir-h">۳) نقشه‌ی راه این بخش</div>
-      <div class="ir-p">در گام‌های بعد خودت ربات را می‌سازی: گام ۱ چشم (سنسور)، گام ۲ سرهم‌کردنِ قطعات، گام ۳ خواندنِ سنسور با کد، گام ۴ مغز (if)، گام ۵ جهتِ موتورها، گام ۶ سرعتِ موتورها با PWM و گام ۷ تعقیبِ کاملِ خط.</div>
+      <div class="ir-p">در گام‌های بعد خودت ربات را می‌سازی: گام ۱ چشم (سنسور)، گام ۲ سرهم‌کردنِ قطعات، گام ۳ خواندنِ سنسور با کد و گام ۴ مغز (if).</div>
 
       <div class="ir-h">۴) ببین ربات کامل چطور خط را می‌رود</div>
       <div class="ir-p">این ربات ۵ سنسور دارد. از روی اینکه خط زیر کدام سنسورها است می‌فهمد چقدر و به کدام سمت منحرف شده؛ هرچه انحراف بیشتر باشد، تندتر به همان سمت می‌پیچد و در پیچ‌ها خودش آهسته‌تر می‌رود. مسیر را عوض کن و سرعت را تغییر بده. وقتی دو مسیر را تا 🏁 ببرد، مأموریت کامل می‌شود. (در گام ۷ خودت سرعت و شدت پیچیدنِ یک ربات را تنظیم می‌کنی.)</div>
@@ -274,6 +243,192 @@ function mountLineIntroSim(container, { onSuccess, alreadyDone } = {}){
   return { stop(){ running = false; cancelAnimationFrame(raf); } };
 }
 
+/* ================= LINE LOGIC (robotics step 4) =================
+   مغزِ ربات: ربات سه‌سنسوره روی مسیر حرکت می‌کند و تصمیمش را با قانون‌های
+   if / else if می‌گیرد. هر قانون را که کاربر روشن کند، ربات همان کار را بلد می‌شود.
+   مأموریت وقتی کامل می‌شود که ربات دو مسیر را تا پایان برود.
+   از مسیرها و توابعِ کمکیِ مأموریتِ معرفی (LI_TRACKS, liNew, liDist, liSeg) استفاده می‌کند. */
+const LL3_OFF = [-10, 0, 10], LL3_NEED = 2, LL3_R = 6.5;
+const LL3_TRACKS = [LI_TRACKS[0], LI_TRACKS[2], LI_TRACKS[3]];
+const LL3_RULES = [
+  { id:'straight', code:'if (center == 1)',      act:'مستقیم برو',     icon:'⬆️' },
+  { id:'left',     code:'else if (left == 1)',   act:'به چپ بپیچ',     icon:'⬅️' },
+  { id:'right',    code:'else if (right == 1)',  act:'به راست بپیچ',   icon:'➡️' }
+];
+function ll3New(tr){ const s = liNew(tr); s.vals = [0, 0, 0]; s.act = 'stop'; s.stuck = 0; return s; }
+function ll3Sense(s, tr){
+  const c = Math.cos(s.phi), sn = Math.sin(s.phi), px = s.x + c * 15, py = s.y + sn * 15;
+  return LL3_OFF.map(o => liDist(tr, px - sn * o, py + c * o) < LL3_R ? 1 : 0);
+}
+/* decide(vals) اختیاری است: اگر باشد، تصمیم را برنامه‌ی کاربر (چراغ‌های PB12/13/14 در hal-block.js) می‌گیرد */
+function ll3Step(s, tr, dt, base, rules, decide){
+  if(dt <= 0) return;
+  s.vals = ll3Sense(s, tr);
+  const L = s.vals[0], C = s.vals[1], R = s.vals[2];
+  /* دقیقاً همان if / else if ی که در کد می‌نویسی */
+  let act = 'stop';
+  if(decide) act = decide(s.vals);
+  else if(C && rules.straight) act = 'straight';
+  else if(L && rules.left) act = 'left';
+  else if(R && rules.right) act = 'right';
+  s.act = act;
+  const any = L || C || R;
+  s.lost = any ? 0 : s.lost + dt;
+  s.stuck = (any && act === 'stop') ? s.stuck + dt : 0;
+  const turn = 0.045 * base;
+  const v = act === 'stop' ? 0 : act === 'straight' ? base : base * 0.55;
+  const wT = act === 'left' ? -turn : act === 'right' ? turn : 0;
+  s.w += (wT - s.w) * Math.min(1, dt / 0.05);
+  s.phi += s.w * dt;
+  s.x += Math.cos(s.phi) * v * dt; s.y += Math.sin(s.phi) * v * dt;
+  s.vl = v + s.w * 11; s.vr = v - s.w * 11;
+  s.t += dt;
+  const lt = s.trail[s.trail.length - 1];
+  if(Math.hypot(s.x - lt[0], s.y - lt[1]) > 3){ s.trail.push([s.x, s.y]); if(s.trail.length > 700) s.trail.shift(); }
+  let bi = s.seg, bd = 1e9, ba = s.prog;
+  for(let i = Math.max(0, s.seg - 2); i < Math.min(tr.pts.length - 1, s.seg + 10); i++){
+    const q = liSeg(tr, i, s.x, s.y);
+    if(q.d < bd){ bd = q.d; bi = i; ba = tr.cum[i] + q.t * (tr.cum[i + 1] - tr.cum[i]); }
+  }
+  s.seg = bi; if(ba > s.prog) s.prog = ba;
+  if(s.prog >= tr.total - 16) s.done = true;
+  else if(s.stuck > 1) s.fail = 'stuck';
+  else if(s.lost > 1) s.fail = 'lost';
+  else if(s.x < -12 || s.x > 332 || s.y < -12 || s.y > 202) s.fail = 'lost';
+  else if(s.t > 60) s.fail = 'time';
+}
+
+function mountLineLogicSim(container, { onSuccess, alreadyDone, explain } = {}){
+  const trackBtns = LL3_TRACKS.map((t, i) => `<button type="button" class="sim-btn ${i ? 'sim-btn-ghost' : 'sim-btn-run'}" data-t="${i}">${t.name}</button>`).join('');
+  const rowCss = 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 10px;border:1px solid #2a3346;border-radius:10px;background:#0d1119;margin-bottom:6px;';
+  const ruleRows = LL3_RULES.map(r => `<label class="ll3-row" data-r="${r.id}" style="${rowCss}cursor:pointer"><input type="checkbox" data-c="${r.id}"${r.id === 'straight' ? ' checked' : ''}><code class="mono" dir="ltr" style="min-width:150px;text-align:left">${r.code}</code><span>${r.icon} ${r.act}</span></label>`).join('')
+    + `<div class="ll3-row" data-r="stop" style="${rowCss}"><span style="display:inline-block;width:13px"></span><code class="mono" dir="ltr" style="min-width:150px;text-align:left">else</code><span>⏹️ بایست</span></div>`;
+  const sensorDots = LL3_OFF.map((o, i) => `<circle class="ll3-s" cx="15" cy="${o}" r="3.2" fill="#555"/>`).join('');
+  container.innerHTML = `
+    <div class="sim-wrap ir-wrap">
+      <div class="sim-hw-note">${explain ? 'اول با ربات می‌بینی مغز چطور تصمیم می‌گیرد؛ پایین‌تر همین قانون‌ها را با کد می‌نویسی. این بخش برای فهمیدن است و روی تکمیل مأموریت اثری ندارد. ' : ''}مغزِ ربات یک فهرست قانون است. هر قانون را که روشن کنی، ربات همان کار را بلد می‌شود. اول فقط «مستقیم» روشن است؛ ببین ربات چه می‌کند، بعد قانون‌های چپ و راست را اضافه کن تا خط را تا 🏁 برود.</div>
+
+      <div class="ir-h">۱) قانون‌های مغز (ردیفِ سبز همان لحظه انجام می‌شود)</div>
+      <div class="ir-p">ربات سه سنسور جلو دارد: <b>چپ، وسط و راست</b>. هر سنسور وقتی خط مشکی را ببیند، می‌شود <b>۱</b>. مغز از بالا به پایین قانون‌ها را نگاه می‌کند و <b>اولین قانونی که درست باشد</b> را انجام می‌دهد؛ بقیه نادیده گرفته می‌شوند. اگر هیچ‌کدام درست نبود، ربات می‌ایستد.</div>
+      <div>${ruleRows}</div>
+
+      <div class="ir-h">۲) ربات را ببین</div>
+      <div class="ir-tabs">${trackBtns}</div>
+      <svg class="ls-svg" viewBox="0 0 320 190" direction="ltr" role="img" aria-label="ربات سه‌سنسوره روی مسیر" style="cursor:default">
+        <rect width="320" height="190" fill="#e9e6dc"/>
+        <path id="ll3Track" fill="none" stroke="#111" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+        <polyline id="ll3Trail" fill="none" stroke="#1fa37a" stroke-opacity=".75" stroke-width="2" stroke-linejoin="round"/>
+        <text id="ll3Flag" font-size="16" text-anchor="middle">🏁</text>
+        <g id="ll3Bot">
+          <rect x="-8" y="-14" width="13" height="5" rx="1.5" fill="#15171c"/><rect x="-8" y="9" width="13" height="5" rx="1.5" fill="#15171c"/>
+          <rect x="-12" y="-9" width="23" height="18" rx="4" fill="#2b6cb0" stroke="#8fc0f5"/>
+          <rect x="-7" y="-5" width="10" height="10" rx="1.5" fill="#0e1117" stroke="#57d8a3" stroke-width=".8"/>
+          <circle cx="-9.5" cy="0" r="2.2" fill="#cfd4dc"/>
+          <rect x="10" y="-2.5" width="3" height="5" fill="#2a2f3a"/>
+          <rect x="12" y="-18" width="6" height="36" rx="2" fill="#1a2130" stroke="#c97c3d" stroke-width="1"/>
+          ${sensorDots}
+        </g>
+      </svg>
+      <div class="ls-read"><span>سنسورها: <b class="mono">چپ <span id="ll3L"></span> · وسط <span id="ll3C"></span> · راست <span id="ll3R"></span></b></span></div>
+      <div class="ls-read"><span>تصمیم: <b id="ll3Dec"></b></span></div>
+      <label class="ls-field">سرعت: <b class="mono" id="ll3Sv"></b><input type="range" id="ll3Sp" dir="ltr" min="40" max="100" step="5" value="60"></label>
+      <div class="ll-row"><button type="button" class="sim-btn sim-btn-run" data-a="go">▶ شروع</button><button type="button" class="sim-btn sim-btn-ghost" data-a="reset">↺ از اول</button></div>
+      <div class="sim-status" id="ll3Status" data-state="${alreadyDone ? 'success' : 'idle'}"></div>
+    </div>`;
+  const q = s => container.querySelector(s);
+  const trackEl = q('#ll3Track'), trailEl = q('#ll3Trail'), flagEl = q('#ll3Flag'), bot = q('#ll3Bot'), sp = q('#ll3Sp'), st = q('#ll3Status');
+  const dots = Array.from(container.querySelectorAll('.ll3-s'));
+  const rows = {}; container.querySelectorAll('.ll3-row').forEach(el => { rows[el.dataset.r] = el; });
+  const rules = { straight: true, left: false, right: false };
+  const finished = new Set();
+  let ti = 0, s = ll3New(LL3_TRACKS[0]), raf = 0, last = null, running = false, succeeded = !!alreadyDone;
+  const say = (a, t) => { st.dataset.state = a; st.textContent = t; };
+  const pathD = tr => 'M' + tr.pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' L');
+  const DEC = { straight: '⬆️ وسط خط را می‌بیند: مستقیم', left: '⬅️ چپ خط را می‌بیند: به چپ بپیچ', right: '➡️ راست خط را می‌بیند: به راست بپیچ', stop: '⏹️ هیچ قانونی درست نیست: بایست' };
+  const mark = v => v ? '■' : '□';
+  function draw(){
+    bot.setAttribute('transform', `translate(${s.x.toFixed(1)} ${s.y.toFixed(1)}) rotate(${(s.phi * 180 / Math.PI).toFixed(1)})`);
+    dots.forEach((c, i) => c.setAttribute('fill', s.vals[i] ? '#ff5a4f' : '#555'));
+    trailEl.setAttribute('points', s.trail.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' '));
+    q('#ll3L').textContent = mark(s.vals[0]); q('#ll3C').textContent = mark(s.vals[1]); q('#ll3R').textContent = mark(s.vals[2]);
+    q('#ll3Dec').textContent = DEC[s.act];
+    Object.keys(rows).forEach(k => {
+      const on = k === s.act;
+      rows[k].style.borderColor = on ? '#57d8a3' : '#2a3346';
+      rows[k].style.background = on ? '#12301f' : '#0d1119';
+    });
+  }
+  function loadTrack(i){
+    ti = i;
+    const tr = LL3_TRACKS[i], e = tr.pts[tr.pts.length - 1];
+    trackEl.setAttribute('d', pathD(tr));
+    flagEl.setAttribute('x', e[0]); flagEl.setAttribute('y', e[1] - 8);
+    container.querySelectorAll('[data-t]').forEach(b => { const on = +b.dataset.t === i; b.classList.toggle('sim-btn-run', on); b.classList.toggle('sim-btn-ghost', !on); });
+  }
+  function failText(){
+    if(s.fail === 'stuck'){
+      const miss = [];
+      if(s.vals[1] && !rules.straight) miss.push('«مستقیم برو»');
+      if(s.vals[0] && !rules.left) miss.push('«به چپ بپیچ»');
+      if(s.vals[2] && !rules.right) miss.push('«به راست بپیچ»');
+      return `⚠️ ربات ایستاد: سنسور خط را دید ولی قانونِ ${miss.join(' و ') || 'مناسب'} خاموش است. آن را روشن کن و دوباره امتحان کن.`;
+    }
+    if(s.fail === 'lost') return '⚠️ ربات خط را گم کرد (هر سه سنسور سفید شدند). قانون‌های چپ و راست روشن باشند و سرعت را کم کن.';
+    return '⚠️ ربات خیلی کند رفت و وقت تمام شد. سرعت را بیشتر کن.';
+  }
+  function frame(ts){
+    if(!running) return;
+    const dt = last == null ? 0 : Math.min(0.05, (ts - last) / 1000); last = ts;
+    const n = Math.max(1, Math.ceil(dt * 120)), h = dt / n;
+    for(let i = 0; i < n && !s.done && !s.fail; i++) ll3Step(s, LL3_TRACKS[ti], h, +sp.value, rules);
+    draw();
+    if(s.done){
+      running = false; finished.add(ti);
+      if(explain){
+        say('success', '✅ رسید! مغزِ ربات با چند if ساده خط را تا پایان دنبال کرد. حالا پایین‌تر همین قانون‌ها را با کد خودت بنویس.');
+        return;
+      }
+      if(finished.size >= LL3_NEED || succeeded){
+        say('success', '✅ رسید! مغزِ ربات با چند if ساده خط را تا پایان دنبال کرد. گام بعد این تصمیم‌ها را به موتورها می‌رسانی.');
+        if(!succeeded){ succeeded = true; onSuccess && onSuccess(); }
+      } else say('success', `✅ ربات مسیر «${LL3_TRACKS[ti].name}» را تا پایان رفت! ${toFa(LL3_NEED - finished.size)} مسیر دیگر را هم امتحان کن.`);
+      return;
+    }
+    if(s.fail){ running = false; say('error', failText()); return; }
+    raf = requestAnimationFrame(frame);
+  }
+  function reset(){
+    cancelAnimationFrame(raf); running = false; s = ll3New(LL3_TRACKS[ti]); last = null; draw();
+    if(!succeeded) say('idle', '🏁 یک مسیر انتخاب کن، قانون‌ها را تنظیم کن و «شروع» را بزن.');
+  }
+  container.addEventListener('click', e => {
+    const b = e.target.closest ? e.target.closest('button') : null;
+    if(!b) return;
+    if(b.dataset.t != null){ loadTrack(+b.dataset.t); reset(); }
+    else if(b.dataset.a === 'reset') reset();
+    else if(b.dataset.a === 'go'){ reset(); running = true; say('running', '▶ ربات در حال رفتن است…'); raf = requestAnimationFrame(frame); }
+  });
+  container.addEventListener('change', e => {
+    const c = e.target && e.target.dataset ? e.target.dataset.c : null;
+    if(c) rules[c] = !!e.target.checked;
+  });
+  sp.addEventListener('input', () => { q('#ll3Sv').textContent = toFa(sp.value); });
+  q('#ll3Sv').textContent = toFa(sp.value);
+  loadTrack(0); draw();
+  say(alreadyDone && !explain ? 'success' : 'idle', alreadyDone && !explain ? '✅ قبلاً این مأموریت را انجام داده‌ای. دوست داری دوباره قانون‌ها را امتحان کنی؟' : '🏁 اول «شروع» را بزن و ببین فقط با قانونِ «مستقیم» چه می‌شود.');
+  return { stop(){ running = false; cancelAnimationFrame(raf); } };
+}
+
+/* مأموریت «مغزِ ربات»: اول ربات متحرک (فقط برای فهمیدن)، بعد نوشتنِ کدِ همان قانون‌ها در
+   ادیتورِ اصلیِ STM32 (CubeMX + ادیتور از hal-block.js: mountHalBrainSim). در آن‌جا هم ربات متحرک
+   با کدِ خودِ کاربر حرکت می‌کند (hsBrainRobotHw) و همان مأموریت را تکمیل می‌کند. */
+function mountLineLogicMission(container, opts = {}){
+  container.innerHTML = '<div id="llRobotMount"></div><div id="llCodeMount" style="margin-top:14px;"></div>';
+  const robot = mountLineLogicSim(container.querySelector('#llRobotMount'), { explain: true });
+  const code = mountHalBrainSim(container.querySelector('#llCodeMount'), opts);
+  return { stop(){ robot.stop(); code && code.stop && code.stop(); } };
+}
+
 /* ================= ROBOT ASSEMBLY (robotics step 2) =================
    ربات را از بالا می‌بینی. شش قطعه پایینِ صفحه است؛ هر کدام را بکش و روی جایگاهِ
    خط‌چینِ خودش بینداز. وقتی همه نشستند «روشنش کن» مأموریت را تکمیل می‌کند.
@@ -291,60 +446,51 @@ const RA_PARTS = [
   { id:'driver',  kind:'driver',  tray:[100, 372], lbl:'درایور موتور',  name:'درایور موتور TB6612',            info:'🦿 درایور بین مغز و موتورها نشست؛ چون پایه‌های برد جریانِ کافی برای راندنِ موتور ندارند.' }
 ];
 const RA_WHAT = {
-  sensors: 'آرایه‌ی ۹ سنسور TCRT5000 چشمِ ربات است. هر سنسور یک LED مادون‌قرمز و یک گیرنده دارد و نورِ برگشتی از زمین را اندازه می‌گیرد؛ از روی آن می‌فهمد زیرش سفید است یا خط مشکی. ۹ سنسور کنار هم یعنی ربات می‌فهمد خط دقیقاً کجای جلویش است.',
-  motor: 'موتور N20 یک موتور DC کوچک با گیربکس فلزی و چرخ است. گیربکس سرعت را کم و نیروی چرخش را زیاد می‌کند. ربات دو موتورِ مستقل دارد: اگر یکی تندتر بچرخد، ربات به سمتِ کندتر می‌پیچد.',
-  caster: 'چرخ هرزگرد یک چرخِ بدونِ موتور است (معمولاً ساچمه‌ای) که فقط پشتِ ربات را روی زمین نگه می‌دارد و آزادانه به هر سو می‌چرخد. بدونِ آن بدنه روی زمین می‌افتد.',
-  reg: 'رگولاتور LM2596 ولتاژ باتری (۷٫۴ ولت) را به ولتاژ کمتر و ثابتی تبدیل می‌کند که برد و سنسورها تحمل می‌کنند. ولومِ کوچکِ روی آن ولتاژ خروجی را تنظیم می‌کند. بدونِ آن ولتاژِ زیادِ باتری به برد آسیب می‌زند.',
-  power: 'کلید روشن/خاموش مسیر برقِ باتری را وصل و قطع می‌کند. نشانِ «۱» روشن و نشانِ «۰» خاموش است. با آن می‌توانی ربات را بدونِ جداکردنِ باتری خاموش کنی.',
-  battery: 'باتری لیتیوم‌پلیمر ۲سلوله (LiPo 2S) با ولتاژ ۷٫۴ ولت است و جریانِ کافی برای موتورها دارد. انرژیِ همه‌ی بخش‌ها از آن می‌آید. سیم‌های قرمز و مشکی را هیچ‌وقت به هم نزن، چون اتصال کوتاه خطرناک است.',
-  board: 'برد Blue Pill با چیپ STM32F103C8T6 مغزِ ربات است (هسته‌ی ۳۲بیتی تا ۷۲ مگاهرتز). کدی که می‌نویسی روی آن اجرا می‌شود: سنسورها را می‌خواند، تصمیم می‌گیرد و به درایور فرمان می‌دهد.',
-  driver: 'درایور موتور TB6612 بین مغز و موتورها می‌نشیند. پایه‌های برد جریانِ کافی برای راندنِ موتور ندارند؛ درایور فرمانِ ضعیفِ برد را به جریانِ قوی از باتری تبدیل می‌کند. با دو پایه‌ی جهت و یک PWM جهت و سرعتِ هر موتور را کنترل می‌کند.'
+  sensors: 'چشمِ ربات: ۹ سنسورِ مادون‌قرمز که زیرِ خود را «سفید» یا «مشکی» می‌بینند و خط را پیدا می‌کنند.',
+  motor: 'موتورِ کوچک با گیربکس و چرخ؛ دو موتورِ مستقل یعنی ربات می‌تواند بپیچد.',
+  caster: 'چرخِ بدونِ موتور که پشتِ ربات را نگه می‌دارد و آزادانه به هر سو می‌چرخد.',
+  reg: 'ولتاژِ باتری (۷٫۴ ولت) را به ولتاژِ کمترِ مناسبِ برد و سنسورها کم می‌کند.',
+  power: 'کلیدی که برقِ باتری را وصل و قطع می‌کند.',
+  battery: 'باتری ۷٫۴ ولتی که انرژیِ همه‌ی بخش‌ها را می‌دهد.',
+  board: 'مغزِ ربات (STM32): کدِ تو روی آن اجرا می‌شود و سنسورها و درایور را کنترل می‌کند.',
+  driver: 'جریانِ قوی را از باتری به موتورها می‌رساند؛ پایه‌های برد به‌تنهایی برای موتور کافی نیستند.'
 };
 const RA_GUIDE = [['sensors', '👁️ چشم‌ها (۹ سنسور)'], ['board', '🧠 مغز (Blue Pill)'], ['driver', '🦿 درایور موتور'], ['motor', '⚙️ موتور با چرخ (دو تا)'], ['caster', '⚪ چرخ هرزگرد'], ['battery', '🔋 باتری'], ['power', '🔘 کلید'], ['reg', '🔧 رگولاتور']];
 const raWhat = p => RA_WHAT[p.kind];
 /* بخش‌های هر قطعه: vb = viewBox، m = نشانه‌ها (x,y نقطه‌ی روی قطعه، lx,ly جای شماره، t توضیح) */
 const RA_ANAT = {
   sensors: { vb: [-6, -16, 192, 52], m: [
-    { x: 9, y: 8.5, lx: 6, ly: -9, t: 'LED مادون‌قرمز: نورِ نامرئی به زمین می‌فرستد.' },
-    { x: 15.5, y: 8.5, lx: 20, ly: -9, t: 'گیرنده (فوتوترانزیستور): نورِ برگشتی از زمین را می‌گیرد.' },
-    { x: 31.5, y: 2.2, lx: 44, ly: -9, t: 'پین‌های اتصال: برق و خروجیِ هر سنسور از این‌جا به برد می‌رود.' },
+    { x: 9, y: 8.5, lx: 6, ly: -9, t: 'LED مادون‌قرمز: نور می‌فرستد.' },
+    { x: 15.5, y: 8.5, lx: 20, ly: -9, t: 'گیرنده: نورِ برگشتی را می‌گیرد.' },
     { x: 12, y: 17.5, lx: 12, ly: 28, t: 'مقاومت: جریانِ LED را محدود می‌کند.' } ] },
   board: { vb: [-8, -16, 80, 60], m: [
-    { x: 3.5, y: 11, lx: 4, ly: -9, t: 'پورت micro-USB: برق می‌دهد (برنامه را با ST-Link می‌ریزیم).' },
-    { x: 13.75, y: 11, lx: 16, ly: -9, t: 'دکمه‌ی RESET: برنامه را از اول اجرا می‌کند.' },
-    { x: 31, y: 10, lx: 30, ly: -9, t: 'چیپ STM32F103C8T6: مغزِ اصلی که کدِ تو را اجرا می‌کند.' },
-    { x: 46.5, y: 11.5, lx: 44, ly: -9, t: 'کریستال ۸ مگاهرتز: ساعتِ چیپ است؛ با PLL به ۷۲ مگاهرتز می‌رسد.' },
-    { x: 57, y: 10, lx: 58, ly: -9, t: 'جامپرهای BOOT: حالتِ راه‌اندازی را تعیین می‌کنند؛ برای اجرای برنامه‌ی خودت BOOT0 باید روی ۰ باشد.' },
-    { x: 20.5, y: 21, lx: 20, ly: 37, t: 'LED روی PC13: همان LED چشمک‌زن برد.' },
-    { x: 40, y: 25.5, lx: 40, ly: 37, t: 'ردیف پین‌ها: ورودی و خروجی‌ها (PA0، PB12، PA8 و ...) از این‌جا بیرون می‌آیند.' } ] },
+    { x: 3.5, y: 11, lx: 4, ly: -9, t: 'پورت USB.' },
+    { x: 13.75, y: 11, lx: 16, ly: -9, t: 'دکمه‌ی RESET.' },
+    { x: 31, y: 10, lx: 30, ly: -9, t: 'چیپ STM32: مغزِ اصلی.' },
+    { x: 46.5, y: 11.5, lx: 44, ly: -9, t: 'کریستال: ساعتِ چیپ.' },
+    { x: 20.5, y: 21, lx: 20, ly: 37, t: 'LED روی PC13.' } ] },
   driver: { vb: [-8, -16, 76, 72], m: [
-    { x: 30, y: 12, lx: 30, ly: -9, t: 'چیپ TB6612: دو موتور را هرکدام جداگانه کنترل می‌کند.' },
-    { x: 7.5, y: 14, lx: 4, ly: -9, t: 'خازن‌ها: ولتاژ را صاف می‌کنند تا موتور برد را نلرزاند.' },
-    { x: 44.6, y: 2.5, lx: 54, ly: -9, t: 'پایه‌های بالا: فرمانِ جهت و PWM از مغز می‌آید.' },
-    { x: 30, y: 38, lx: 30, ly: 49, t: 'پایه‌های پایین: اتصال به موتورها و برقِ باتری.' } ] },
+    { x: 30, y: 12, lx: 30, ly: -9, t: 'چیپ TB6612.' },
+    { x: 44.6, y: 2.5, lx: 54, ly: -9, t: 'پایه‌های بالا: فرمان از مغز.' },
+    { x: 30, y: 38, lx: 30, ly: 49, t: 'پایه‌های پایین: موتورها و باتری.' } ] },
   motor: { vb: [-16, -8, 58, 72], m: [
-    { x: 2, y: 21, lx: -9, ly: 21, t: 'چرخ: لاستیک و محور؛ ربات را روی خط می‌برد.' },
-    { x: 21, y: 20, lx: 33, ly: 20, t: 'گیربکس: سرعتِ موتور را کم و نیرویش را زیاد می‌کند.' },
-    { x: 21, y: 41, lx: 33, ly: 41, t: 'موتور DC: با برق می‌چرخد و جهتش را قطبِ برق تعیین می‌کند.' },
-    { x: 21, y: 52, lx: 33, ly: 54, t: 'برد انکودر: چرخشِ محور را می‌شمارد تا سرعت قابل‌اندازه‌گیری شود.' } ] },
+    { x: 2, y: 21, lx: -9, ly: 21, t: 'چرخ.' },
+    { x: 21, y: 20, lx: 33, ly: 20, t: 'گیربکس: سرعت کم، نیرو زیاد.' },
+    { x: 21, y: 41, lx: 33, ly: 41, t: 'موتور DC.' },
+    { x: 21, y: 52, lx: 33, ly: 54, t: 'انکودر: چرخش را می‌شمارد.' } ] },
   caster: { vb: [-8, -16, 52, 56], m: [
-    { x: 14, y: 8, lx: 14, ly: -9, t: 'ساچمه: آزادانه می‌چرخد و هر سمت می‌رود.' },
-    { x: 23, y: 23, lx: 36, ly: 34, t: 'سوراخ‌های پیچ: قطعه با آن‌ها به بدنه بسته می‌شود.' } ] },
+    { x: 14, y: 8, lx: 14, ly: -9, t: 'ساچمه: آزادانه می‌چرخد.' } ] },
   battery: { vb: [-8, -16, 84, 62], m: [
-    { x: 25, y: 5, lx: 25, ly: -9, t: 'بدنه: دو سلول لیتیوم‌پلیمر پشتِ هم (۲S)؛ جمعاً ۷٫۴ ولت.' },
-    { x: 52, y: 12, lx: 46, ly: -9, t: 'سیم قرمز: قطبِ مثبت (+).' },
-    { x: 59, y: 10, lx: 66, ly: -9, t: 'کانکتور: به ربات وصل می‌شود؛ جهتش را وارونه نزن.' },
-    { x: 52, y: 19, lx: 52, ly: 40, t: 'سیم مشکی: قطبِ منفی (−).' },
-    { x: 57, y: 28, lx: 66, ly: 40, t: 'سیم بالانس: فقط هنگامِ شارژ استفاده می‌شود.' } ] },
+    { x: 25, y: 5, lx: 25, ly: -9, t: 'بدنه: دو سلول، ۷٫۴ ولت.' },
+    { x: 52, y: 12, lx: 52, ly: -9, t: 'سیم قرمز: مثبت (+).' },
+    { x: 52, y: 19, lx: 52, ly: 40, t: 'سیم مشکی: منفی (−).' } ] },
   power: { vb: [-8, -16, 50, 56], m: [
-    { x: 17, y: 9, lx: 17, ly: -9, t: 'راکر: سمتِ «۱» روشن و سمتِ «۰» خاموش است.' },
-    { x: 11.5, y: 22, lx: 11.5, ly: 33, t: 'ترمینال‌ها: سیمِ برقِ باتری به یکی و به سمتِ رگولاتور به دیگری می‌رود.' } ] },
+    { x: 17, y: 9, lx: 17, ly: -9, t: 'راکر: ۱ روشن، ۰ خاموش.' },
+    { x: 11.5, y: 22, lx: 11.5, ly: 33, t: 'ترمینال‌ها: سیمِ برق.' } ] },
   reg: { vb: [-8, -16, 60, 54], m: [
-    { x: 2.5, y: 9, lx: 2, ly: -9, t: 'ترمینال ورودی: ۷٫۴ ولتِ باتری.' },
-    { x: 15.5, y: 6, lx: 15, ly: -9, t: 'سلف: انرژی را لحظه‌ای ذخیره می‌کند تا ولتاژ پایین بیاید.' },
-    { x: 29, y: 4, lx: 28, ly: -9, t: 'خازن: ولتاژ خروجی را صاف می‌کند.' },
-    { x: 36.5, y: 5.5, lx: 38, ly: -9, t: 'ولوم: با پیچ‌گوشتی ولتاژ خروجی را تنظیم می‌کنی.' },
-    { x: 41.5, y: 12, lx: 42, ly: 31, t: 'ترمینال خروجی: ولتاژِ کم‌شده برای برد و سنسورها.' } ] }
+    { x: 2.5, y: 9, lx: 2, ly: -9, t: 'ورودی: ۷٫۴ ولتِ باتری.' },
+    { x: 36.5, y: 5.5, lx: 38, ly: -9, t: 'ولوم: ولتاژِ خروجی را تنظیم می‌کند.' },
+    { x: 41.5, y: 12, lx: 42, ly: 31, t: 'خروجی: ولتاژِ کم‌شده.' } ] }
 };
 function raGuideSvg(kind){
   const a = RA_ANAT[kind], W = kind === 'sensors' ? 300 : 200, k = a.vb[2] / W, gold = '#d4af37';
@@ -355,7 +501,7 @@ function raGuideSvg(kind){
     `<text x="${m.lx}" y="${(m.ly + 2.6 * k).toFixed(2)}" text-anchor="middle" font-size="${(7.5 * k).toFixed(2)}" font-weight="700" fill="#10151f" style="font-family:'Vazirmatn',sans-serif">${toFa(i + 1)}</text>`).join('');
   return `<svg viewBox="${a.vb.join(' ')}" style="width:${W}px;max-width:100%;height:auto;display:block;background:#10151f;border-radius:10px" role="img" aria-label="شکلِ قطعه با بخش‌های شماره‌دار">${raVisual(kind)}${marks}</svg>`;
 }
-const raCard = ([k, t]) => `<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:10px 0;border-top:1px solid #2a3346">${raGuideSvg(k)}<div class="hs-p" style="flex:1 1 200px"><b>${t}</b><br>${RA_WHAT[k]}${RA_ANAT[k].m.map((m, i) => `<div style="margin-top:4px"><b style="color:#d4af37">${toFa(i + 1)}.</b> ${m.t}</div>`).join('')}</div></div>`;
+const raCard = ([k, t]) => `<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:8px 0;border-top:1px solid #2a3346">${raGuideSvg(k)}<div class="hs-p" style="flex:1 1 200px"><b>${t}</b><br>${RA_WHAT[k]}${RA_ANAT[k].m.map((m, i) => `<div><b style="color:#d4af37">${toFa(i + 1)}.</b> ${m.t}</div>`).join('')}</div></div>`;
 const RA_SLOTS = [
   { id:'s_sensors', kind:'sensors', pos:[70, 28],   label:'چشم‌ها' },
   { id:'s_board',   kind:'board',   pos:[128, 70],  label:'مغز' },
@@ -498,7 +644,7 @@ function mountRobotAssembleSim(container, { onSuccess, alreadyDone } = {}){
         <button type="button" class="sim-btn sim-btn-ghost" id="raReset">↺ از اول</button>
       </div>
       <div class="sim-status" id="raStatus" data-state="idle"></div>
-      <details class="hs-det" open>
+      <details class="hs-det">
         <summary>راهنمای قطعه‌ها: هر قطعه چیست؟</summary>
         ${RA_GUIDE.map(raCard).join('')}
       </details>

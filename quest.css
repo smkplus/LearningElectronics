@@ -819,3 +819,9 @@ body.sim-fullscreen-lock #knightSection{ z-index:1200 !important; }
 .steps .hl-dir{ color:#c792ea; } .steps .hl-struct, .steps .hl-type, .steps .hl-header{ color:#2ea09d; }
 .steps .hl-fn, .steps .hl-class{ color:#e5a467; } .steps .hl-ident, .steps .hl-const{ color:#e6edf3; }
 .steps .hl-str{ color:#80cbc4; unicode-bidi:plaintext; } .steps .hl-num{ color:#67c2ff; } .steps .hl-cm{ color:#5c6370; unicode-bidi:plaintext; }
+
+/* ربات گام ۴ (مغزِ ربات): اندازه‌ی ربات مثل قسمت «ربات را ببین» */
+.hs-simmount .sim-board-wrap{ display:block !important; width:100% !important; max-width:none !important; padding:0 !important; background:none !important; border:0 !important; }
+.hs-simmount .sim-board-wrap > *{ width:100% !important; max-width:none !important; }
+.hs-simmount .sim-board-wrap .ls-svg{ width:100% !important; max-width:none !important; height:auto !important; }
+.hs-simmount .sim-board-wrap .ir-tabs{ margin-bottom:10px; }
