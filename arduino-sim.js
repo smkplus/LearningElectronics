@@ -429,13 +429,52 @@ const ArduinoSim = (() => {
   }
 
   /* ------------------------------ SVG Circuits ------------------------------ */
+  /* برد Arduino Uno R3 مثل بخش الکترونیک (آبی، USB، جک برق، سوکت‌ها، ATmega، لوگو). مختصات داخلی mil است
+     (برد ۲٫۷″×۲٫۱″)؛ ۹۰ درجه چرخیده تا USB بالا و سوکت‌های دیجیتال (D0–D13) سمت راست باشند.
+     پایه‌های شبیه‌ساز (دایره‌های x=148) روی همین سوکت‌های راست می‌نشینند. */
   function boardBaseSVG() {
+    const S = 0.055, X0 = 150, Y0 = 22;
+    const sock = (x0, n, y) => `<rect x="${x0 - 50}" y="${y - 65}" width="${n * 100}" height="130" rx="12" fill="#171a1f" stroke="#000" stroke-width="10"/>`
+      + Array.from({ length: n }, (_, k) => `<rect x="${x0 + 100 * k - 26}" y="${y - 26}" width="52" height="52" fill="#4b525c"/>`).join('');
+    const logo = (cx, cy) => `<g fill="none" stroke="#f4fbfb" stroke-linecap="round"><circle cx="${cx - 105}" cy="${cy}" r="92" stroke-width="30"/><circle cx="${cx + 105}" cy="${cy}" r="92" stroke-width="30"/><path d="M${cx - 150} ${cy}h90M${cx + 60} ${cy}h90M${cx + 105} ${cy - 45}v90" stroke-width="22"/></g>`;
     return `
-      <rect x="10" y="15" width="140" height="160" rx="10" class="sim-board-body"/>
-      <rect x="55" y="4" width="30" height="13" rx="2" class="sim-usb"/>
-      <text x="78" y="34" text-anchor="middle" class="sim-board-label">ARDUINO</text>
-      <text x="78" y="48" text-anchor="middle" class="sim-board-sub">UNO</text>`;
+      <g transform="translate(${X0} ${Y0}) rotate(90) scale(${S})">
+        <rect x="0" y="0" width="2700" height="2100" rx="70" fill="#1a6fb5" stroke="#0e4a7d" stroke-width="30"/>
+        <g fill="#b9c0c8">${Array.from({ length: 14 }, (_, k) => `<rect x="${1069 + 93 * k}" y="1160" width="42" height="80"/><rect x="${1069 + 93 * k}" y="1540" width="42" height="80"/>`).join('')}</g>
+        <rect x="1050" y="1230" width="1350" height="320" rx="24" fill="#16181d"/>
+        <path d="M1050 1335a55 55 0 0 1 0 110z" fill="#2c3037"/>
+        <rect x="640" y="235" width="220" height="220" rx="24" fill="#b7bec6" stroke="#6d757e" stroke-width="18"/>
+        <circle cx="750" cy="345" r="72" fill="#c93030"/>
+        ${sock(1900, 8, 100)}${sock(800, 10, 100)}${sock(1000, 8, 2000)}${sock(1900, 6, 2000)}
+        <rect x="-270" y="180" width="690" height="480" rx="30" fill="#c9d0d7" stroke="#8b949e" stroke-width="22"/>
+        <rect x="-80" y="1300" width="640" height="440" rx="36" fill="#1b1d22"/>
+        ${logo(1700, 620)}
+        <text x="1700" y="1060" font-size="190" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#f4fbfb">UNO</text>
+      </g>`;
   }
+
+  /* LED واقعی (همان LED بخش الکترونیک): گنبد به راست، پایه‌ها به چپ؛ پایه‌ی بلند (آند) بالا و کوتاه (کاتد) پایین.
+     (ax, ay) سرِ پایه‌ی آند است که سیمِ مقاومت به آن می‌رسد؛ کاتد در (ax+9.6, ay+16). id=simLedBulb لایه‌ی روشنِ LED است. */
+  function realLedSVG(ax, ay) {
+    const k = 0.8, cx = ax + 32, cy = ay + 8;
+    const body = 'M-9,-20 H6 A20,20 0 0 1 6,20 H-9 Z';
+    return `
+      <g id="simLedGroup" class="sim-led-group" transform="translate(${cx} ${cy}) scale(${k})">
+        <circle class="lr-glow" cx="6" cy="0" r="26" fill="#ff4d3d" opacity="0"/>
+        <g stroke="#b9bfc9" stroke-width="3" stroke-linecap="round"><line x1="-14" y1="-10" x2="-40" y2="-10"/><line x1="-14" y1="10" x2="-28" y2="10"/></g>
+        <path d="${body}" fill="url(#simLrOff)" stroke="#7a403a" stroke-width="1"/>
+        <g stroke="#8c93a0" stroke-width="3"><line x1="-9" y1="-10" x2="-1" y2="-10"/><line x1="-9" y1="10" x2="0" y2="10"/></g>
+        <polygon points="-1,3 6,6 6,14 -1,17" fill="#9aa1ad" stroke="#6b7280" stroke-width=".6"/>
+        <rect x="1" y="8" width="3" height="4" fill="#d9b94a"/>
+        <path d="M2.5,8 Q9,-6 -1,-10" fill="none" stroke="#d9b94a" stroke-width=".9"/>
+        <path id="simLedBulb" d="${body}" fill="url(#simLrOn)" opacity="0"/>
+        <path d="M-14,-24 H-9 V20 H-12 L-14,17 Z" fill="#d8dce3" stroke="#8a929e" stroke-width=".8"/>
+        <path d="M3.4,-14.8 A15,15 0 0 1 16.6,-10.6" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/>
+      </g>`;
+  }
+  const LED_DEFS = `
+        <radialGradient id="simLrOff" cx="62%" cy="38%" r="75%"><stop offset="0%" stop-color="#e3b9b3"/><stop offset="55%" stop-color="#a65a53"/><stop offset="100%" stop-color="#63302b"/></radialGradient>
+        <radialGradient id="simLrOn" cx="62%" cy="38%" r="75%"><stop offset="0%" stop-color="#fff3ef"/><stop offset="55%" stop-color="#ff5a4a"/><stop offset="100%" stop-color="#b3261e"/></radialGradient>`;
 
 function serialSVG() {
   return `
@@ -472,7 +511,7 @@ function serialSVG() {
   function ledSVG(pin) {
     return `
     <svg viewBox="0 0 300 190" class="sim-board-svg" aria-hidden="true">
-      <defs>
+      <defs>${LED_DEFS}
         <filter id="simLedGlow" x="-120%" y="-120%" width="340%" height="340%">
           <feGaussianBlur stdDeviation="5" result="blur"/>
           <feMerge>
@@ -495,16 +534,11 @@ function serialSVG() {
       <rect x="184" y="64" width="3" height="12" class="sim-band sim-band-1"/>
       <rect x="192" y="64" width="3" height="12" class="sim-band sim-band-2"/>
       <rect x="200" y="64" width="3" height="12" class="sim-band sim-band-3"/>
-      <line x1="214" y1="70" x2="245" y2="70" class="sim-wire sim-wire-live"/>
+      <line x1="214" y1="70" x2="238" y2="70" class="sim-wire sim-wire-live"/>
 
-      <g id="simLedGroup" class="sim-led-group">
-        <line x1="262" y1="53" x2="270" y2="45" class="sim-led-ray"/>
-        <line x1="262" y1="53" x2="254" y2="45" class="sim-led-ray"/>
-        <line x1="270" y1="70" x2="280" y2="70" class="sim-led-ray"/>
-        <circle id="simLedBulb" cx="262" cy="70" r="17" class="sim-led-bulb"/>
-      </g>
-      <line x1="262" y1="87" x2="262" y2="140" class="sim-wire sim-wire-gnd"/>
-      <line x1="262" y1="140" x2="148" y2="140" class="sim-wire sim-wire-gnd"/>
+      ${realLedSVG(238, 70)}
+      <line x1="247.6" y1="86" x2="247.6" y2="140" class="sim-wire sim-wire-gnd"/>
+      <line x1="247.6" y1="140" x2="148" y2="140" class="sim-wire sim-wire-gnd"/>
 
       <text x="262" y="178" text-anchor="middle" class="sim-caption">LED + مقاومت ۲۲۰Ω</text>
     </svg>`;
@@ -513,7 +547,7 @@ function serialSVG() {
   function ledButtonSVG(pin, buttonPin) {
     return `
     <svg viewBox="0 0 300 190" class="sim-board-svg" aria-hidden="true">
-      <defs>
+      <defs>${LED_DEFS}
         <filter id="simLedGlow" x="-120%" y="-120%" width="340%" height="340%">
           <feGaussianBlur stdDeviation="5" result="blur"/>
           <feMerge>
@@ -538,16 +572,11 @@ function serialSVG() {
       <rect x="183" y="56" width="3" height="12" class="sim-band sim-band-1"/>
       <rect x="190" y="56" width="3" height="12" class="sim-band sim-band-2"/>
       <rect x="197" y="56" width="3" height="12" class="sim-band sim-band-3"/>
-      <line x1="210" y1="62" x2="242" y2="62" class="sim-wire sim-wire-live"/>
+      <line x1="210" y1="62" x2="241" y2="62" class="sim-wire sim-wire-live"/>
 
-      <g id="simLedGroup" class="sim-led-group">
-        <line x1="259" y1="47" x2="267" y2="39" class="sim-led-ray"/>
-        <line x1="259" y1="47" x2="251" y2="39" class="sim-led-ray"/>
-        <line x1="274" y1="62" x2="283" y2="62" class="sim-led-ray"/>
-        <circle id="simLedBulb" cx="259" cy="62" r="15" class="sim-led-bulb"/>
-      </g>
-      <line x1="259" y1="77" x2="259" y2="150" class="sim-wire sim-wire-gnd"/>
-      <line x1="259" y1="150" x2="148" y2="150" class="sim-wire sim-wire-gnd"/>
+      ${realLedSVG(241, 62)}
+      <line x1="250.6" y1="78" x2="250.6" y2="150" class="sim-wire sim-wire-gnd"/>
+      <line x1="250.6" y1="150" x2="148" y2="150" class="sim-wire sim-wire-gnd"/>
 
       <line x1="148" y1="104" x2="196" y2="104" class="sim-wire sim-wire-in"/>
       <g id="simButtonGroup" class="sim-push-group">
@@ -565,7 +594,7 @@ function serialSVG() {
   function potSVG(pin, potPin) {
     return `
     <svg viewBox="0 0 300 190" class="sim-board-svg" aria-hidden="true">
-      <defs>
+      <defs>${LED_DEFS}
         <filter id="simLedGlow" x="-120%" y="-120%" width="340%" height="340%">
           <feGaussianBlur stdDeviation="5" result="blur"/>
           <feMerge>
@@ -590,16 +619,11 @@ function serialSVG() {
       <rect x="183" y="56" width="3" height="12" class="sim-band sim-band-1"/>
       <rect x="190" y="56" width="3" height="12" class="sim-band sim-band-2"/>
       <rect x="197" y="56" width="3" height="12" class="sim-band sim-band-3"/>
-      <line x1="210" y1="62" x2="242" y2="62" class="sim-wire sim-wire-live"/>
+      <line x1="210" y1="62" x2="241" y2="62" class="sim-wire sim-wire-live"/>
 
-      <g id="simLedGroup" class="sim-led-group">
-        <line x1="259" y1="47" x2="267" y2="39" class="sim-led-ray"/>
-        <line x1="259" y1="47" x2="251" y2="39" class="sim-led-ray"/>
-        <line x1="274" y1="62" x2="283" y2="62" class="sim-led-ray"/>
-        <circle id="simLedBulb" cx="259" cy="62" r="15" class="sim-led-bulb"/>
-      </g>
-      <line x1="259" y1="77" x2="259" y2="150" class="sim-wire sim-wire-gnd"/>
-      <line x1="259" y1="150" x2="148" y2="150" class="sim-wire sim-wire-gnd"/>
+      ${realLedSVG(241, 62)}
+      <line x1="250.6" y1="78" x2="250.6" y2="150" class="sim-wire sim-wire-gnd"/>
+      <line x1="250.6" y1="150" x2="148" y2="150" class="sim-wire sim-wire-gnd"/>
 
       <line x1="148" y1="104" x2="199" y2="104" class="sim-wire sim-wire-in"/>
       <g id="simPotGroup" class="sim-pot-group">
@@ -1522,6 +1546,12 @@ function setSerialScreenText(text) {
       const r = Math.max(0, Math.min(1, ratio));
       el.ledGroup.classList.toggle('is-on', r > 0.02);
       el.ledBulb.style.setProperty('--sim-led-ratio', r.toFixed(3));
+      /* LED واقعی: لایه‌ی روشن و هاله با شدتِ نور محو و پررنگ می‌شوند */
+      if (el.ledBulb.id === 'simLedBulb' && !el.ledBulb.classList.contains('sim-led-bulb')) {
+        el.ledBulb.setAttribute('opacity', r.toFixed(2));
+        const gl = el.ledGroup.querySelector('.lr-glow');
+        if (gl) gl.setAttribute('opacity', (r * 0.5).toFixed(2));
+      }
     }
 
     function setRunning(isRunning) {
