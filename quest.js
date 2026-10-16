@@ -690,12 +690,12 @@ const CONCEPT_SIMS = {
   line_intro: mountLineIntroSim,
   robot_assemble: mountRobotAssembleSim,
   line_sensor: mountLineSensorMission,
+  line_logic: mountLineLogicMission,
   line_follow: mountLineFollowSim,
   // STM32 — quest-sims-stm32.js + cube-block.js / hal-block.js
   stm32_cube: mountStm32CubeSim,
   stm32_stlink: mountStlinkSim,
   line_read: mountHalReadSim,
-  line_logic: mountHalBrainSim,
   line_motors: mountHalMotorSim,
   motor_pwm: mountHalPwmSim
 };
@@ -711,9 +711,10 @@ const ROBOT_ASSEMBLE_INTRO_TEXT = '🛠️ حالا که چشم ربات رو ش
 const STLINK_INTRO_TEXT = '🔌 برد Blue Pill برخلاف آردوینو خودش مبدل USB به سریال و بوت‌لودر نداره، واسه همین برای ریختن برنامه یه «برنامه‌ریز» به اسم ST-Link لازمه. چهار تا سیم رو وصل کن: 3.3V، GND، SWDIO و SWCLK. مواظب ۵ ولت هم باش، چیپ رو می‌سوزونه!';
 const LINE_SENSOR_INTRO_TEXT = '🤖 ربات تعقیب خط اول از همه یه «چشم» می‌خواد: سنسور مادون‌قرمز. اول بخش توضیحی رو ببین تا بفهمی IR چیه و چرا با چشم فرق داره؛ بعد سنسور رو روی مسیر بکش و آستانه رو جوری تنظیم کن که روی سفید LED خاموش و روی خط مشکی روشن بشه.';
 
+const LINE_LOGIC_INTRO_TEXT = '🧠 مغزِ ربات یه فهرست قانونه! اول با ربات متحرک ببین هر قانون چی کار می‌کنه: «شروع» رو بزن و قانون‌های چپ و راست رو روشن کن. بعدش پایین‌تر مثل STM32CubeIDE اول پایه‌ها رو تو CubeMX تنظیم کن و بعد همین قانون‌ها رو با if و else if کد بزن؛ ربات دقیقاً کدِ تو رو اجرا می‌کنه.';
+
 const HAL_INTRO_TEXT = {
   line_read: '📟 حالا خودِ STM32 باید سنسور را بخواند! اول در مرحله‌ی ۱ روی نقشه‌ی چیپ بگو PA0 ورودی است و PC13 خروجی؛ بعد در مرحله‌ی ۲ با HAL_GPIO_ReadPin بخوان و LED را کنترل کن.',
-  line_logic: '🧠 سه سنسور، سه چراغ. اول پایه‌ها را در CubeMX تنظیم کن، بعد با if و else if بنویس هر حالت کدام چراغ را روشن کند.',
   line_motors: '⚙️ موتورها با دو پایه‌ی جهت کنترل می‌شوند. اول چهار پایه‌ی PB0 و PB1 و PB10 و PB11 را خروجی کن، بعد حرکت‌ها را با WritePin و HAL_Delay بنویس.',
   motor_pwm: '🎚️ جهت را داری؛ حالا سرعت. پایه‌های PA8 و PA9 را تایمر کن، PWM را قبل از حلقه روشن کن و با __HAL_TIM_SET_COMPARE سرعت بده.'
 };
@@ -854,6 +855,10 @@ function onNodeClick(i, locked, evt){
 
   if(q.id === 'line_sensor' && !done){
     setTimeout(() => showKnightLine(LINE_SENSOR_INTRO_TEXT, 'happy', 'knight'), 400);
+  }
+
+  if(q.id === 'line_logic' && !done){
+    setTimeout(() => showKnightLine(LINE_LOGIC_INTRO_TEXT, 'happy', 'knight'), 400);
   }
 
   if(HAL_INTRO_TEXT[q.id] && !done){
