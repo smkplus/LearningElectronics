@@ -465,8 +465,8 @@ function mountShiftRegisterSim(container, { onSuccess, alreadyDone } = {}){
 
   const STAGES = [
     { tab:'۱ · CLOCK',
-      goal:'🚂 <b>مرحله ۱ — CLOCK (قطار بیت‌ها):</b> تراشه هشت خانه دارد. با هر پالس <b>CLOCK</b>، بیتِ روی سیم <b>DATA</b> از چپ (Q0) وارد می‌شود و بقیه یک خانه به راست می‌روند. <b>هدف:</b> فقط یک بیتِ ۱ بفرست و آن‌قدر CLOCK بزن تا به آخرین خانه (Q7) برسد. ردیف پایین (لچ) فعلاً کاری نمی‌کند.',
-      start:'DATA را ۱ کن و یک بار CLOCK بزن؛ بعد DATA را ۰ بگذار و CLOCK را ادامه بده.',
+      goal:'🚂 <b>مرحله ۱ — CLOCK (قطار بیت‌ها):</b> تراشه هشت خانه دارد. با هر پالس <b>CLOCK</b>، بیتِ روی سیم <b>DATA</b> از چپ (Q0) وارد می‌شود و بقیه یک خانه به راست می‌روند. <b>هدف:</b> DATA را ۱ کن و یک بار CLOCK بزن تا بیتِ ۱ وارد شود؛ هر بار CLOCK بزنی آن ۱ یک خانه جلوتر می‌رود. ردیف پایین (لچ) فعلاً کاری نمی‌کند.',
+      start:'DATA را ۱ کن و CLOCK بزن؛ ببین بیت یک خانه وارد می‌شود. بعد دوباره CLOCK بزن تا جلوتر برود.',
       lesson:'💡 <b>یاد گرفتی:</b> بیت‌ها فقط با پالس CLOCK حرکت می‌کنند و DATA درست در لحظه‌ی بالا رفتن CLOCK خوانده می‌شود (نقطه‌ی زرد در نمودار زمانی). ۸ پالس = ۸ بیت؛ اولین بیت به Q7 می‌رسد و پالس نهم آن را از انتها بیرون می‌اندازد (در مدار واقعی به تراشه‌ی بعدی می‌رود، یعنی می‌شود چند تراشه را زنجیر کرد).' },
     { tab:'۲ · LATCH',
       goal:'📌 <b>مرحله ۲ — LATCH (ویترین):</b> داخل تراشه دو ردیف هست. ردیف بالا (شیفت) با هر CLOCK عوض می‌شود، ولی LEDها به ردیف پایین (لچ) وصل‌اند که فقط با پالس <b>LATCH</b> از ردیف بالا کپی می‌گیرد. <b>هدف:</b> چند بیتِ ۱ داخل رجیستر بفرست، ببین LEDها تکان نمی‌خورند، بعد LATCH بزن.',
@@ -527,7 +527,10 @@ function mountShiftRegisterSim(container, { onSuccess, alreadyDone } = {}){
           <g id="srTimeDyn"></g></g>
       </svg>
       <div style="display:flex;gap:6px;max-width:360px;margin:8px auto 0">
-        <button type="button" class="sim-btn" id="srData"></button>
+        <button type="button" class="sim-btn" id="srD0">DATA = ۰</button>
+        <button type="button" class="sim-btn" id="srD1">DATA = ۱</button>
+      </div>
+      <div style="display:flex;gap:6px;max-width:360px;margin:6px auto 0">
         <button type="button" class="sim-btn" id="srClk">⏩ CLOCK</button>
         <button type="button" class="sim-btn" id="srLatch">📌 LATCH</button>
       </div>
@@ -544,10 +547,10 @@ function mountShiftRegisterSim(container, { onSuccess, alreadyDone } = {}){
     </div>`;
 
   const q = s => container.querySelector(s), qa = s => Array.from(container.querySelectorAll(s));
-  const st = q('#srStatus'), dataBtn = q('#srData'), clkBtn = q('#srClk'), latchBtn = q('#srLatch');
+  const st = q('#srStatus'), d0Btn = q('#srD0'), d1Btn = q('#srD1'), clkBtn = q('#srClk'), latchBtn = q('#srLatch');
   const ghosts = qa('.srG'), wires = qa('[data-w]'), gate = q('#srGate');
   const BTN = 'flex:1;padding:8px 6px;font-size:13px;min-height:0;border-radius:10px;border:0;color:#fff;font-weight:bold';
-  dataBtn.style.cssText = BTN; clkBtn.style.cssText = BTN + ';background:' + C.clk; latchBtn.style.cssText = BTN + ';background:' + C.latch;
+  d0Btn.style.cssText = BTN; d1Btn.style.cssText = BTN; clkBtn.style.cssText = BTN + ';background:' + C.clk; latchBtn.style.cssText = BTN + ';background:' + C.latch;
   ['srReset', 'srHint', 'srNew'].forEach(id => { q('#' + id).style.cssText = 'flex:1;padding:6px;font-size:12px;min-height:0;border-radius:10px'; });
   const say = (state, text) => { st.dataset.state = state; st.textContent = text; };
 
@@ -636,8 +639,11 @@ function mountShiftRegisterSim(container, { onSuccess, alreadyDone } = {}){
     q('#srTarget').style.display = target ? '' : 'none';
     q('#srLower').setAttribute('opacity', stage === 0 ? .25 : 1);
     latchBtn.style.display = stage === 0 ? 'none' : '';
-    dataBtn.textContent = 'DATA = ' + fa(data);
-    dataBtn.style.background = data ? C.on : '#2a3547'; dataBtn.style.color = data ? '#1b1b1b' : '#fff';
+    [[d0Btn, 0], [d1Btn, 1]].forEach(([b, v]) => {
+      const on = data === v;
+      b.style.background = on ? C.on : '#2a3547'; b.style.color = on ? '#1b1b1b' : '#9aa7b8';
+      b.style.outline = on ? '2px solid #ffe39a' : 'none'; b.setAttribute('aria-pressed', on);
+    });
     q('#srGoal').innerHTML = STAGES[stage].goal;
     q('#srHint').style.display = target ? '' : 'none';
     q('#srNew').style.display = target && done[2] ? '' : 'none';
@@ -674,7 +680,8 @@ function mountShiftRegisterSim(container, { onSuccess, alreadyDone } = {}){
   }
 
   /* ---------- رویدادها ---------- */
-  dataBtn.addEventListener('click', () => { data = data ? 0 : 1; refresh(); });
+  d0Btn.addEventListener('click', () => { data = 0; refresh(); });
+  d1Btn.addEventListener('click', () => { data = 1; refresh(); });
   clkBtn.addEventListener('click', () => {
     flush();
     prevReg = reg.slice();
@@ -685,9 +692,8 @@ function mountShiftRegisterSim(container, { onSuccess, alreadyDone } = {}){
     let msg = `بیت ${fa(data)} وارد Q0 شد و بقیه یک خانه به راست رفتند.`;
     if(fell) msg += ' بیتِ ۱ که در Q7 بود از انتها بیرون افتاد (در مدار واقعی به تراشه‌ی بعدی می‌رود).';
     if(stage === 0){
-      if(reg.every((v, i) => v === (i === N - 1 ? 1 : 0))){ say('success', '✅ آن ۱ قدم‌به‌قدم به Q7 رسید! هر CLOCK فقط یک قدم است.'); completeStage(0); return; }
-      if(!sum(reg) && !data) msg += ' همه‌ی خانه‌ها ۰ است؛ DATA را ۱ کن تا یک بیتِ ۱ بفرستی.';
-      else if(sum(reg) > 1) msg += ' الان چند بیتِ ۱ داخل رجیستر است؛ «پاک‌کردن» را بزن و فقط یک ۱ بفرست.';
+      if(sum(reg) > 0){ say('success', '✅ دیدی؟ با هر CLOCK بیت‌ها یک خانه جلو می‌روند. هر چه بیشتر CLOCK بزنی، ۱ جلوتر می‌رود تا از انتها بیرون بیفتد.'); completeStage(0); return; }
+      msg += ' همه‌ی خانه‌ها ۰ است؛ DATA را ۱ کن و دوباره CLOCK بزن.';
     } else if(!same(reg, out)) msg += ' ولی LEDها هنوز عوض نشده‌اند — برای نمایش باید LATCH بزنی.';
     say('idle', msg);
   });

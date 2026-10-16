@@ -221,6 +221,8 @@ window.applyCloudProgress = (cloudProgress) => {
 
 function isLocked(index){
   if(TEST_MODE || index === 0) return false;
+  // اولین مأموریتِ هر بخش (الکترونیک / آردوینو / STM32 / رباتیک) از اول باز است
+  if(QUESTS[index].group !== QUESTS[index-1].group) return false;
   return !progress[QUESTS[index-1].id];
 }
 function totalXP(){ return QUESTS.reduce((s,q)=>s+q.xp,0); }
