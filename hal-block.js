@@ -402,7 +402,7 @@ function mountHalMission(container, cfg, { onSuccess, alreadyDone } = {}){
   const q = s => container.querySelector(s);
   const strip = q('.hs-strip');
   const pinsBody = q('.hs-pins-body');
-  let tabs = null, cx = null, sim = null, succeeded = !!alreadyDone;
+  let tabs = null, cx = null, sim = null, curTab = 'cube', succeeded = !!alreadyDone;
 
   const pinProblem = () => {
     const bad = required.find(r => CUBE.cfg[r.pin] !== r.fn);
@@ -434,20 +434,28 @@ function mountHalMission(container, cfg, { onSuccess, alreadyDone } = {}){
       const st = ok ? '<span style="color:#57d8a3">✅ درست</span>'
         : cur ? `<span style="color:#ff8a80">⚠️ اشتباه (الان ${cur})</span>`
         : '<span style="color:#d4af37">○ هنوز تنظیم نشده</span>';
-      return `<tr data-go="${r.pin}" data-fn="${r.fn}" tabindex="0" style="cursor:pointer"><td dir="ltr" style="${cell}text-align:left"><b>${r.pin}</b></td><td style="${cell}">${role(r) || '—'}</td><td dir="ltr" style="${cell}text-align:left">${r.fn}</td><td dir="ltr" style="${cell}text-align:left">${cur || 'Reset_State'}</td><td style="${cell}">${st}</td></tr>`;
+      return `<tr data-go="${r.pin}" data-fn="${r.fn}" tabindex="0" style="cursor:pointer"><td dir="ltr" style="${cell}text-align:left"><b>${r.pin}</b></td><td style="${cell}">${role(r) || '—'}</td><td dir="ltr" style="${cell}text-align:left">${r.fn}</td><td dir="ltr" style="${cell}text-align:left">${cur || 'Reset_State'}</td><td style="${cell}">${st}${ok ? '' : ` <button type="button" class="sim-btn sim-btn-run" data-fix="${r.pin}" style="padding:2px 8px;font-size:12px">🔧 درست کن</button>`}</td></tr>`;
     });
-    const seen = new Set(required.map(r => r.pin));
-    const rowsExtra = Object.entries(CUBE.cfg).filter(([n, f]) => !/^(SYS|RCC)_/.test(f) && !seen.has(n)).map(([n, f]) =>
-      `<tr data-go="${n}" data-fn="${f}" tabindex="0" style="cursor:pointer;opacity:.8"><td dir="ltr" style="${cell}text-align:left"><b>${n}</b></td><td style="${cell}">—</td><td dir="ltr" style="${cell}text-align:left">—</td><td dir="ltr" style="${cell}text-align:left">${f}</td><td style="${cell}">ℹ️ برای این مأموریت لازم نیست</td></tr>`);
     const left = required.filter(r => CUBE.cfg[r.pin] !== r.fn).length;
     const sum = !required.length ? '' : left
-      ? `<div class="hs-p" style="margin-top:8px">⏳ ${toFa(left)} پایه از ${toFa(required.length)} پایه هنوز درست تنظیم نشده. روی هر ردیف بزنی همان پایه در نقشه‌ی بالا انتخاب می‌شود.</div>`
+      ? `<div class="hs-p" style="margin-top:8px">⏳ ${toFa(left)} پایه از ${toFa(required.length)} پایه هنوز درست تنظیم نشده. روی هر ردیف بزنی همان پایه در نقشه‌ی بالا انتخاب می‌شود. <button type="button" class="sim-btn sim-btn-run" data-fix="all" style="padding:2px 10px;font-size:12px">🔧 همه را درست کن</button></div>`
       : `<div class="hs-p" style="margin-top:8px;color:#57d8a3">✅ هر ${toFa(required.length)} پایه درست تنظیم شده؛ حالا کد بنویس.</div>`;
-    pinsBody.innerHTML = `<table class="hs-table" style="width:100%"><tr><th>پایه</th><th>کار در ربات</th><th>باید باشد</th><th>الان</th><th>وضعیت</th></tr>${rowsReq.concat(rowsExtra).join('')}</table>${sum}`;
+    pinsBody.innerHTML = `<table class="hs-table" style="width:100%"><tr><th>پایه</th><th>کار در ربات</th><th>باید باشد</th><th>الان</th><th>وضعیت</th></tr>${rowsReq.join('')}</table>${sum}`;
   }
   const goPin = tr => { if(!tr || !tr.dataset.go) return; tabs.set('cube'); cx.focus(tr.dataset.go, tr.dataset.fn); };
-  pinsBody.addEventListener('click', e => goPin(e.target.closest('tr[data-go]')));
-  pinsBody.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); goPin(e.target.closest('tr[data-go]')); } });
+  /* «درست کن»: پایه(ها) را همان‌جا مثل CubeMX تنظیم می‌کند و نقشه و چیپ‌ها و ادیتور را تازه می‌کند. */
+  function fixPins(which){
+    required.forEach(r => { if((which === 'all' || which === r.pin) && CUBE.cfg[r.pin] !== r.fn) CUBE.cfg[r.pin] = r.fn; });
+    cxSave();
+    buildCx();
+    refreshAll();
+  }
+  pinsBody.addEventListener('click', e => {
+    const fb = e.target.closest('[data-fix]');
+    if(fb){ e.stopPropagation(); fixPins(fb.dataset.fix); return; }
+    goPin(e.target.closest('tr[data-go]'));
+  });
+  pinsBody.addEventListener('keydown', e => { if(e.target.closest('[data-fix]')) return; if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); goPin(e.target.closest('tr[data-go]')); } });
   strip.addEventListener('click', e => {
     const b = e.target.closest('[data-go]'); if(!b) return;
     if(b.dataset.go === 'clock') tabs.set('clock'); else { tabs.set('cube'); cx.focus(b.dataset.go, b.dataset.fn); }
@@ -477,12 +485,15 @@ function mountHalMission(container, cfg, { onSuccess, alreadyDone } = {}){
   tabs = cxTabs(q('.hs-tabsHost'), [
     { id: 'clock', icon: '⏱️', label: 'ساعت' },
     { id: 'cube', icon: '🧩', label: 'پایه‌ها (Cube)' }
-  ], id => cx.showPart(id === 'clock' ? 'clock' : 'pins'));
+  ], id => { curTab = id; cx.showPart(id === 'clock' ? 'clock' : 'pins'); });
   const marks = s => {
     tabs.mark('cube', s.pinsOk ? 'ok' : 'todo');
     tabs.mark('clock', s.clockReady ? 'ok' : s.clockBad ? 'todo' : '');
   };
-  cx = mountCubeMx(q('.hs-cubemount'), {
+  function buildCx(){
+    if(cx){ try{ cx.stop(); }catch(_){} }
+    q('.hs-cubemount').innerHTML = '';
+    cx = mountCubeMx(q('.hs-cubemount'), {
     goal: 'روی هر پایه‌ی نقشه بزن و کارش را (مثل منوی CubeMX) انتخاب کن. چک‌لیستِ پایه‌های لازم همان چیپ‌های بالای صفحه است؛ روی هر چیپ بزنی همین‌جا با قابِ طلایی نشانت می‌دهم.',
     required,
     showClock: true, clockRequired: false,
@@ -493,7 +504,14 @@ function mountHalMission(container, cfg, { onSuccess, alreadyDone } = {}){
     onChange(s){
       marks(s); paintStrip(); if(sim) sim.pushHalContext();
     }
-  });
+    });
+    cx.showPart(curTab === 'clock' ? 'clock' : 'pins');
+  }
+  const refreshAll = () => {
+    marks({ pinsOk: !pinProblem(), clockReady: cxClock(CUBE.clk).ready, clockBad: !cxClock(CUBE.clk).ok });
+    paintStrip(); if(sim) sim.pushHalContext();
+  };
+  buildCx();
   paintStrip();
   marks({ pinsOk: !pinProblem(), clockReady: cxClock(CUBE.clk).ready, clockBad: !cxClock(CUBE.clk).ok });
   tabs.set('cube');

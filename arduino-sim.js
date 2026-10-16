@@ -622,6 +622,22 @@ function serialSVG() {
   }
 
   function stm32BlinkSVG() {
+    /* برد Blue Pill (مثل ماموریت ST-Link): بدنه‌ی آبی، هدرِ پایه‌ها، micro-USB، RESET، جامپرهای BOOT،
+       چیپ STM32F103C8T6، کریستال و LED سبزِ PC13. شناسه‌های simLedGroup / simLedBulb را شبیه‌ساز روشن و خاموش می‌کند. */
+    let pads = '';
+    for (let i = 0; i < 20; i++) {
+      const x = (40 + i * 11.8).toFixed(1);
+      [42, 138].forEach(y => { pads += `<circle cx="${x}" cy="${y}" r="2.6" fill="#d9b94a"/><circle cx="${x}" cy="${y}" r="1" fill="#0b1a3a"/>`; });
+    }
+    let swd = '';
+    for (let i = 0; i < 4; i++) swd += `<circle cx="272" cy="${80 + i * 8}" r="2.2" fill="#d9b94a"/><circle cx="272" cy="${80 + i * 8}" r="0.9" fill="#0b1a3a"/>`;
+    let ticks = '';
+    for (let i = 0; i < 6; i++) {
+      const o = 122 + i * 7.4;
+      ticks += `<rect x="${o}" y="65" width="2.4" height="3" fill="#8a93a6"/><rect x="${o}" y="116" width="2.4" height="3" fill="#8a93a6"/>`
+             + `<rect x="115" y="${72 + i * 7.4}" width="3" height="2.4" fill="#8a93a6"/><rect x="166" y="${72 + i * 7.4}" width="3" height="2.4" fill="#8a93a6"/>`;
+    }
+    const boot = (y, label) => `<rect x="42" y="${y}" width="22" height="7" rx="1.5" fill="#101216"/><circle cx="47" cy="${y + 3.5}" r="1.6" fill="#d9b94a"/><circle cx="53" cy="${y + 3.5}" r="1.6" fill="#d9b94a"/><circle cx="59" cy="${y + 3.5}" r="1.6" fill="#d9b94a"/><text x="68" y="${y + 6}" class="sim-board-sub" style="font-size:5.5px;letter-spacing:.3px;fill:#bcd0f5">${label}</text>`;
     return `
     <svg viewBox="0 0 300 190" class="sim-board-svg" aria-hidden="true">
       <defs>
@@ -633,18 +649,26 @@ function serialSVG() {
           </feMerge>
         </filter>
       </defs>
-      <rect x="22" y="30" width="256" height="116" rx="10" class="sim-board-body"/>
-      <rect x="8" y="72" width="26" height="34" rx="3" class="sim-usb"/>
-      <rect x="104" y="58" width="84" height="62" rx="5" class="sim-monitor-body"/>
-      <text x="146" y="86" text-anchor="middle" class="sim-board-label">STM32</text>
-      <text x="146" y="102" text-anchor="middle" class="sim-board-sub">F103C8T6</text>
+      <rect x="16" y="34" width="268" height="112" rx="8" fill="#1b4fb0" stroke="#4a7fd8"/>
+      ${pads}
+      <rect x="6" y="78" width="22" height="34" rx="2" fill="#c8d0dc" stroke="#8a93a6"/><rect x="9" y="86" width="14" height="18" rx="1.5" fill="#2a2f3a"/>
+      <rect x="42" y="68" width="14" height="14" rx="2" fill="#dfe4ec" stroke="#8a93a6"/>
+      <text x="49" y="92" text-anchor="middle" class="sim-board-sub" style="font-size:5.5px;letter-spacing:.3px;fill:#bcd0f5">RESET</text>
+      ${boot(102, 'BOOT0')}${boot(116, 'BOOT1')}
+      <rect x="118" y="68" width="48" height="48" rx="2" fill="#101216"/>${ticks}<circle cx="123" cy="73" r="1.4" fill="#8a93a6"/>
+      <text x="142" y="90" text-anchor="middle" class="sim-board-label" style="font-size:8px">STM32</text>
+      <text x="142" y="101" text-anchor="middle" class="sim-board-sub" style="font-size:6px">F103C8T6</text>
+      <ellipse cx="192" cy="92" rx="4.5" ry="9" fill="#cfd4dc" stroke="#7c8594"/>
+      ${swd}
+      <text x="272" y="72" text-anchor="middle" class="sim-board-sub" style="font-size:5.5px;fill:#bcd0f5">SWD</text>
       <g id="simLedGroup" class="sim-led-group">
-        <line x1="236" y1="62" x2="244" y2="54" class="sim-led-ray"/>
-        <line x1="236" y1="62" x2="228" y2="54" class="sim-led-ray"/>
-        <line x1="252" y1="78" x2="261" y2="78" class="sim-led-ray"/>
-        <circle id="simLedBulb" cx="236" cy="78" r="13" class="sim-led-bulb"/>
+        <line x1="236" y1="70" x2="242" y2="64" class="sim-led-ray"/>
+        <line x1="236" y1="70" x2="230" y2="64" class="sim-led-ray"/>
+        <line x1="247" y1="82" x2="254" y2="82" class="sim-led-ray"/>
+        <circle id="simLedBulb" cx="236" cy="82" r="9" class="sim-led-bulb"/>
       </g>
-      <text x="236" y="112" text-anchor="middle" class="sim-pin-label">PC13</text>
+      <text x="236" y="102" text-anchor="middle" class="sim-pin-label" style="font-size:7px;fill:#e6eefc">PC13</text>
+      <text x="150" y="132" text-anchor="middle" class="sim-board-sub" style="font-size:7px;fill:#bcd0f5">BLUE PILL</text>
       <text x="150" y="172" text-anchor="middle" class="sim-caption">Blue Pill — LED روی PC13 (صفر = روشن، یک = خاموش)</text>
     </svg>`;
   }
