@@ -471,15 +471,55 @@ function mountVoltageRegulatorSim(container, { onSuccess, alreadyDone } = {}){
   const lblCss = 'font-size:11px;color:#9aa7b8';
   const valCss = "font:700 15px 'JetBrains Mono',monospace;direction:ltr";
 
+  /* برد Arduino Uno R3 از بالا (همان برد مأموریت‌های ترانزیستور و شیفت رجیستر).
+     مختصات داخلی بر حسب mil است (۲٫۷″×۲٫۱″، USB سمت چپ، هدر دیجیتال بالا، هدر تغذیه پایین).
+     ۹۰° چرخانده شده تا هدر تغذیه (…، 5V، GND، GND، Vin) رو به مدار (سمت چپ) باشد.
+     نگاشت: صفحه‌ی x = UTX − y_mil·S ، صفحه‌ی y = UTY + x_mil·S */
+  const US = 0.042, UTX = 336, UTY = 52, r2 = v => +v.toFixed(2);
+  const uPinX = UTX - 2000 * US;                       // ردیف پین‌های هدر تغذیه
+  const uPinY = m => r2(UTY + m * US);                 // m = موقعیت پین روی هدر (mil)
+  const Y5V = uPinY(1400), YGND = uPinY(1600);
+  const usock = (x0, n, y) => `<rect x="${x0 - 50}" y="${y - 65}" width="${n * 100}" height="130" rx="12" fill="#171a1f" stroke="#000" stroke-width="10"/>`
+    + Array.from({ length: n }, (_, k) => `<rect x="${x0 + 100 * k - 26}" y="${y - 26}" width="52" height="52" fill="#4b525c"/>`).join('');
+  const unoSvg = `<g transform="translate(${UTX} ${UTY}) rotate(90) scale(${US})">
+          <rect id="vrBoardRect" x="0" y="0" width="2700" height="2100" rx="70" fill="#1a6fb5" stroke="#0e4a7d" stroke-width="30"/>
+          <g fill="#b9c0c8">${Array.from({ length: 14 }, (_, k) => `<rect x="${1069 + 93 * k}" y="1160" width="42" height="80"/><rect x="${1069 + 93 * k}" y="1540" width="42" height="80"/>`).join('')}</g>
+          <rect x="1050" y="1230" width="1350" height="320" rx="24" fill="#16181d"/>
+          <path d="M1050 1335a55 55 0 0 1 0 110z" fill="#2c3037"/>
+          <rect x="640" y="235" width="220" height="220" rx="24" fill="#b7bec6" stroke="#6d757e" stroke-width="18"/>
+          <circle cx="750" cy="345" r="72" fill="#c93030"/>
+          ${usock(1900, 8, 100)}${usock(800, 10, 100)}${usock(1000, 8, 2000)}${usock(1900, 6, 2000)}
+          <rect x="-270" y="180" width="690" height="480" rx="30" fill="#c9d0d7" stroke="#8b949e" stroke-width="22"/>
+          <rect x="-80" y="1300" width="640" height="440" rx="36" fill="#1b1d22"/>
+        </g>
+        <g transform="translate(306 100) scale(${US})" fill="none" stroke="#f4fbfb" stroke-linecap="round"><circle cx="-105" cy="0" r="92" stroke-width="30"/><circle cx="105" cy="0" r="92" stroke-width="30"/><path d="M-150 0h90M60 0h90M105 -45v90" stroke-width="22"/></g>
+        <text x="306" y="116" font-size="8" font-weight="bold" font-family="Arial, Helvetica, sans-serif" fill="#f4fbfb" text-anchor="middle">UNO</text>
+        <text x="${uPinX + 5}" y="${(Y5V + 1.6).toFixed(1)}" font-size="4.6" font-weight="bold" font-family="Arial, Helvetica, sans-serif" fill="#fff">5V</text>
+        <text x="${uPinX + 5}" y="${(YGND + 1.6).toFixed(1)}" font-size="4.6" font-weight="bold" font-family="Arial, Helvetica, sans-serif" fill="#fff">GND</text>`;
+
+  /* آتشِ برد (وقتی ولتاژ زیاد مستقیم به برد می‌رسد): سبک نگه داشته شده —
+     ۵ شعله‌ی دولایه با رنگ ساده (بدون گرادیان) و یک انیمیشن ساده برای هرکدام،
+     درخششِ ثابت و بدون جرقه. فقط وقتی برد می‌سوزد نمایش داده می‌شود. */
+  const fireDefs = `<radialGradient id="vrGlowG"><stop offset="0" stop-color="#ff8a2a" stop-opacity=".5"/><stop offset=".6" stop-color="#ff4a12" stop-opacity=".18"/><stop offset="1" stop-color="#ff4a12" stop-opacity="0"/></radialGradient>`;
+  const flameD = (w, h) => { const n = v => r2(v); return `M${n(-w)} 0 C${n(-w * 1.15)} ${n(-h * .35)} ${n(-w * .3)} ${n(-h * .55)} ${n(-w * .05)} ${n(-h)} C${n(w * .2)} ${n(-h * .62)} ${n(w * 1.2)} ${n(-h * .4)} ${n(w)} 0 Z`; };
+  const flame = (x, y, w, h, dur) => `<g transform="translate(${x} ${y})"><g>
+        <animateTransform attributeName="transform" type="scale" values="1 1;.88 1.16;1 1" dur="${dur}s" repeatCount="indefinite"/>
+        <path d="${flameD(w, h)}" fill="#ff5a14"/><path d="${flameD(w * .55, h * .6)}" fill="#ffc83a"/></g></g>`;
+  const fireSvg = `<g id="vrFire" style="display:none" pointer-events="none">
+        <circle cx="292" cy="108" r="60" fill="url(#vrGlowG)"/>
+        ${[[266, 120, 8, 36, .8], [290, 112, 10, 46, .65], [316, 118, 8, 34, .9], [276, 162, 10, 46, .7], [306, 162, 11, 54, .85]].map(a => flame(...a)).join('')}
+      </g>`;
+
   container.innerHTML = `
     <div class="sim-wrap">
       <div class="sim-hw-note"><b>🔌 این قطعه چیکار می‌کند؟</b><br>رگولاتور ولتاژ هر ولتاژی را (تا حدی) می‌گیرد و یک ولتاژ <b>ثابت</b> تحویل می‌دهد. برد آردوینو ۵ ولت می‌خواهد ولی باتری ۹ ولت است؛ بین این دو یک ۷۸۰۵ می‌گذاریم. <b>هدف:</b> اول ببین بدون رگولاتور چه می‌شود، بعد رگولاتور را وصل کن و حدّ و مرزهایش (افت ولتاژ و گرما) را پیدا کن.</div>
       <svg class="ls-svg" style="cursor:default;display:block;width:100%;max-width:380px;height:auto;margin:0 auto" viewBox="0 20 340 170" direction="ltr" role="img" aria-label="باتری، رگولاتور ۷۸۰۵ با دو خازن، و برد آردوینو ۵ ولتی">
-        <path id="vrBypass" d="M80 80 V44 H238 V80 H250" fill="none" stroke="${C.red}" stroke-width="3" stroke-linecap="round"/>
+        <defs>${fireDefs}</defs>
+        <path id="vrBypass" d="M80 80 V44 H244 V${Y5V} H${uPinX - 1}" fill="none" stroke="${C.red}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
         <g fill="none" stroke="${C.line}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
           <path id="vrIn" d="M44 80 H112"/>
-          <path id="vrOut" d="M200 80 H250"/>
-          <path d="M44 124 H56 V168 H292 V152"/>
+          <path id="vrOut" d="M200 80 H244 V${Y5V} H${uPinX - 1}"/>
+          <path d="M44 124 H56 V168 H240 V${YGND} H${uPinX - 1}"/>
           <path d="M156 122 V168"/>
           <path d="M80 80 V100 M80 106 V168"/>
           <path d="M226 80 V100 M226 106 V168"/>
@@ -497,13 +537,10 @@ function mountVoltageRegulatorSim(container, { onSuccess, alreadyDone } = {}){
           <text x="156" y="98" font-size="15" font-weight="bold" fill="#f4fbfb" text-anchor="middle">7805</text>
           <text x="118" y="75" font-size="8" fill="#9aa7b8">IN</text><text x="194" y="75" font-size="8" fill="#9aa7b8" text-anchor="end">OUT</text><text x="156" y="116" font-size="8" fill="#9aa7b8" text-anchor="middle">GND</text>
         </g>
-        <g id="vrSmoke" fill="#8a919c" opacity="0"><circle cx="276" cy="48" r="7"/><circle cx="292" cy="40" r="9"/><circle cx="308" cy="30" r="7"/></g>
-        <rect x="250" y="56" width="82" height="96" rx="6" fill="#1a6fb5" stroke="#0e4a7d"/>
-        <text x="291" y="72" font-size="9" font-weight="bold" fill="#f4fbfb" text-anchor="middle">Arduino ۵V</text>
-        <rect x="268" y="82" width="46" height="30" rx="3" fill="#16181d"/>
-        <circle id="vrLedG" cx="291" cy="97" r="14" fill="${C.ok}" opacity="0"/><circle id="vrLed" cx="291" cy="97" r="5" fill="#3a2a2a" stroke="#6b4a4a"/>
-        <text id="vrBoardT" x="291" y="136" font-size="9" font-weight="bold" fill="#f4fbfb" text-anchor="middle"></text>
-      </svg>
+        ${unoSvg}
+        ${fireSvg}
+        <circle id="vrLedG" cx="306" cy="138" r="14" fill="${C.ok}" opacity="0"/><circle id="vrLed" cx="306" cy="138" r="5" fill="#3a2a2a" stroke="#6b4a4a"/>
+        <text id="vrBoardT" x="306" y="157" font-size="8" font-weight="bold" fill="#f4fbfb" text-anchor="middle"></text>      </svg>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-width:380px;margin:8px auto 0">
         <div style="${cardCss}"><div style="${lblCss}">ورودی</div><div id="vrVin" style="${valCss}"></div></div>
         <div style="${cardCss}"><div style="${lblCss}">خروجی</div><div id="vrVout" style="${valCss}"></div></div>
@@ -568,7 +605,9 @@ function mountVoltageRegulatorSim(container, { onSuccess, alreadyDone } = {}){
     q('#vrOut').style.display = reg ? '' : 'none';
     q('#vrBypass').style.display = reg ? 'none' : '';
     q('#vrHeat').setAttribute('opacity', reg ? Math.min(.75, Math.max(0, (m.t - 40) / 120)).toFixed(2) : 0);
-    q('#vrSmoke').setAttribute('opacity', burn ? .8 : 0);
+    q('#vrFire').style.display = burn ? '' : 'none';
+    q('#vrBoardRect').setAttribute('fill', burn ? '#8a2e22' : '#1a6fb5');
+    q('#vrBoardRect').setAttribute('stroke', burn ? '#ff5a4f' : '#0e4a7d');
     const led = q('#vrLed'), glow = q('#vrLedG'), bt = q('#vrBoardT');
     if(burn){ led.setAttribute('fill', C.bad); led.setAttribute('stroke', '#ffb3aa'); glow.setAttribute('fill', C.bad); glow.setAttribute('opacity', .4); bt.textContent = 'سوخت! ✖'; bt.setAttribute('fill', C.bad); }
     else if(m.vout === 0){ led.setAttribute('fill', '#3a2a2a'); led.setAttribute('stroke', '#6b4a4a'); glow.setAttribute('opacity', 0); bt.textContent = 'خاموش'; bt.setAttribute('fill', '#cfc8b6'); }
@@ -576,6 +615,13 @@ function mountVoltageRegulatorSim(container, { onSuccess, alreadyDone } = {}){
     else { led.setAttribute('fill', '#ffd25a'); led.setAttribute('stroke', '#fff2b8'); glow.setAttribute('fill', C.ok); glow.setAttribute('opacity', .45); bt.textContent = 'روشن ✓'; bt.setAttribute('fill', C.ok); }
 
     q('#vrDirect').className = 'sim-btn ' + (reg ? 'sim-btn-ghost' : 'sim-btn-run');
+    // «بدون رگولاتور» حالت خطرناک است: وقتی انتخاب شده قرمز نشان داده شود، نه سبز
+    const dBtn = q('#vrDirect').style;
+    dBtn.backgroundImage = reg ? '' : 'none';
+    dBtn.background = reg ? '' : '#d9382b';
+    dBtn.color = reg ? '' : '#fff';
+    dBtn.borderColor = reg ? '' : '#d9382b';
+    dBtn.boxShadow = reg ? '' : '0 0 12px rgba(217,56,43,.45)';
     q('#vrUse').className = 'sim-btn ' + (reg ? 'sim-btn-run' : 'sim-btn-ghost');
     q('#vrCheck').innerHTML = CHECKS.map(([k, t]) => `<li class="${seen[k] ? 'd' : ''}">${t}</li>`).join('');
 
