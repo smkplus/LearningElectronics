@@ -809,3 +809,13 @@ body.sim-fullscreen-lock #knightSection{ z-index:1200 !important; }
 .cx-guide-t{ font-weight:700; color:var(--gold); margin-bottom:4px; }
 .cx-guide-b{ font-size:14px; color:#efe9d6; }
 .cx-guide .sim-btn{ margin-top:8px; }
+
+/* کدِ داخلِ مرحله‌های مأموریت (بک‌تیک) — رنگ‌ها مثل ادیتور */
+.steps li code.step-code{
+  display:inline-block; direction:ltr; unicode-bidi:isolate; padding:0 6px; border-radius:6px;
+  background:#0d1117; border:1px solid #2a3344; color:#e6edf3;
+  font-family:ui-monospace,Consolas,'JetBrains Mono',monospace; font-size:.92em;
+}
+.steps .hl-dir{ color:#c792ea; } .steps .hl-struct, .steps .hl-type, .steps .hl-header{ color:#2ea09d; }
+.steps .hl-fn, .steps .hl-class{ color:#e5a467; } .steps .hl-ident, .steps .hl-const{ color:#e6edf3; }
+.steps .hl-str{ color:#80cbc4; unicode-bidi:plaintext; } .steps .hl-num{ color:#67c2ff; } .steps .hl-cm{ color:#5c6370; unicode-bidi:plaintext; }

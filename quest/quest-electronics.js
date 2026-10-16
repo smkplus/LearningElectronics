@@ -517,10 +517,10 @@ function mountVoltageRegulatorSim(container, { onSuccess, alreadyDone } = {}){
         <defs>${fireDefs}</defs>
         <path id="vrBypass" d="M80 80 V44 H244 V${Y5V} H${uPinX - 1}" fill="none" stroke="${C.red}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
         <g fill="none" stroke="${C.line}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-          <path id="vrIn" d="M44 80 H112"/>
-          <path id="vrOut" d="M200 80 H244 V${Y5V} H${uPinX - 1}"/>
+          <path id="vrIn" d="M44 80 H100 V136 H136 V130"/>
+          <path id="vrOut" d="M176 130 V136 H212 V80 H244 V${Y5V} H${uPinX - 1}"/>
           <path d="M44 124 H56 V168 H240 V${YGND} H${uPinX - 1}"/>
-          <path d="M156 122 V168"/>
+          <path d="M156 130 V168"/>
           <path d="M80 80 V100 M80 106 V168"/>
           <path d="M226 80 V100 M226 106 V168"/>
         </g>
@@ -531,11 +531,15 @@ function mountVoltageRegulatorSim(container, { onSuccess, alreadyDone } = {}){
         <text id="vrBat" x="26" y="106" font-size="11" font-weight="bold" fill="${C.on}" text-anchor="middle">9 V</text>
         <text x="26" y="150" font-size="10" fill="#cfc8b6" text-anchor="middle">باتری</text>
         <g id="vrReg">
-          <rect x="124" y="50" width="64" height="12" rx="2" fill="#b7bec6" stroke="#6d757e"/><circle cx="156" cy="56" r="3" fill="#10151f"/>
-          <rect x="112" y="62" width="88" height="60" rx="6" fill="#1b1d22" stroke="#3b4a60"/>
-          <rect id="vrHeat" x="112" y="62" width="88" height="60" rx="6" fill="#ff3b1f" opacity="0"/>
-          <text x="156" y="98" font-size="15" font-weight="bold" fill="#f4fbfb" text-anchor="middle">7805</text>
-          <text x="118" y="75" font-size="8" fill="#9aa7b8">IN</text><text x="194" y="75" font-size="8" fill="#9aa7b8" text-anchor="end">OUT</text><text x="156" y="116" font-size="8" fill="#9aa7b8" text-anchor="middle">GND</text>
+          <g fill="#c0c6d0" stroke="#6d757e" stroke-width=".8"><rect x="134.5" y="108" width="3" height="22"/><rect x="154.5" y="108" width="3" height="22"/><rect x="174.5" y="108" width="3" height="22"/></g>
+          <path d="M126 76 V56 Q126 52 130 52 H182 Q186 52 186 56 V76 Z" fill="#b7bec6" stroke="#6d757e"/>
+          <path d="M129 55 H183" stroke="#e3e7ee" stroke-width="1.2" stroke-linecap="round"/>
+          <circle cx="156" cy="62" r="4.2" fill="#10151f" stroke="#6d757e" stroke-width=".8"/>
+          <rect x="120" y="72" width="72" height="38" rx="3" fill="#1b1d22" stroke="#3b4a60"/>
+          <rect x="120" y="72" width="72" height="5" rx="2" fill="#2b2f37"/>
+          <rect id="vrHeat" x="120" y="72" width="72" height="38" rx="3" fill="#ff3b1f" opacity="0"/>
+          <text x="156" y="94" font-size="14" font-weight="bold" fill="#f4fbfb" text-anchor="middle">7805</text>
+          <g font-size="6.5" fill="#9aa7b8" text-anchor="middle"><text x="136" y="106">IN</text><text x="156" y="106">GND</text><text x="176" y="106">OUT</text></g>
         </g>
         ${unoSvg}
         ${fireSvg}

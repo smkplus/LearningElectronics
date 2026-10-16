@@ -299,7 +299,7 @@ function hsMxCalls(){
   const set = new Set();
   Object.values(CUBE.cfg).forEach(f => {
     let m;
-    if((m = f.match(/^TIM(\d)_CH/))) set.add(`MX_TIM${m[1]}_Init();         // تایمر ${m[1]}: کارِ کیوب‌مکس`);
+    if((m = f.match(/^TIM(\d)_CH/))) set.add(`MX_TIM${m[1]}_Init();`);
     else if((m = f.match(/^USART(\d)_/))) set.add(`MX_USART${m[1]}_UART_Init();`);
     else if((m = f.match(/^I2C(\d)_/))) set.add(`MX_I2C${m[1]}_Init();`);
     else if((m = f.match(/^SPI(\d)_/))) set.add(`MX_SPI${m[1]}_Init();`);
@@ -308,10 +308,10 @@ function hsMxCalls(){
   return Array.from(set).map(l => '  ' + l + '\n').join('');
 }
 function halSkeleton(cfg){
-  const init = cfg.initEditor ? '  // کدِ تو (ادیتورِ قبل از حلقه) این‌جا اجرا می‌شود\n' : '';
-  return 'int main(void)\n{\n  HAL_Init();\n  SystemClock_Config();   // ساعت ' + Math.round(cxClock(CUBE.clk).sys) + ' مگاهرتز: کارِ کیوب‌مکس\n  MX_GPIO_Init();         // پایه‌ها: کارِ کیوب‌مکس\n' + hsMxCalls() +
+  const init = '';
+  return 'int main(void)\n{\n  HAL_Init();\n  SystemClock_Config();\n  MX_GPIO_Init();\n' + hsMxCalls() +
     '  /* USER CODE BEGIN 2 */\n' + init + '  /* USER CODE END 2 */\n\n' +
-    '  /* USER CODE BEGIN WHILE */\n  while (1)\n  {\n    // کدِ تو (ادیتورِ داخل حلقه) این‌جا اجرا می‌شود\n    /* USER CODE END WHILE */\n\n    /* USER CODE BEGIN 3 */\n  }\n  /* USER CODE END 3 */\n}';
+    '  /* USER CODE BEGIN WHILE */\n  while (1)\n  {\n    /* USER CODE END WHILE */\n\n    /* USER CODE BEGIN 3 */\n  }\n  /* USER CODE END 3 */\n}';
 }
 function halEditorHtml(small){
   return `<div class="hal-ed${small ? ' hs-small' : ''}"><div class="hal-gut" aria-hidden="true"></div><div class="hal-wrap"><pre class="hal-hl" aria-hidden="true"></pre><textarea class="hal-src" dir="ltr" spellcheck="false"></textarea></div></div>`;
@@ -477,8 +477,8 @@ function mountHalMission(container, cfg, { onSuccess, alreadyDone } = {}){
 /* ---------- سخت‌افزار ۱: سنسور روی PA0 و LED روی PC13 ---------- */
 function hsReadHw(root, api){
   root.innerHTML = `
-    <svg class="hs-svg" viewBox="0 0 320 160" direction="ltr" role="img" aria-label="سنسور خط‌یاب روی PA0 و LED روی PC13">
-      <rect id="hrSurf" x="20" y="104" width="190" height="42" rx="6" style="fill:#e9e6dc;stroke:#667"/>
+    <svg class="hs-svg" viewBox="0 0 320 160" direction="ltr" role="img" aria-label="سنسور خط‌یاب روی خط مشکی و LED روی PC13">
+      <rect x="20" y="104" width="190" height="42" rx="6" style="fill:#111111;stroke:#667"/>
       <polygon points="116,76 128,76 138,104 106,104" style="fill:rgba(255,110,110,.35)"/>
       <rect x="100" y="42" width="40" height="34" rx="5" style="fill:#2b6cb0"/>
       <text x="120" y="63" font-size="11" text-anchor="middle" style="fill:#fff">IR</text>
@@ -486,36 +486,21 @@ function hsReadHw(root, api){
       <circle id="hrLed" cx="262" cy="70" r="15" style="fill:#1f3a24;stroke:#667;stroke-width:2"/>
       <text x="262" y="104" font-size="10" text-anchor="middle">LED روی PC13</text>
     </svg>
-    <div class="ll-row">
-      <button type="button" class="sim-btn sim-btn-run" data-s="white">⬜ زیر سنسور سفید</button>
-      <button type="button" class="sim-btn sim-btn-ghost" data-s="black">⬛ زیر سنسور مشکی</button>
-    </div>
     <div class="hs-chips"><span id="hrPin"></span><span id="hrP13"></span></div>
-    <div class="hs-chips"><span id="hrC1"></span><span id="hrC2"></span></div>`;
+    <div class="hs-chips"><span id="hrC1"></span></div>`;
   const q = s => root.querySelector(s);
-  let surf = 'white', out = { C13: 1 }, seenB = false, seenW = false, holdB = 0, holdW = 0, wrongT = 0;
+  let out = { C13: 1 }, seenB = false, holdB = 0, wrongT = 0;
   function paint(){
-    const black = surf === 'black', on = out.C13 === 0;
-    q('#hrSurf').style.fill = black ? '#111111' : '#e9e6dc';
+    const on = out.C13 === 0;
     const led = q('#hrLed');
     led.style.fill = on ? '#7dffa0' : '#1f3a24';
     led.style.filter = on ? 'drop-shadow(0 0 8px #7dffa0)' : 'none';
-    q('#hrPin').textContent = `PA0 = ${toFa(black ? 1 : 0)} (${black ? 'خط مشکی' : 'سطح سفید'})`;
+    q('#hrPin').textContent = `PA0 = ${toFa(1)} (خط مشکی)`;
     q('#hrP13').textContent = `PC13 = ${toFa(out.C13)} (LED ${on ? 'روشن' : 'خاموش'})`;
     q('#hrC1').textContent = `${seenB ? '✅' : '○'} مشکی ← LED روشن`;
-    q('#hrC2').textContent = `${seenW ? '✅' : '○'} سفید ← LED خاموش`;
-    root.querySelectorAll('[data-s]').forEach(b => {
-      const a = b.dataset.s === surf;
-      b.classList.toggle('sim-btn-run', a); b.classList.toggle('sim-btn-ghost', !a);
-    });
   }
-  root.addEventListener('click', e => {
-    const b = e.target.closest ? e.target.closest('button[data-s]') : null;
-    if(!b) return;
-    surf = b.dataset.s; holdB = holdW = wrongT = 0; paint();
-  });
   return {
-    read: (p, n) => (p === 'A' && n === 0) ? (surf === 'black' ? 1 : 0) : 0,
+    read: (p, n) => (p === 'A' && n === 0) ? 1 : 0,
     write(p, n, v){
       if(p === 'C' && n === 13){
         if(out.C13 !== v){ out.C13 = v; api.log(`PC13 = ${v}  (LED ${v ? 'خاموش' : 'روشن'})`); }
@@ -523,24 +508,17 @@ function hsReadHw(root, api){
     },
     out: (p, n) => (p === 'C' && n === 13) ? out.C13 : 0,
     compare(){},
-    reset(){ out = { C13: 1 }; seenB = seenW = false; holdB = holdW = wrongT = 0; paint(); },
+    reset(){ out = { C13: 1 }; seenB = false; holdB = wrongT = 0; paint(); },
     tick(dt){
       paint();
       if(!api.running()) return;
-      const black = surf === 'black', on = out.C13 === 0;
-      if(black && on){ holdB += dt; if(holdB >= 0.3) seenB = true; } else holdB = 0;
-      if(seenB && !black && !on){ holdW += dt; if(holdW >= 0.3) seenW = true; } else holdW = 0;
-      wrongT = ((black && !on) || (!black && on)) ? wrongT + dt : 0;
-      if(seenB && seenW) return;
-      if(wrongT > 1.2){
-        api.say('error', black
-          ? '⚠️ زیر سنسور مشکی است (PA0 = ۱) ولی LED خاموش مانده. شرطِ if را بررسی کن؛ روی Blue Pill روشن‌شدنِ LED یعنی GPIO_PIN_RESET.'
-          : '⚠️ زیر سنسور سفید است (PA0 = ۰) ولی LED روشن است. در حالت سفید باید LED خاموش شود (GPIO_PIN_SET).');
-      } else if(wrongT === 0){
-        api.say('running', seenB ? '✅ روی مشکی درست بود. حالا سطحِ زیر سنسور را سفید کن.' : '▶ در حال اجرا… سطحِ زیر سنسور را مشکی کن و LED را ببین.');
-      }
+      const on = out.C13 === 0;
+      if(on){ holdB += dt; wrongT = 0; if(holdB >= 0.3) seenB = true; } else { holdB = 0; wrongT += dt; }
+      if(seenB) return;
+      if(wrongT > 1.2) api.say('error', '⚠️ زیر سنسور مشکی است (PA0 = ۱) ولی LED خاموش مانده. شرطِ if را بررسی کن؛ روی Blue Pill روشن‌شدنِ LED یعنی GPIO_PIN_RESET.');
+      else api.say('running', '▶ در حال اجرا… اگر سنسور مشکی را دید، LED باید روشن شود.');
     },
-    isDone: () => seenB && seenW
+    isDone: () => seenB
   };
 }
 
@@ -737,21 +715,17 @@ const HS_TABLE_HTML = `<details class="hs-det"><summary>🔁 معادلِ آرد
 
 const HAL_CFG = {
   line_read: {
-    goal: 'هدف: سنسورِ روی <b>PA0</b> را بخوان؛ وقتی خط <b>مشکی</b> را دید LED روی <b>PC13</b> روشن شود و روی سفید خاموش. (در این شبیه‌ساز، ماژولِ سنسور روی مشکی <b>GPIO_PIN_SET</b> می‌دهد.)',
+    goal: 'هدف: سنسورِ روی <b>PA0</b> را بخوان؛ وقتی خط <b>مشکی</b> را دید LED روی <b>PC13</b> روشن شود. (در این شبیه‌ساز، ماژولِ سنسور روی مشکی <b>GPIO_PIN_SET</b> می‌دهد و روی Blue Pill روشن‌شدنِ LED یعنی <b>GPIO_PIN_RESET</b>.)',
     preface: HS_FLOW_HTML + HS_TABLE_HTML,
     skeletonOpen: true,
     required: [
       { pin: 'PA0', fn: 'GPIO_Input', label: 'PA0 را GPIO_Input کن (سنسور خط؛ برد باید آن را بخواند)' },
       { pin: 'PC13', fn: 'GPIO_Output', label: 'PC13 را GPIO_Output کن (LED روی برد؛ برد به آن فرمان می‌دهد)' }
     ],
-    starter: '// کدِ داخل while(1): سنسور PA0 را بخوان و LED روی PC13 را کنترل کن\n',
+    starter: '',
     sample: `if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_SET)
 {
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);  // مشکی: LED روشن
-}
-else
-{
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);    // سفید: LED خاموش
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
 }`,
     successMsg: '✅ عالی! اولین برنامه‌ی «ورودی ← تصمیم ← خروجی» تو روی STM32 کار می‌کند؛ مغزِ هر رباتی از همین ساخته می‌شود.',
     idleMsg: '⚙️ اول در تبِ «Cube» پایه‌ها را روی نقشه‌ی CubeMX تنظیم کن، بعد کد را بنویس و «اجرا» را بزن.',
@@ -767,33 +741,29 @@ else
       { pin: 'PB13', fn: 'GPIO_Output', label: 'PB13 را GPIO_Output کن (چراغ مستقیم)' },
       { pin: 'PB14', fn: 'GPIO_Output', label: 'PB14 را GPIO_Output کن (چراغ راست)' }
     ],
-    starter: `// ۱) سه سنسور را در سه متغیر بخوان
-uint8_t left   = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0);
+    starter: `uint8_t left   = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0);
 uint8_t center = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1);
 uint8_t right  = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2);
-
-// ۲) همه‌ی چراغ‌ها را خاموش کن، بعد با if / else if فقط چراغِ درست را روشن کن
 `,
     sample: `uint8_t left   = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0);
 uint8_t center = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1);
 uint8_t right  = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2);
 
-// اول همه‌ی چراغ‌ها خاموش
 HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
 HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_RESET);
 HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
 
 if (center == 1)
 {
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_SET);   // مستقیم
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_SET);
 }
 else if (left == 1)
 {
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);   // چپ
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
 }
 else if (right == 1)
 {
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);   // راست
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
 }`,
     successMsg: '✅ عالی! مغزِ ربات آماده است: با if و else if اولویت‌بندی کردی و برای هر حالتِ سنسورها تصمیمِ درست گرفتی.',
     idleMsg: '🧠 اول پایه‌ها را در تبِ «Cube» تنظیم کن، بعد کد را بنویس، «اجرا» را بزن و با دکمه‌های بالا حالتِ سنسورها را عوض کن.',
@@ -814,30 +784,21 @@ else if (right == 1)
       { pin: 'PB10', fn: 'GPIO_Output', label: 'PB10 را GPIO_Output کن (موتور راست IN1)' },
       { pin: 'PB11', fn: 'GPIO_Output', label: 'PB11 را GPIO_Output کن (موتور راست IN2)' }
     ],
-    starter: `// ۱) جلو: هر دو موتور رو به جلو، یک ثانیه
-${HS_FWD}
+    starter: `${HS_FWD}
 HAL_Delay(1000);
-
-// ۲) چپ: موتور چپ بایستد، موتور راست جلو بماند
-// ۳) راست: موتور راست بایستد، موتور چپ جلو برود
-// ۴) ایست: هر چهار پایه RESET
 `,
-    sample: `// جلو
-${HS_FWD}
+    sample: `${HS_FWD}
 HAL_Delay(1000);
 
-// چپ: موتور چپ ایستاده، راست جلو
 HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
 HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
 HAL_Delay(600);
 
-// راست: موتور چپ جلو، راست ایستاده
 HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
 HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
 HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_RESET);
 HAL_Delay(600);
 
-// ایست
 HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
 HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
 HAL_Delay(800);`,
@@ -859,34 +820,25 @@ HAL_Delay(800);`,
       { pin: 'PA8', fn: 'TIM1_CH1', label: 'PA8 را TIM1_CH1 کن (سرعت موتور چپ)' },
       { pin: 'PA9', fn: 'TIM1_CH2', label: 'PA9 را TIM1_CH2 کن (سرعت موتور راست)' }
     ],
-    initStarter: '// PWM هر دو کانال را روشن کن (یک‌بار، قبل از حلقه)\n',
+    initStarter: '',
     initSample: `HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);`,
-    starter: `// جهت: هر دو موتور رو به جلو
-${HS_FWD}
-
-// آهسته (حدود ۳۰۰) و تند (حدود ۸۰۰) برای هر دو موتور، با HAL_Delay بین‌شان
-// خم چپ: موتور راست تندتر — خم راست: موتور چپ تندتر
+    starter: `${HS_FWD}
 `,
-    sample: `// جهت: هر دو موتور رو به جلو
-${HS_FWD}
+    sample: `${HS_FWD}
 
-// آهسته
 __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 300);
 __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 300);
 HAL_Delay(1200);
 
-// تند
 __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 800);
 __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 800);
 HAL_Delay(1200);
 
-// خم چپ: موتور راست تندتر
 __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 300);
 __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 800);
 HAL_Delay(1200);
 
-// خم راست: موتور چپ تندتر
 __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 800);
 __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 300);
 HAL_Delay(1200);`,

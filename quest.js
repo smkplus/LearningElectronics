@@ -741,6 +741,12 @@ function cutHtml(h, k){
   return out + '</span>'.repeat(Math.max(open, 0));
 }
 
+/* کدِ داخل بک‌تیک در مرحله‌ها: ایزوله، LTR و با رنگ‌بندیِ ادیتور */
+function stepHtml(s){
+  if(typeof ArduinoSim === 'undefined' || !ArduinoSim.highlightArduino) return s.replace(/`/g, '');
+  return s.split('`').map((p, i) => i % 2 ? `<code class="step-code">${ArduinoSim.highlightArduino(p)}</code>` : p).join('');
+}
+
 function showEditorGuide(tpl){
   const parts = tpl.split(/\{\{(.+?)\}\}/g);
   const colored = parts.map((p, i) => i % 2 ? ArduinoSim.highlightArduino(p) : p);
@@ -804,7 +810,7 @@ function onNodeClick(i, locked, evt){
   stepsEl.innerHTML = '';
   q.steps.forEach((s, idx) => {
     const li = document.createElement('li');
-    li.innerHTML = `<span class="num mono">${idx+1}</span><span>${s}</span>`;
+    li.innerHTML = `<span class="num mono">${idx+1}</span><span>${stepHtml(s)}</span>`;
     stepsEl.appendChild(li);
   });
   document.getElementById('modalReward').textContent = `✨ +${toFa(q.xp)} XP`;
