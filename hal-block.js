@@ -414,13 +414,8 @@ function mountHalMission(container, cfg, { onSuccess, alreadyDone } = {}){
     const c = cxClock(CUBE.clk);
     const label = (n, f) => `${n} · ${/^TIM/.test(f) ? 'PWM' : (FN[f] || f)}`;
     const items = [`<button type="button" class="hs-chipb ${c.ready ? 'ok' : 'todo'}" data-go="clock">⏱️ ${toFa(Math.round(c.sys))} MHz</button>`];
-    const seen = new Set();
     required.forEach(r => {
-      seen.add(r.pin);
       items.push(`<button type="button" class="hs-chipb ${CUBE.cfg[r.pin] === r.fn ? 'ok' : 'todo'}" data-go="${r.pin}" data-fn="${r.fn}" dir="ltr">${label(r.pin, r.fn)}</button>`);
-    });
-    Object.entries(CUBE.cfg).filter(([n, f]) => !/^(SYS|RCC)_/.test(f) && !seen.has(n)).forEach(([n, f]) => {
-      items.push(`<button type="button" class="hs-chipb ok" data-go="${n}" data-fn="${f}" dir="ltr">${label(n, f)}</button>`);
     });
     strip.innerHTML = items.join('');
     paintPins();
