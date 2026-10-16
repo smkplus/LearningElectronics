@@ -45,7 +45,7 @@ const QUEST_GROUPS = [
   QUESTS.forEach(q => {
     if(q.id === 'hello') g = 'arduino';
     else if(q.id === 'stm32_cube') g = 'stm32';
-    else if(q.id === 'robot_assemble') g = 'robotics';
+    else if(q.id === 'line_intro') g = 'robotics';
     q.group = g;
   });
 })();
@@ -687,6 +687,7 @@ const CONCEPT_SIMS = {
   voltage_regulator: mountVoltageRegulatorSim,
   shift_register: mountShiftRegisterSim,
   // رباتیک — quest-sims-robotics.js
+  line_intro: mountLineIntroSim,
   robot_assemble: mountRobotAssembleSim,
   line_sensor: mountLineSensorMission,
   line_follow: mountLineFollowSim,
@@ -705,9 +706,10 @@ const HELLO_MISSION_INTRO_TEXT = '📝 تو این ماموریت باید مت�
 
 /* راهنمای داخل ادیتور: کدها بین {{ }} نوشته می‌شوند. متن با همان افکت تایپِ بنر می‌آید و هر بار که بنر
    یک حرف اضافه می‌کند، همان لحظه نسخه‌ی رنگیِ همان مقدار متن جایگزین می‌شود. */
-const ROBOT_ASSEMBLE_INTRO_TEXT = '🛠️ به بخش رباتیک خوش اومدی! قبل از اینکه ربات راه بیفته، باید خودت بدنه‌ش رو سر هم کنی. هر قطعه رو بگیر و بنداز روی جایگاه خط‌چینِ خودش؛ آخرش هم روشنش کن!';
+const LINE_INTRO_TEXT = '🤖 به بخش رباتیک خوش اومدی! اول بخون ربات تعقیب خط چیه و چطور کار می‌کنه، بعد ببین یه ربات کامل چطور روی چند مسیر خط رو می‌ره. دو مسیر رو تا 🏁 برسون تا مأموریت تکمیل بشه.';
+const ROBOT_ASSEMBLE_INTRO_TEXT = '🛠️ حالا که چشم ربات رو شناختی، وقت ساختنه! قبل از اینکه ربات راه بیفته، باید خودت بدنه‌ش رو سر هم کنی. هر قطعه رو بگیر و بنداز روی جایگاه خط‌چینِ خودش؛ آخرش هم روشنش کن!';
 const STLINK_INTRO_TEXT = '🔌 برد Blue Pill برخلاف آردوینو خودش مبدل USB به سریال و بوت‌لودر نداره، واسه همین برای ریختن برنامه یه «برنامه‌ریز» به اسم ST-Link لازمه. چهار تا سیم رو وصل کن: 3.3V، GND، SWDIO و SWCLK. مواظب ۵ ولت هم باش، چیپ رو می‌سوزونه!';
-const LINE_SENSOR_INTRO_TEXT = '🤖 بدنه‌ی ربات آماده‌ست! حالا ربات تعقیب خط یه «چشم» می‌خواد: سنسور مادون‌قرمز. اول بخش توضیحی رو ببین تا بفهمی IR چیه و چرا با چشم فرق داره؛ بعد سنسور رو روی مسیر بکش و آستانه رو جوری تنظیم کن که روی سفید LED خاموش و روی خط مشکی روشن بشه.';
+const LINE_SENSOR_INTRO_TEXT = '🤖 ربات تعقیب خط اول از همه یه «چشم» می‌خواد: سنسور مادون‌قرمز. اول بخش توضیحی رو ببین تا بفهمی IR چیه و چرا با چشم فرق داره؛ بعد سنسور رو روی مسیر بکش و آستانه رو جوری تنظیم کن که روی سفید LED خاموش و روی خط مشکی روشن بشه.';
 
 const HAL_INTRO_TEXT = {
   line_read: '📟 حالا خودِ STM32 باید سنسور را بخواند! اول در مرحله‌ی ۱ روی نقشه‌ی چیپ بگو PA0 ورودی است و PC13 خروجی؛ بعد در مرحله‌ی ۲ با HAL_GPIO_ReadPin بخوان و LED را کنترل کن.',
@@ -836,6 +838,10 @@ function onNodeClick(i, locked, evt){
   // یادآوری می‌کنیم که باید متن را چاپ کند و اگر کدنویسی بلد نیست از حالت بلوکی استفاده کند.
   if(q.id === 'hello' && !done){
     setTimeout(() => showKnightLine(HELLO_MISSION_INTRO_TEXT, 'happy'), 400);
+  }
+
+  if(q.id === 'line_intro' && !done){
+    setTimeout(() => showKnightLine(LINE_INTRO_TEXT, 'happy', 'knight'), 400);
   }
 
   if(q.id === 'robot_assemble' && !done){
