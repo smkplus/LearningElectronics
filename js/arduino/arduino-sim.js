@@ -710,15 +710,26 @@ function serialSVG() {
 
       <line x1="148" y1="92" x2="196" y2="92" class="sim-wire sim-wire-in"/>
       <g id="simServoGroup">
-        <rect x="184" y="83" width="12" height="18" rx="2" class="sim-servo-flange"/>
-        <rect x="268" y="83" width="12" height="18" rx="2" class="sim-servo-flange"/>
-        <rect x="196" y="76" width="72" height="32" rx="6" class="sim-servo-body"/>
-        <rect x="222" y="56" width="20" height="20" rx="4" class="sim-servo-drum"/>
+        <rect x="186" y="80" width="92" height="9" rx="1.5" class="sim-servo-flange"/>
+        <circle cx="191.5" cy="84.5" r="2.2" class="sim-servo-hole"/>
+        <circle cx="272.5" cy="84.5" r="2.2" class="sim-servo-hole"/>
+        <rect x="196" y="74" width="72" height="34" rx="3" class="sim-servo-body"/>
+        <text x="232" y="94" class="sim-servo-label">SG90</text>
+        <rect x="204" y="64" width="56" height="10" rx="2.5" class="sim-servo-neck"/>
+        <circle cx="251" cy="63" r="5.5" class="sim-servo-boss"/>
+        <circle cx="232" cy="56" r="10.5" class="sim-servo-boss"/>
+        <circle cx="232" cy="56" r="5.5" class="sim-servo-drum"/>
         <g id="simServoHornGroup">
-          <line x1="232" y1="56" x2="232" y2="26" class="sim-servo-horn"/>
-          <circle cx="232" cy="26" r="3.4" class="sim-servo-horn-tip"/>
+          <path d="M228.2 55 L229.4 30.2 A2.6 2.6 0 0 1 234.6 30.2 L235.8 55 Z" class="sim-servo-horn"/>
+          <circle cx="232" cy="56" r="6.5" class="sim-servo-horn"/>
+          <circle cx="232" cy="37" r="1.1" class="sim-servo-horn-hole"/>
+          <circle cx="232" cy="43.5" r="1.1" class="sim-servo-horn-hole"/>
+          <circle cx="232" cy="30.5" r="1.5" class="sim-servo-horn-tip"/>
         </g>
-        <circle cx="232" cy="56" r="3.4" class="sim-servo-shaft"/>
+        <circle cx="232" cy="56" r="2.2" class="sim-servo-shaft"/>
+        <line x1="189" y1="88.6" x2="197" y2="88.6" stroke="#7a4a22" stroke-width="3"/>
+        <line x1="189" y1="92" x2="197" y2="92" stroke="#f0932b" stroke-width="3"/>
+        <line x1="189" y1="95.4" x2="197" y2="95.4" stroke="#d93a3a" stroke-width="3"/>
       </g>
       <line x1="232" y1="108" x2="232" y2="150" class="sim-wire sim-wire-gnd"/>
       <line x1="232" y1="150" x2="148" y2="150" class="sim-wire sim-wire-gnd"/>

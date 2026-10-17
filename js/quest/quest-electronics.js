@@ -63,10 +63,10 @@ const QUESTS_ELECTRONICS = [
     desc:'رگولاتور خطی ۷۸۰۵ سه پایه دارد: ورودی (IN)، زمین (GND) و خروجی (OUT). هر ولتاژی بین حدود ۷ تا ۳۵ ولت به ورودی بدهی، روی خروجی ۵ ولتِ ثابت می‌گیری. برای همین اغلب برد آردوینو و بسیاری از پروژه‌ها با باتری ۹ ولتی یا آداپتور ۱۲ ولتی روشن می‌شوند. برای ۳٫۳ ولتِ STM32 هم نمونه‌ی مشابه (مثل AMS1117-3.3) داریم.\n\nرگولاتور خطی ولتاژِ اضافه را «می‌سوزاند»، یعنی به گرما تبدیل می‌کند: توان تلف‌شده = (ولتاژ ورودی − ولتاژ خروجی) × جریان. هرچه اختلاف یا جریان بیشتر باشد، قطعه داغ‌تر می‌شود و اگر از حدی بگذرد، محافظ حرارتی خروجی را قطع می‌کند. دو خازن کوچک هم کنار آن می‌گذارند تا خروجی نویز نداشته باشد.',
     steps:[
       'اول ببین: باتری مستقیم به برد ۵ ولتی وصل است و برد سوخته. ولتاژ را کم و زیاد کن و ببین فقط یک بازه‌ی باریک امن است.',
-      'دکمه‌ی «با رگولاتور ۷۸۰۵» را بزن؛ حالا هر ورودی بین ۷ تا ۱۵ ولت، خروجی را روی ۵ ولتِ ثابت نگه می‌دارد.',
-      'ورودی را زیر ۷ ولت ببر: رگولاتور حدود ۲ ولت اختلاف لازم دارد (افت ولتاژ) و خروجی دیگر ۵ نیست.',
-      'ورودی و جریانِ مصرف را بالا ببر تا رگولاتور داغ شود و محافظ حرارتی خاموشش کند؛ توان تلف‌شده = (Vin − Vout) × I.',
-      'در آخر یک حالتِ سالم بساز: ورودی ۷ تا ۱۰ ولت، خروجی ۵ ولتِ ثابت و دمای کمتر از ۱۰۰ درجه؛ بعد مأموریت خودکار تکمیل می‌شود.'
+      'دکمه‌ی «با رگولاتور ۷۸۰۵» را بزن؛ حالا هر ورودی بین ۷ تا ۱۵ ولت، خروجی را روی ۵ ولتِ ثابت نگه می‌دارد. به محض استفاده از رگولاتور، مأموریت تکمیل می‌شود.',
+      '(اختیاری) ورودی را زیر ۷ ولت ببر: رگولاتور حدود ۲ ولت اختلاف لازم دارد (افت ولتاژ) و خروجی دیگر ۵ نیست.',
+      '(اختیاری) ورودی و جریانِ مصرف را بالا ببر تا رگولاتور داغ شود و محافظ حرارتی خاموشش کند؛ توان تلف‌شده = (Vin − Vout) × I.',
+      '(اختیاری) یک حالتِ سالم بساز: ورودی ۷ تا ۱۰ ولت، خروجی ۵ ولتِ ثابت و دمای کمتر از ۱۰۰ درجه.'
     ]},
   { id:'shift_register', icon:'🔢', title:'شیفت رجیستر (74HC595)', sub:'۸ خروجی با فقط ۳ پین — کلاک، لچ و چالش',
     xp:60,
@@ -82,6 +82,31 @@ const QUESTS_ELECTRONICS = [
     ]}
 ];
 
+
+/* باتری ۹ ولتی ایستاده: بدنه‌ی سبز با برچسب روشن؛ دو قطبِ − (شش‌ضلعی، نقره‌ای) و + (گرد، طلایی)
+   روی بالای باتری. مرکزِ قطب‌ها: ‌(x+10, y-8) برای − و (x+w-10, y-8) برای +؛ سیم‌ها از همان نقطه‌ها شروع می‌شوند. */
+function batterySvg(o){
+  const { id, x, y, w, h, textId, text } = o, ty = y - 8, xm = x + 10, xp = x + w - 10, s1 = y + h * 0.3, sh = h * 0.4, cx = x + w / 2, cy = s1 + sh / 2;
+  const mid = textId
+    ? `<text id="${textId}" x="${cx}" y="${cy + 4}" font-size="13" font-weight="bold" fill="#052e18" text-anchor="middle">${text || ''}</text>`
+    : `<path d="M${cx + 2} ${cy - 7} L${cx - 5} ${cy + 1} H${cx} L${cx - 2} ${cy + 7} L${cx + 5} ${cy - 1} H${cx} Z" fill="#052e18"/>`;
+  return `<g>
+    <defs>
+      <linearGradient id="${id}B" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3fcf85"/><stop offset=".5" stop-color="#27a560"/><stop offset="1" stop-color="#17703f"/></linearGradient>
+      <linearGradient id="${id}S" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d4ffe6"/><stop offset="1" stop-color="#8be8b4"/></linearGradient>
+    </defs>
+    <rect x="${xm - 2.5}" y="${ty}" width="5" height="${y - ty + 2}" fill="#aab2be"/>
+    <rect x="${xp - 2}" y="${ty}" width="4" height="${y - ty + 2}" fill="#aab2be"/>
+    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="6" fill="url(#${id}B)" stroke="#0b4a28" stroke-width="1.2"/>
+    <rect x="${x + 1}" y="${s1}" width="${w - 2}" height="${sh}" fill="url(#${id}S)"/>
+    <rect x="${x + 3}" y="${y + 3}" width="2" height="${h - 6}" rx="1" fill="#fff" opacity=".18"/>
+    ${mid}
+    <circle cx="${xm}" cy="${ty}" r="5.2" fill="#cfd5de" stroke="#6d757e" stroke-width="1"/>
+    <text x="${xm}" y="${ty + 3.2}" font-size="9" font-weight="bold" fill="#3a4250" text-anchor="middle">\u2212</text>
+    <circle cx="${xp}" cy="${ty}" r="5.2" fill="#f2c94c" stroke="#8a6a12" stroke-width="1"/>
+    <text x="${xp}" y="${ty + 3.2}" font-size="9" font-weight="bold" fill="#5a4200" text-anchor="middle">+</text>
+  </g>`;
+}
 
 /* ----- شبیه‌سازهای بخش الکترونیک ----- */
 /* ================= RESISTOR COLOR-CODE MISSION =================
@@ -201,18 +226,17 @@ function mountLedDiodeSim(container, { onSuccess, alreadyDone } = {}){
   container.innerHTML = `
     <div class="sim-wrap">
       <div class="sim-hw-note">هدف: LED الان برعکس وصل شده و روشن نمی‌شود. جهتش را درست کن تا جریان از آند (+، پایه‌ی بلند) به کاتد (−، پایه‌ی کوتاه) برود.</div>
-      <svg class="ls-svg" style="cursor:default" viewBox="0 0 320 130" direction="ltr" role="img" aria-label="مدار باتری، مقاومت و LED">
+      <svg class="ls-svg" style="cursor:default" viewBox="0 0 320 170" direction="ltr" role="img" aria-label="مدار باتری، مقاومت و LED">
         <defs>${ledRealDefs('ld')}</defs>
-        <g id="ldWires" fill="none" stroke="#667" stroke-width="3"><path d="M48 66 H80"/><path d="M130 66 H200"/><path d="M48 86 H200"/></g>
-        <rect x="14" y="56" width="34" height="40" rx="5" fill="#2a2f3a" stroke="#667"/>
-        <text x="31" y="71" font-size="14" fill="#cfc8b6" text-anchor="middle">+</text><text x="31" y="90" font-size="14" fill="#cfc8b6" text-anchor="middle">−</text>
-        <text x="31" y="112" font-size="11" fill="#cfc8b6" text-anchor="middle">باتری</text>
+        <g id="ldWires" fill="none" stroke="#667" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M48 66 H80"/><path id="ldWTop" d="M130 66 H186"/><path id="ldWRet" d="M22 66 V52 H4 V158 H206 V86"/></g>
+        ${batterySvg({ id: 'ldBat', x: 12, y: 74, w: 46, h: 58 })}
+        <text x="35" y="147" font-size="11" fill="#cfc8b6" text-anchor="middle">باتری</text>
         <rect x="80" y="58" width="50" height="16" rx="3" fill="#c9b48a" stroke="#8a7550"/>
         <rect x="92" y="58" width="5" height="16" fill="#c0392b"/><rect x="102" y="58" width="5" height="16" fill="#c0392b"/><rect x="112" y="58" width="5" height="16" fill="#6b4226"/>
         <text x="105" y="52" font-size="11" fill="#cfc8b6" text-anchor="middle">۲۲۰Ω</text>
         <g id="ldLed" transform="translate(250 76)">${ledRealSvg('ld')}</g>
         <text id="ldTop" x="175" y="57" font-size="10" fill="#cfc8b6" text-anchor="middle"></text>
-        <text id="ldBot" x="175" y="104" font-size="10" fill="#cfc8b6" text-anchor="middle"></text>
+        <text id="ldBot" x="178" y="112" font-size="10" fill="#cfc8b6" text-anchor="end"></text>
       </svg>
       <div class="ll-row"><button type="button" class="sim-btn sim-btn-run" id="ldFlip">🔄 LED را برگردان</button></div>
       <div class="sim-status" id="ldStatus" data-state="idle"></div>
@@ -226,8 +250,15 @@ function mountLedDiodeSim(container, { onSuccess, alreadyDone } = {}){
     led.setAttribute('transform', `translate(250 76) scale(1 ${flipped ? -1 : 1})`);
     ledRealSet(led, on ? 1 : 0);
     wires.setAttribute('stroke', on ? '#e8b64a' : '#667');
-    q('#ldTop').textContent = flipped ? 'کاتد (−) — پایه‌ی کوتاه' : 'آند (+) — پایه‌ی بلند';
-    q('#ldBot').textContent = flipped ? 'آند (+) — پایه‌ی بلند' : 'کاتد (−) — پایه‌ی کوتاه';
+    /* سیم‌ها دقیقاً به نوکِ پایه‌ها می‌رسند: پایه‌ی بلند (آند) نوکش x=۱۸۶ و پایه‌ی کوتاه (کاتد) نوکش x=۲۰۶ است.
+       با برگرداندن LED جای دو پایه عوض می‌شود، پس طولِ سیم‌ها هم باید عوض شود. */
+    const ANODE_X = 186, CATHODE_X = 206;
+    const tipTop = flipped ? CATHODE_X : ANODE_X, tipBot = flipped ? ANODE_X : CATHODE_X;
+    q('#ldWTop').setAttribute('d', `M130 66 H${tipTop}`);
+    q('#ldWRet').setAttribute('d', `M22 66 V52 H4 V158 H${tipBot} V86`);
+    q('#ldBot').setAttribute('x', tipBot - 8);
+    q('#ldTop').textContent = flipped ? 'کاتد (−) پایه‌ی کوتاه' : 'آند (+) پایه‌ی بلند';
+    q('#ldBot').textContent = flipped ? 'آند (+) پایه‌ی بلند' : 'کاتد (−) پایه‌ی کوتاه';
     if(on){
       say('success', '✅ روشن شد! حالا آند (پایه‌ی بلند) سمتِ مثبت باتری است و جریان از LED رد می‌شود.');
       if(!succeeded){ succeeded = true; onSuccess && onSuccess(); }
@@ -246,12 +277,12 @@ function mountCapacitorSim(container, { onSuccess, alreadyDone } = {}){
   container.innerHTML = `
     <div class="sim-wrap">
       <div class="sim-hw-note">هدف: خازن را تا ته شارژ کن، بعد به LED وصلش کن و ببین انرژیِ ذخیره‌شده LED را روشن می‌کند و کم‌کم تمام می‌شود.</div>
-      <svg class="ls-svg" style="cursor:default" viewBox="0 0 320 185" direction="ltr" role="img" aria-label="باتری، خازن و LED">
+      <svg class="ls-svg" style="cursor:default" viewBox="0 0 320 196" direction="ltr" role="img" aria-label="باتری، خازن و LED">
         <defs>${ledRealDefs('cp')}</defs>
-        <rect x="14" y="52" width="34" height="56" rx="5" fill="#2a2f3a" stroke="#667"/>
-        <text x="31" y="72" font-size="15" fill="#cfc8b6" text-anchor="middle">+</text><text x="31" y="100" font-size="15" fill="#cfc8b6" text-anchor="middle">−</text>
-        <text x="31" y="124" font-size="11" fill="#cfc8b6" text-anchor="middle">باتری</text>
-        <path id="cpIn" d="M48 80 H130" fill="none" stroke="#667" stroke-width="3"/>
+        <text x="34" y="146" font-size="11" fill="#cfc8b6" text-anchor="middle">باتری</text>
+        <path id="cpIn" d="M46 64 H130" fill="none" stroke="#667" stroke-width="3"/>
+        <path id="cpNeg" d="M22 64 V50 H4 V188 H186 V124" fill="none" stroke="#667" stroke-width="3"/>
+        ${batterySvg({ id: 'cpBat', x: 12, y: 72, w: 44, h: 58 })}
         <path id="cpOut" d="M190 80 H203 V70 H216" fill="none" stroke="#667" stroke-width="3"/>
         <path id="cpRet" d="M240 90 V172 H134 V124" fill="none" stroke="#667" stroke-width="3"/>
         <rect x="130" y="36" width="8" height="88" fill="#c0c6d0"/><rect x="182" y="36" width="8" height="88" fill="#c0c6d0"/>
@@ -269,7 +300,7 @@ function mountCapacitorSim(container, { onSuccess, alreadyDone } = {}){
       <div class="sim-status" id="cpStatus" data-state="idle"></div>
     </div>`;
   const q = s => container.querySelector(s);
-  const fill = q('#cpFill'), pct = q('#cpPct'), wIn = q('#cpIn'), wOut = q('#cpOut'), wRet = q('#cpRet'), led = q('#cpLed'), st = q('#cpStatus');
+  const fill = q('#cpFill'), pct = q('#cpPct'), wIn = q('#cpIn'), wOut = q('#cpOut'), wRet = q('#cpRet'), wNeg = q('#cpNeg'), led = q('#cpLed'), st = q('#cpStatus');
   let v = 0, mode = 'idle', fullSeen = false, succeeded = !!alreadyDone, raf = 0, last = null;
   const say = (state, text) => { st.dataset.state = state; st.textContent = text; };
 
@@ -278,6 +309,7 @@ function mountCapacitorSim(container, { onSuccess, alreadyDone } = {}){
     fill.setAttribute('y', (124 - h).toFixed(1)); fill.setAttribute('height', h.toFixed(1));
     pct.textContent = toFa(Math.round(v * 100)) + '٪';
     wIn.setAttribute('stroke', mode === 'charge' ? '#57d8a3' : '#667');
+    wNeg.setAttribute('stroke', mode === 'charge' ? '#57d8a3' : '#667');
     const dis = mode === 'discharge' && v > 0.03;
     wOut.setAttribute('stroke', dis ? '#ffd25a' : '#667');
     wRet.setAttribute('stroke', dis ? '#ffd25a' : '#667');
@@ -505,31 +537,26 @@ function mountVoltageRegulatorSim(container, { onSuccess, alreadyDone } = {}){
   const flame = (x, y, w, h, dur) => `<g transform="translate(${x} ${y})"><g>
         <animateTransform attributeName="transform" type="scale" values="1 1;.88 1.16;1 1" dur="${dur}s" repeatCount="indefinite"/>
         <path d="${flameD(w, h)}" fill="#ff5a14"/><path d="${flameD(w * .55, h * .6)}" fill="#ffc83a"/></g></g>`;
-  const fireSvg = `<g id="vrFire" style="display:none" pointer-events="none">
-        <circle cx="292" cy="108" r="60" fill="url(#vrGlowG)"/>
-        ${[[266, 120, 8, 36, .8], [290, 112, 10, 46, .65], [316, 118, 8, 34, .9], [276, 162, 10, 46, .7], [306, 162, 11, 54, .85]].map(a => flame(...a)).join('')}
-      </g>`;
+  const fireSvg = '';  // آتش حذف شد؛ فقط برد قرمز می‌شود
 
   container.innerHTML = `
     <div class="sim-wrap">
       <div class="sim-hw-note"><b>🔌 این قطعه چیکار می‌کند؟</b><br>رگولاتور ولتاژ هر ولتاژی را (تا حدی) می‌گیرد و یک ولتاژ <b>ثابت</b> تحویل می‌دهد. برد آردوینو ۵ ولت می‌خواهد ولی باتری ۹ ولت است؛ بین این دو یک ۷۸۰۵ می‌گذاریم. <b>هدف:</b> اول ببین بدون رگولاتور چه می‌شود، بعد رگولاتور را وصل کن و حدّ و مرزهایش (افت ولتاژ و گرما) را پیدا کن.</div>
       <svg class="ls-svg" style="cursor:default;display:block;width:100%;max-width:380px;height:auto;margin:0 auto" viewBox="0 20 340 170" direction="ltr" role="img" aria-label="باتری، رگولاتور ۷۸۰۵ با دو خازن، و برد آردوینو ۵ ولتی">
-        <defs>${fireDefs}</defs>
+        
         <path id="vrBypass" d="M80 80 V44 H244 V${Y5V} H${uPinX - 1}" fill="none" stroke="${C.red}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
         <g fill="none" stroke="${C.line}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-          <path id="vrIn" d="M44 80 H100 V136 H136 V130"/>
+          <path id="vrIn" d="M50 80 H100 V136 H136 V130"/>
           <path id="vrOut" d="M176 130 V136 H212 V80 H244 V${Y5V} H${uPinX - 1}"/>
-          <path d="M44 124 H56 V168 H240 V${YGND} H${uPinX - 1}"/>
+          <path d="M24 80 V66 H5 V168 H240 V${YGND} H${uPinX - 1}"/>
           <path d="M156 130 V168"/>
           <path d="M80 80 V100 M80 106 V168"/>
           <path d="M226 80 V100 M226 106 V168"/>
         </g>
         <g stroke="#cfc8b6" stroke-width="3"><path d="M70 100 H90 M70 106 H90 M216 100 H236 M216 106 H236"/></g>
         <text x="86" y="146" font-size="8" fill="#9aa7b8">۰٫۳۳µF</text><text x="220" y="146" font-size="8" fill="#9aa7b8" text-anchor="end">۰٫۱µF</text>
-        <rect x="8" y="70" width="36" height="64" rx="5" fill="#2a2f3a" stroke="#667"/>
-        <text x="26" y="85" font-size="12" fill="#cfc8b6" text-anchor="middle">+</text><text x="26" y="130" font-size="12" fill="#cfc8b6" text-anchor="middle">−</text>
-        <text id="vrBat" x="26" y="106" font-size="11" font-weight="bold" fill="${C.on}" text-anchor="middle">9 V</text>
-        <text x="26" y="150" font-size="10" fill="#cfc8b6" text-anchor="middle">باتری</text>
+        ${batterySvg({ id: 'vrBatt', x: 14, y: 88, w: 46, h: 58, textId: 'vrBat', text: '9 V' })}
+        <text x="37" y="161" font-size="10" fill="#cfc8b6" text-anchor="middle">باتری</text>
         <g id="vrReg">
           <g fill="#c0c6d0" stroke="#6d757e" stroke-width=".8"><rect x="134.5" y="108" width="3" height="22"/><rect x="154.5" y="108" width="3" height="22"/><rect x="174.5" y="108" width="3" height="22"/></g>
           <path d="M126 76 V56 Q126 52 130 52 H182 Q186 52 186 56 V76 Z" fill="#b7bec6" stroke="#6d757e"/>
@@ -562,7 +589,6 @@ function mountVoltageRegulatorSim(container, { onSuccess, alreadyDone } = {}){
         <button type="button" class="sim-btn sim-btn-ghost" id="vrDirect" style="flex:1">🔋 بدون رگولاتور</button>
         <button type="button" class="sim-btn sim-btn-ghost" id="vrUse" style="flex:1">🔌 با رگولاتور ۷۸۰۵</button>
       </div>
-      <ul class="cx-m" id="vrCheck" style="max-width:380px;margin:10px auto 0"></ul>
       <div class="sim-status" id="vrStatus" data-state="idle" aria-live="polite"></div>
       <div class="sim-hw-note" id="vrLesson" style="display:none"></div>
     </div>`;
@@ -609,9 +635,8 @@ function mountVoltageRegulatorSim(container, { onSuccess, alreadyDone } = {}){
     q('#vrOut').style.display = reg ? '' : 'none';
     q('#vrBypass').style.display = reg ? 'none' : '';
     q('#vrHeat').setAttribute('opacity', reg ? Math.min(.75, Math.max(0, (m.t - 40) / 120)).toFixed(2) : 0);
-    q('#vrFire').style.display = burn ? '' : 'none';
-    q('#vrBoardRect').setAttribute('fill', burn ? '#8a2e22' : '#1a6fb5');
-    q('#vrBoardRect').setAttribute('stroke', burn ? '#ff5a4f' : '#0e4a7d');
+    q('#vrBoardRect').setAttribute('fill', burn ? '#d32f2f' : '#1a6fb5');
+    q('#vrBoardRect').setAttribute('stroke', burn ? '#ff8a80' : '#0e4a7d');
     const led = q('#vrLed'), glow = q('#vrLedG'), bt = q('#vrBoardT');
     if(burn){ led.setAttribute('fill', C.bad); led.setAttribute('stroke', '#ffb3aa'); glow.setAttribute('fill', C.bad); glow.setAttribute('opacity', .4); bt.textContent = 'سوخت! ✖'; bt.setAttribute('fill', C.bad); }
     else if(m.vout === 0){ led.setAttribute('fill', '#3a2a2a'); led.setAttribute('stroke', '#6b4a4a'); glow.setAttribute('opacity', 0); bt.textContent = 'خاموش'; bt.setAttribute('fill', '#cfc8b6'); }
@@ -627,7 +652,6 @@ function mountVoltageRegulatorSim(container, { onSuccess, alreadyDone } = {}){
     dBtn.borderColor = reg ? '' : '#d9382b';
     dBtn.boxShadow = reg ? '' : '0 0 12px rgba(217,56,43,.45)';
     q('#vrUse').className = 'sim-btn ' + (reg ? 'sim-btn-run' : 'sim-btn-ghost');
-    q('#vrCheck').innerHTML = CHECKS.map(([k, t]) => `<li class="${seen[k] ? 'd' : ''}">${t}</li>`).join('');
 
     if(!reg){
       if(burn) say('error', `💥 ${f(vin)} ولتِ باتری مستقیم به برد ۵ ولتی رسید و برد سوخت. دکمه‌ی «با رگولاتور ۷۸۰۵» را بزن.`);
@@ -643,7 +667,7 @@ function mountVoltageRegulatorSim(container, { onSuccess, alreadyDone } = {}){
       say('success', `✅ خروجی ثابت ۵ ولت است و دمای رگولاتور ${fa(Math.round(m.t))} درجه؛ ورودی را عوض کن، خروجی همان می‌ماند.`);
     }
 
-    if(reg && !m.shut && vin >= 7 && m.t <= T_SAFE && seen.burn && seen.stable && seen.drop && seen.shut && !succeeded){
+    if(reg && !succeeded){
       succeeded = true;
       const l = q('#vrLesson'); l.style.display = '';
       l.innerHTML = '💡 <b>یاد گرفتی:</b> رگولاتور خطی ولتاژ اضافه را به گرما تبدیل می‌کند، پس هرچه ورودی به خروجی نزدیک‌تر باشد (ولی دست‌کم ۲ ولت بالاتر) گرمای کمتری دارد. برای ۳٫۳ ولتِ STM32 از رگولاتوری مثل AMS1117-3.3 استفاده می‌کنند. وقتی اختلاف ولتاژ یا جریان زیاد است، رگولاتور سوئیچینگ (Buck) بهتر است.';

@@ -297,12 +297,17 @@
   .pr-hold-btn{ width:100%; }
 
   /* ---------- SERVO MOTOR ---------- */
-  .sim-servo-body{ fill:#2a3346; stroke:var(--copper); stroke-width:1.4; }
-  .sim-servo-flange{ fill:#161c28; stroke:var(--panel-border); stroke-width:1; }
-  .sim-servo-drum{ fill:#3a4356; stroke:var(--copper); stroke-width:1.2; }
-  .sim-servo-shaft{ fill:var(--copper-bright); }
-  .sim-servo-horn{ stroke:var(--trace-bright); stroke-width:3; stroke-linecap:round; }
+  .sim-servo-body{ fill:#2f6db8; stroke:#17487f; stroke-width:1.2; }
+  .sim-servo-flange{ fill:#255a99; stroke:#17487f; stroke-width:1; }
+  .sim-servo-neck{ fill:#3a7bc8; stroke:#17487f; stroke-width:1; }
+  .sim-servo-boss{ fill:#4a8bd6; stroke:#17487f; stroke-width:1; }
+  .sim-servo-drum{ fill:#c9ced8; stroke:#7b8497; stroke-width:1; }
+  .sim-servo-hole{ fill:#0b0e14; stroke:#17487f; stroke-width:.8; }
+  .sim-servo-shaft{ fill:#7b8497; stroke:#4b5366; stroke-width:.6; }
+  .sim-servo-horn{ fill:#f1f4fa; stroke:#98a2b8; stroke-width:.8; }
+  .sim-servo-horn-hole{ fill:#0b0e14; opacity:.55; }
   .sim-servo-horn-tip{ fill:var(--trace-bright); }
+  .sim-servo-label{ font-family:'JetBrains Mono', monospace; font-size:8px; font-weight:700; letter-spacing:1px; fill:#d6e6ff; text-anchor:middle; }
   .sim-resistor-body{ fill:#d8c9a3; stroke:#8a7550; stroke-width:1; }
   .sim-band{ fill:#b23b2e; }
   .sim-band-2{ fill:#b23b2e; }
