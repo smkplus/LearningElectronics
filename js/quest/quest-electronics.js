@@ -1057,22 +1057,31 @@ function mountVoltCurrentSim(container, { onSuccess, alreadyDone } = {}){
         <svg class="ef-svg" viewBox="0 0 320 300" xmlns="http://www.w3.org/2000/svg">
           <defs>${ledRealDefs('ef')}
             <linearGradient id="efFlapG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9d2e0"/><stop offset="1" stop-color="#7d8aa0"/></linearGradient>
+            <radialGradient id="efBatG"><stop offset="0" stop-color="#57d8a3" stop-opacity=".9"/><stop offset="1" stop-color="#57d8a3" stop-opacity="0"/></radialGradient>
+            <radialGradient id="efBatGR"><stop offset="0" stop-color="#ff6a55" stop-opacity=".9"/><stop offset="1" stop-color="#ff6a55" stop-opacity="0"/></radialGradient>
           </defs>
+          <ellipse id="efBatGlow" cx="78" cy="150" rx="100" ry="70" fill="url(#efBatG)" opacity="0"/>
           <!-- سیم‌ها: غلاف تیره + رگِ رنگی + برق نازک؛ منفی خاکستری، مثبت قرمز -->
           <g fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path d="M138,135 V52 Q138,40 150,40 H224 Q236,40 236,52 V140" stroke="#0b1018" stroke-width="7.5"/>
             <path id="efWNeg" d="M138,135 V52 Q138,40 150,40 H224 Q236,40 236,52 V140" stroke="#5d6678" stroke-width="4.5"/>
             <path d="M138,135 V52 Q138,40 150,40 H224 Q236,40 236,52 V140" stroke="#fff" stroke-opacity=".18" stroke-width="1.3" transform="translate(-1 -1)"/>
             <path d="M216,160 V248 Q216,260 204,260 H150 Q138,260 138,248 V165" stroke="#0b1018" stroke-width="7.5"/>
-            <path id="efWPos" d="M216,160 V248 Q216,260 204,260 H150 Q138,260 138,248 V165" stroke="#b83b32" stroke-width="4.5"/>
+            <path id="efWPos" d="M216,160 V248 Q216,260 204,260 H150 Q138,260 138,248 V165" stroke="#5d6678" stroke-width="4.5"/>
             <path d="M216,160 V248 Q216,260 204,260 H150 Q138,260 138,248 V165" stroke="#fff" stroke-opacity=".18" stroke-width="1.3" transform="translate(-1 -1)"/>
           </g>
-          ${batterySvg({ id: 'efBat', x: 50, y: 95, w: 50, h: 110, rot: 90 })}
-          <text x="75" y="196" font-size="11" fill="#cfc8b6" text-anchor="middle">باتری ۵ ولت</text>
+          <!-- موجِ انرژی روی سیم‌ها: خط‌چین‌های درخشانی که با جریان حرکت می‌کنند -->
+          <g id="efEn" fill="none" stroke="#fff6c4" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 14" opacity="0">
+            <path d="M138,135 V52 Q138,40 150,40 H224 Q236,40 236,52 V140"/>
+            <path d="M216,160 V248 Q216,260 204,260 H150 Q138,260 138,248 V165"/>
+          </g>
+          ${batterySvg({ id: 'efBat', x: 50, y: 95, w: 50, h: 110, rot: 90, textId: 'efBatTxt', text: '9 V' })}
+          <text x="75" y="196" font-size="11" fill="#cfc8b6" text-anchor="middle">باتری ۹ ولت</text>
 
           <g transform="translate(187,40)">
             <rect x="-32" y="-16" width="64" height="32" rx="5" fill="#222b3b" stroke="#55627a" stroke-width="1.4"/>
             <rect x="-26" y="-13" width="52" height="26" rx="2" fill="#0a0f17"/>
+            <rect id="efSlot" x="-26" y="-13" width="52" height="26" rx="2" fill="#ffd25a" opacity="0"/>
             <rect id="efFlapTop" x="-26" y="-13" width="52" height="14" fill="url(#efFlapG)"/>
             <rect id="efFlapBottom" x="-26" y="-1" width="52" height="14" fill="url(#efFlapG)"/>
             <g fill="#8d99ab"><circle cx="-29" cy="-12.5" r="1.4"/><circle cx="29" cy="-12.5" r="1.4"/><circle cx="-29" cy="12.5" r="1.4"/><circle cx="29" cy="12.5" r="1.4"/></g>
@@ -1083,12 +1092,23 @@ function mountVoltCurrentSim(container, { onSuccess, alreadyDone } = {}){
           <g fill="#c9ced8" stroke="#6d757e" stroke-width="1"><circle cx="236" cy="140" r="3"/><circle cx="216" cy="160" r="3"/></g>
           <text id="efBurstMark" x="292" y="150" text-anchor="middle" dominant-baseline="middle" class="ef-burn-mark" opacity="0">💥</text>
 
+          <!-- نمایشگر زنده‌ی جریان -->
+          <g transform="translate(8 6)">
+            <rect width="108" height="46" rx="9" fill="#141b27" stroke="#2c3748"/>
+            <text x="54" y="14" font-size="9" fill="#9aa7b8" text-anchor="middle">جریان مدار</text>
+            <text id="efMeterVal" x="54" y="31" font-size="14" font-weight="bold" fill="#3f7cc4" text-anchor="middle" font-family="'JetBrains Mono', monospace">۰ mA</text>
+            <rect x="9" y="36" width="90" height="4" rx="2" fill="#1f2937"/>
+            <rect id="efMeterBar" x="9" y="36" width="0" height="4" rx="2" fill="#3f7cc4"/>
+          </g>
+
+          <g id="efHalos"></g>
           <circle class="ef-electron-dot" r="6"/>
           <circle class="ef-electron-dot" r="6"/>
           <circle class="ef-electron-dot" r="6"/>
           <circle class="ef-electron-dot" r="6"/>
           <circle class="ef-electron-dot" r="6"/>
           <circle class="ef-electron-dot" r="6"/>
+          <g id="efFx"></g>
         </svg>
       </div>
       <div class="sim-controls">
@@ -1144,7 +1164,7 @@ function mountVoltCurrentSim(container, { onSuccess, alreadyDone } = {}){
   }
   const electronT = dots.map((_, i) => i/dots.length);
 
-  const V = 5, R_MIN = 8, R_MAX = 4000; // stylised, not real-world-accurate values
+  const V = 9, R_MIN = 14.4, R_MAX = 7200; // باتری ۹ ولتی؛ مقاومت‌ها با ۹/۵ مقیاس شده‌اند تا بازه‌ی جریان (و منطقه‌های اسلایدر) همان قبلی بماند — مقادیر شبیه‌سازی‌شده‌اند، نه واقعی
   function currentFromOpenness(openness){
     if(openness <= 0) return 0; // fully closed → no path → zero current
     const r = R_MIN + (1-openness)*(R_MAX-R_MIN);
@@ -1170,31 +1190,84 @@ function mountVoltCurrentSim(container, { onSuccess, alreadyDone } = {}){
 
   let succeeded = !!alreadyDone;
   let currentMA = 0;
-  let burnFlashUntil = 0;
+
+  /* ================= JUICE: افکت‌های بازخورد ================= */
+  const reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const NS = 'http://www.w3.org/2000/svg';
+  const q = s => container.querySelector(s);
+  const batGlow = q('#efBatGlow'), enGroup = q('#efEn'), enPaths = Array.from(container.querySelectorAll('#efEn path'));
+  const slot = q('#efSlot'), meterVal = q('#efMeterVal'), meterBar = q('#efMeterBar');
+  const fxLayer = q('#efFx'), haloLayer = q('#efHalos');
+  const mk = (parent, attrs) => { const c = document.createElementNS(NS, 'circle'); for(const k in attrs) c.setAttribute(k, attrs[k]); parent.appendChild(c); return c; };
+  const halos  = dots.map(() => mk(haloLayer, { r: 11, fill: '#ffd25a', opacity: 0 }));
+  const ZC = { closed: '#3f7cc4', low: '#3f7cc4', ok: '#57d8a3', burn: '#ff6a55' };
+  const zoneOf = mA => mA <= 0 ? 'closed' : mA < 2 ? 'low' : mA <= 20 ? 'ok' : 'burn';
+  let zone = null, ledTarget = 0, burstT0 = 0, shakeUntil = 0;
+  const parts = [];
+  const rnd = (a, b) => a + Math.random() * (b - a);
+
+  // ذره‌ی کوچک (جرقه/دود) داخل SVG؛ هر فریم در tick حرکت می‌کند و بعد از عمرش حذف می‌شود.
+  function spawn(x, y, vx, vy, life, r, color, g, grow){
+    if(parts.length > 14) return;
+    parts.push({ el: mk(fxLayer, { cx: x, cy: y, r, fill: color }), x, y, vx, vy, life, max: life, g, r, grow: grow || 0 });
+  }
+  function burstSparks(x, y, n, colors, speed, g){
+    for(let i = 0; i < n; i++){
+      const a = rnd(0, 6.283), s = speed * rnd(.4, 1.3);
+      spawn(x, y, Math.cos(a) * s, Math.sin(a) * s - speed * .3, rnd(.3, .6), rnd(1.6, 2.8), colors[i % colors.length], g, 0);
+    }
+  }
+  function vibrate(p){ try{ navigator.vibrate && navigator.vibrate(p); }catch(e){} }
+  function sfx(name){ try{ if(typeof SFX !== 'undefined' && SFX[name]) SFX[name](); }catch(e){} }
+  // هر بار که منطقه‌ی جریان عوض می‌شود (بسته ← کم ← درست ← سوختن) یک بازخورد کوتاه بدهیم.
+  function onZone(z, prev){
+    if(z === 'ok' && prev !== 'ok'){
+      sfx('hover'); vibrate(14);
+    } else if(z === 'burn' && prev !== 'burn'){
+      burstT0 = performance.now(); shakeUntil = reduce ? 0 : burstT0 + 320;
+      if(!reduce) burstSparks(286, 150, 8, ['#ff7a4f', '#ffd25a', '#ff4a30'], 120, 200);
+      sfx('locked'); vibrate([40, 30, 60]);
+    } else if(z !== prev){
+      sfx('hover');
+    }
+  }
+  const easeOutBack = e => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(e - 1, 3) + c1 * Math.pow(e - 1, 2); };
 
   function updateFromSlider(){
     const openness = Number(range.value)/100;
     const mA = currentFromOpenness(openness);
+    const z = zoneOf(mA), burn = z === 'burn';
 
     const flapH = (1-openness) * 14;
     flapTop.setAttribute('height', flapH.toFixed(2));
     flapBot.setAttribute('y', (13-flapH).toFixed(2));
     flapBot.setAttribute('height', flapH.toFixed(2));
+    slot.setAttribute('opacity', (openness * .85).toFixed(2));
+    slot.setAttribute('fill', burn ? '#ff7a4f' : '#ffd25a');
 
-    ledRealSet(ledGroup, 0);
-    burstMark.setAttribute('opacity', '0');
+    ledTarget = z === 'ok' ? 0.35 + 0.65 * Math.min(1, (mA-2)/18) : 0;
+    ledRealSet(ledGroup, ledTarget);
+    burstMark.setAttribute('opacity', burn ? '1' : '0');
     wireNeg.setAttribute('stroke', mA > 0 ? '#8a96ab' : '#5d6678');
-    wirePos.setAttribute('stroke', mA > 0 ? '#ff6a55' : '#b83b32');
+    wirePos.setAttribute('stroke', mA > 0 ? '#8a96ab' : '#5d6678');
+    enGroup.setAttribute('stroke', burn ? '#ffb4a3' : '#fff6c4');
+    batGlow.setAttribute('fill', burn ? 'url(#efBatGR)' : 'url(#efBatG)');
+    dots.forEach(d => { d.style.fill = burn ? '#ff6a55' : ''; });
+    halos.forEach(h => h.setAttribute('fill', burn ? '#ff6a55' : '#ffd25a'));
     range.style.setProperty('--knob-color', zoneColor(mA));
 
-    if(mA <= 0){
+    meterVal.textContent = (mA <= 0 ? toFa(0) : toFa(mA < 100 ? mA.toFixed(1).replace('.', '٫') : Math.round(mA))) + ' mA';
+    meterVal.setAttribute('fill', ZC[z]);
+    meterBar.setAttribute('width', (Math.min(1, mA/30) * 90).toFixed(1));
+    meterBar.setAttribute('fill', ZC[z]);
+
+    if(z === 'closed'){
       statusEl.dataset.state = 'idle';
       statusEl.textContent = '🔒 مسیر کاملاً بسته است — هیچ الکترونی نمی‌تواند رد شود.';
-    } else if(mA < 2){
+    } else if(z === 'low'){
       statusEl.dataset.state = 'idle';
       statusEl.textContent = '🕯️ جریان خیلی کم است — کمی بیشتر باز کن تا LED روشن شود.';
-    } else if(mA <= 20){
-      ledRealSet(ledGroup, 0.35 + 0.65 * Math.min(1, (mA-2)/18));
+    } else if(z === 'ok'){
       statusEl.dataset.state = 'success';
       statusEl.textContent = `✅ عالی! جریان ${mA.toFixed(1)} میلی‌آمپر — LED روشن شد.`;
       if(!succeeded){
@@ -1206,8 +1279,14 @@ function mountVoltCurrentSim(container, { onSuccess, alreadyDone } = {}){
     } else {
       statusEl.dataset.state = 'error';
       statusEl.textContent = `🔥 جریان ${mA.toFixed(0)} میلی‌آمپر — خیلی زیاد است! LED سوخت، کمی مسیر را ببند.`;
-      burstMark.setAttribute('opacity', '1');
-      burnFlashUntil = performance.now() + 260;
+    }
+
+    if(z !== zone){
+      const prev = zone; zone = z;
+      if(prev !== null){
+        onZone(z, prev);
+        if(statusEl.animate && !reduce) statusEl.animate([{ transform: 'scale(1.045)' }, { transform: 'scale(1)' }], { duration: 240, easing: 'ease-out' });
+      }
     }
     return mA;
   }
@@ -1238,21 +1317,57 @@ function mountVoltCurrentSim(container, { onSuccess, alreadyDone } = {}){
   if(alreadyDone) range.value = 40; // openness 0.4 → land in the safe zone instead of showing "closed" again
   currentMA = updateFromSlider();
 
-  let lastTime = performance.now();
+  let lastTime = performance.now(), dashOff = 0;
   let raf = requestAnimationFrame(function tick(now){
     const dt = Math.min(0.05, (now-lastTime)/1000);
     lastTime = now;
+    const live = currentMA > 0, burnt = zone === 'burn';
     const speed = Math.min(260, currentMA * 7); // px/s — overcurrent moves electrons dangerously fast
     if(speed > 0 && totalLen > 0){
       const dFrac = (speed*dt)/totalLen;
       electronT.forEach((t, i) => { electronT[i] = (t+dFrac) % 1; });
+      dashOff -= speed * dt;
     }
+
+    // الکترون‌ها + هاله
+    const vis = Math.min(1, currentMA / 3);
     dots.forEach((dot, i) => {
       const p = pointAt(electronT[i]);
       dot.setAttribute('cx', p.x);
       dot.setAttribute('cy', p.y);
+      halos[i].setAttribute('cx', p.x); halos[i].setAttribute('cy', p.y);
+      halos[i].setAttribute('opacity', live ? (.2 * vis).toFixed(2) : 0);
     });
-    svgEl.style.filter = now < burnFlashUntil ? 'brightness(1.35)' : '';
+
+    // موجِ انرژی روی سیم‌ها و درخششِ باتری
+    enGroup.setAttribute('opacity', live ? (vis * .7).toFixed(2) : 0);
+    enPaths.forEach(p => p.setAttribute('stroke-dashoffset', dashOff.toFixed(1)));
+    batGlow.setAttribute('opacity', live ? (Math.min(1, currentMA / 10) * .3 * (.85 + .15 * Math.sin(now / 260))).toFixed(2) : 0);
+
+    // سوختن: انفجارِ پاپ‌شونده، دود، لرزشِ صفحه
+    if(burnt){
+      const e = Math.min(1, (now - burstT0) / 320);
+      const s = e < 1 ? easeOutBack(e) : 1 + .06 * Math.sin(now / 120);
+      burstMark.setAttribute('transform', `translate(292 150) scale(${s.toFixed(3)}) translate(-292 -150)`);
+    }
+    if(now < shakeUntil){
+      const a = 5 * ((shakeUntil - now) / 320);
+      svgEl.style.transform = `translate(${rnd(-a, a).toFixed(1)}px, ${rnd(-a, a).toFixed(1)}px)`;
+    } else if(svgEl.style.transform){
+      svgEl.style.transform = '';
+    }
+
+    // به‌روزرسانی ذره‌ها
+    for(let i = parts.length - 1; i >= 0; i--){
+      const p = parts[i];
+      p.life -= dt;
+      if(p.life <= 0){ p.el.remove(); parts.splice(i, 1); continue; }
+      p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+      p.el.setAttribute('cx', p.x.toFixed(1)); p.el.setAttribute('cy', p.y.toFixed(1));
+      p.el.setAttribute('opacity', ((p.life / p.max) * (p.grow ? .5 : 1)).toFixed(2));
+      if(p.grow) p.el.setAttribute('r', (p.r + p.grow * (p.max - p.life)).toFixed(1));
+    }
+
     raf = requestAnimationFrame(tick);
   });
 
