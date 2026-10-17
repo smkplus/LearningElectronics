@@ -1075,7 +1075,7 @@ function mountVoltCurrentSim(container, { onSuccess, alreadyDone } = {}){
             <path d="M138,135 V52 Q138,40 150,40 H224 Q236,40 236,52 V140"/>
             <path d="M216,160 V248 Q216,260 204,260 H150 Q138,260 138,248 V165"/>
           </g>
-          ${batterySvg({ id: 'efBat', x: 50, y: 95, w: 50, h: 110, rot: 90, textId: 'efBatTxt', text: '9 V' })}
+          ${batterySvg({ id: 'efBat' , direction:"ltr" , x: 50, y: 95, w: 50, h: 110, rot: 90, textId: 'efBatTxt', text: '9V' })}
           <text x="75" y="196" font-size="11" fill="#cfc8b6" text-anchor="middle">باتری ۹ ولت</text>
 
           <g transform="translate(187,40)">
