@@ -765,6 +765,9 @@ function showEditorGuide(tpl){
     }
     return out;
   };
+  // Reopening the editor (or tapping the bubble mid-typing) must not leave the previous
+  // guide's observer alive: two live observers rewrite each other's output forever and freeze the page.
+  if(showEditorGuide.stop) showEditorGuide.stop();
   const opts = { childList: true, characterData: true, subtree: true };
   const stop = setTimeout(() => obs.disconnect(), 60000);
   const obs = new MutationObserver(() => {
@@ -775,15 +778,22 @@ function showEditorGuide(tpl){
     if(cur.length < bare.length) obs.observe(knightLine, opts); else clearTimeout(stop);
   });
   obs.observe(knightLine, opts);
+  showEditorGuide.stop = () => { clearTimeout(stop); obs.disconnect(); };
   showKnightLine(plain, 'happy', 'knight');
 }
 
+// Show the guide only when the editor goes from closed to open, not on every unrelated body class change.
+let editorWasOpen = false, editorGuideTimer = null;
 new MutationObserver(() => {
-  if(!document.body.classList.contains('sim-fullscreen-lock') || currentIndex === null) return;
+  const open = document.body.classList.contains('sim-fullscreen-lock');
+  const justOpened = open && !editorWasOpen;
+  editorWasOpen = open;
+  if(!justOpened || currentIndex === null) return;
   const q = QUESTS[currentIndex];
   const guide = q && !progress[q.id] && EDITOR_GUIDE[q.id];
   if(!guide) return;
-  setTimeout(() => {
+  clearTimeout(editorGuideTimer);
+  editorGuideTimer = setTimeout(() => {
     if(document.body.classList.contains('sim-fullscreen-lock')) showEditorGuide(guide(SIM_MISSIONS[q.id]));
   }, 350);
 }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
