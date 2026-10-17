@@ -1,7 +1,7 @@
 /* ========================================================================
    QUEST-STM32.JS — بخش STM32
    داده‌ی مأموریت‌ها (QUESTS_STM32) + شبیه‌سازها
-   QUESTS_STM32 + mountStlinkSim (Cube/HAL از cube-block.js و hal-block.js)
+   QUESTS_STM32 + mountStlinkSim (Cube/HAL از cube-block.js و hal-code-editor.js)
    ======================================================================== */
 
 const QUESTS_STM32 = [

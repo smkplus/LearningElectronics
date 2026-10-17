@@ -44,10 +44,10 @@ const ArduinoBlocks = (() => {
   //   blockly-lib/msg/fa.js               ← از node_modules/blockly/msg/fa.js
   //   blockly-lib/msg/en.js               ← از node_modules/blockly/msg/en.js
   const CDN = {
-    core: SELF_DIR + 'blockly-lib/blockly_compressed.js',
-    blocks: SELF_DIR + 'blockly-lib/blocks_compressed.js',
-    msgFa: SELF_DIR + 'blockly-lib/msg/fa.js',
-    msgEn: SELF_DIR + 'blockly-lib/msg/en.js'
+    core: SELF_DIR + '../../blockly-lib/blockly_compressed.js',
+    blocks: SELF_DIR + '../../blockly-lib/blocks_compressed.js',
+    msgFa: SELF_DIR + '../../blockly-lib/msg/fa.js',
+    msgEn: SELF_DIR + '../../blockly-lib/msg/en.js'
   };
 
   // ===== پیش‌واکشیِ موازیِ فایل‌های سنگین (سرعت) =====
@@ -1649,7 +1649,7 @@ const ArduinoBlocks = (() => {
       // (یعنی blockly-editor.html) حل می‌شود، نه نسبت‌به arduino-blocks.js؛
       // با ساختنِ آدرسِ کامل و مطلق این‌جا، دیگر فرقی نمی‌کند iframe از کدام
       // مسیر/دامنه بارگذاری شده باشد.
-      media: SELF_DIR ? (SELF_DIR + 'blockly-media/') : 'blockly-media/',
+      media: SELF_DIR ? (SELF_DIR + '../../blockly-media/') : 'blockly-media/',
       zoom: { controls: true, wheel: true, startScale: 1.2, maxScale: 1.2, minScale: 0.3 },
       grid: { spacing: 24, length: 2, colour: '#232b3a', snap: true },
       move: { scrollbars: true, drag: true, wheel: true }

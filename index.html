@@ -72,11 +72,11 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="common.css">
-<link rel="stylesheet" href="dialogue.css?v=1">
-<link rel="stylesheet" href="quest.css?v=10">
-<link rel="stylesheet" href="arduino-blocks.css?v=1">
-<link rel="stylesheet" href="lab.css?v=4">
+<link rel="stylesheet" href="css/common.css">
+<link rel="stylesheet" href="css/dialogue.css?v=1">
+<link rel="stylesheet" href="css/quest.css?v=10">
+<link rel="stylesheet" href="css/arduino-blocks.css?v=1">
+<link rel="stylesheet" href="css/lab.css?v=4">
 <style>
   .support-wrap{
     display:flex; justify-content:center; margin:32px auto 44px; padding:0 16px;
@@ -323,7 +323,7 @@
 <canvas id="confettiCanvas"></canvas>
 <div class="flash-overlay" id="flashOverlay"></div>
 <audio id="bgMusic" loop autoplay playsinline preload="none"
-  src="Black Knight.mp3"></audio>
+  src="assets/audio/Black Knight.mp3"></audio>
 
 <div class="hud">
   <div class="hud-title">
@@ -353,7 +353,7 @@
 
 <div class="knight-section" id="knightSection">
   <div class="knight-avatar">
-    <img id="knightImg" class="knight-img" src="knight-happy.png" alt="استاد اهم">
+    <img id="knightImg" class="knight-img" src="assets/images/knight-happy.png" alt="استاد اهم">
   </div>
   <div class="speech">
     <div class="name">استاد اهم</div>
@@ -621,7 +621,7 @@
 
 <div class="support-wrap">
   <a class="support-card" href="https://daramet.com/ElectroQuest" target="_blank" rel="noopener">
-    <div class="support-icon"><img src="knight-wink.png" alt="استاد اهم"></div>
+    <div class="support-icon"><img src="assets/images/knight-wink.png" alt="استاد اهم"></div>
     <div class="support-text">
       <span class="support-title">از سازنده حمایت کن ⚜️</span>
       <span class="support-sub">این پروژه رایگان و با عشق ساخته شده — با یه حمایت کوچیک به ادامه‌اش کمک کن</span>
@@ -651,7 +651,7 @@
   <div class="modal welcome-modal">
     <button class="modal-close" id="welcomeClose">✕</button>
     <div class="welcome-avatar">
-      <img src="knight-happy.png" alt="استاد اُهم" class="welcome-img">
+      <img src="assets/images/knight-happy.png" alt="استاد اُهم" class="welcome-img">
     </div>
 <div class="modal-eyebrow">⚜️ خوش‌آمدگویی استاد اُهم</div>
 <h2 class="modal-title">به الکتروکوئست خوش آمدی!</h2>
@@ -668,29 +668,42 @@
   </div>
 </div>
 
-<script src="arduino-mission-blocks.js"></script>
-<script src="common.js?v=2" defer></script>
-<script src="arduino-lang.js?v=3" defer></script>
-<script src="arduino-blocks.js?v=2" defer></script>
-<script src="arduino-sim.js?v=4" defer></script>
-<script src="dialogue.js?v=1" defer></script>
-<script src="cube-block.js?v=4" defer></script>
-<script src="hal-block.js?v=2" defer></script>
-<script src="quest.js?v=9" defer></script>
+<!-- ===================== SCRIPTS =====================
+     Plain scripts run immediately, in order, before any deferred script.
+     Deferred scripts run after the page is parsed, in the order listed here.
+     Order is load-bearing: later files use globals defined by earlier ones. -->
 
-<script src="component-library.js?v=2" defer></script>
-<script src="arduino-nano.js?v=2" defer></script>
-<script src="esp32.js?v=2" defer></script>
-<script src="stm32.js?v=2" defer></script>
-<script src="demo-kinds.js?v=2" defer></script>
-<script src="resistor-colors.js?v=2" defer></script>
-<script src="lab.js?v=4" defer></script>
-<script src="resistor-decoder.js?v=2" defer></script>
+<!-- Plain: mission blocks + quest data (registered before quest.js runs) -->
+<script src="js/arduino/arduino-mission-blocks.js"></script>
+<script src="js/quest/quest-electronics.js?v=2"></script>
+<script src="js/quest/quest-arduino.js"></script>
+<script src="js/quest/quest-stm32.js?v=2"></script>
+<script src="js/quest/quest-robotics.js"></script>
 
-<script src="quest/quest-electronics.js?v=2"></script>
-<script src="quest/quest-arduino.js"></script>
-<script src="quest/quest-stm32.js?v=2"></script>
-<script src="quest/quest-robotics.js"></script>
+<!-- Deferred: core -->
+<script src="js/core/common.js?v=2" defer></script>
+<!-- Deferred: Arduino blocks + simulator -->
+<script src="js/arduino/arduino-lang.js?v=3" defer></script>
+<script src="js/arduino/arduino-blocks.js?v=2" defer></script>
+<script src="js/arduino/arduino-sim.js?v=4" defer></script>
+<!-- Deferred: knight dialogue -->
+<script src="js/core/dialogue.js?v=1" defer></script>
+<!-- Deferred: STM32 (CubeMX pin/clock setup + HAL code editor) -->
+<script src="js/stm32/cube-block.js?v=4" defer></script>
+<script src="js/stm32/hal-code-editor.js?v=2" defer></script>
+<!-- Not loaded yet: drag-and-drop HAL block editor (needs hal-code-editor.js and cube-block.js)
+     <script src="js/stm32/hal-visual-editor.js" defer></script> -->
+<!-- Deferred: quest engine -->
+<script src="js/quest/quest.js?v=9" defer></script>
+<!-- Deferred: electronics lab (board pinouts load in the middle; order kept) -->
+<script src="js/lab/component-library.js?v=2" defer></script>
+<script src="js/boards/arduino-nano.js?v=2" defer></script>
+<script src="js/boards/esp32.js?v=2" defer></script>
+<script src="js/boards/stm32.js?v=2" defer></script>
+<script src="js/lab/demo-kinds.js?v=2" defer></script>
+<script src="js/lab/resistor-colors.js?v=2" defer></script>
+<script src="js/lab/lab.js?v=4" defer></script>
+<script src="js/lab/resistor-decoder.js?v=2" defer></script>
 
 </body>
 </html>

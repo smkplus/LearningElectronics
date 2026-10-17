@@ -1030,7 +1030,7 @@ void loop() {
     const setup = halBodyOf(code, 'setup'), loop = halBodyOf(code, 'loop');
     return 'int main(void)\n{\n' + init + '\n' + (setup.trim() ? halIndent(setup, 2) : '') + '\n  while (1)\n  {\n' + halIndent(loop, 4) + '  }\n}\n';
   }
-  // مأموریتِ رباتیکِ STM32: سخت‌افزار (حسگرها، موتورها، …) را hal-block.js می‌سازد و این‌جا فقط ادیتور/اجرا مالِ ArduinoSim است.
+  // مأموریتِ رباتیکِ STM32: سخت‌افزار (حسگرها، موتورها، …) را hal-code-editor.js می‌سازد و این‌جا فقط ادیتور/اجرا مالِ ArduinoSim است.
   function makeHalTask(h) {
     return {
       board: () => '<div class="sim-hal-hw"></div>',
@@ -1446,7 +1446,7 @@ void loop() {
     let state = freshState();
     let selectedBaud = 9600;
 
-    // سخت‌افزارِ مأموریت‌های رباتیکِ STM32 (حسگر/LED/موتور) — از hal-block.js می‌آید
+    // سخت‌افزارِ مأموریت‌های رباتیکِ STM32 (حسگر/LED/موتور) — از hal-code-editor.js می‌آید
     let halHw = null, halIO = null, halRaf = 0;
     if (halOpts) {
       const halApi = { say: (st, tx) => setStatus(tx, st), log: (m) => { logLine(m, ''); while (el.console.childNodes.length > 14) el.console.removeChild(el.console.firstChild); }, running: () => running };
@@ -1786,7 +1786,7 @@ function setSerialScreenText(text) {
       return io;
     }
 
-    // مأموریت‌های رباتیک: «تمام‌شدن» را خودِ سخت‌افزارِ شبیه‌سازی‌شده (hal-block.js) می‌گوید
+    // مأموریت‌های رباتیک: «تمام‌شدن» را خودِ سخت‌افزارِ شبیه‌سازی‌شده (hal-code-editor.js) می‌گوید
     function runCheck() {
       if (halOpts) return { ok: !!(halHw && halHw.isDone()), reason: halOpts.pending || 'هنوز کامل نیست — شرطِ مأموریت را در شبیه‌ساز ببین.' };
       return task.check(state);

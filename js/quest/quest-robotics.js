@@ -260,7 +260,7 @@ function ll3Sense(s, tr){
   const c = Math.cos(s.phi), sn = Math.sin(s.phi), px = s.x + c * 15, py = s.y + sn * 15;
   return LL3_OFF.map(o => liDist(tr, px - sn * o, py + c * o) < LL3_R ? 1 : 0);
 }
-/* decide(vals) اختیاری است: اگر باشد، تصمیم را برنامه‌ی کاربر (چراغ‌های PB12/13/14 در hal-block.js) می‌گیرد */
+/* decide(vals) اختیاری است: اگر باشد، تصمیم را برنامه‌ی کاربر (چراغ‌های PB12/13/14 در hal-code-editor.js) می‌گیرد */
 function ll3Step(s, tr, dt, base, rules, decide){
   if(dt <= 0) return;
   s.vals = ll3Sense(s, tr);
@@ -420,7 +420,7 @@ function mountLineLogicSim(container, { onSuccess, alreadyDone, explain } = {}){
 }
 
 /* مأموریت «مغزِ ربات»: اول ربات متحرک (فقط برای فهمیدن)، بعد نوشتنِ کدِ همان قانون‌ها در
-   ادیتورِ اصلیِ STM32 (CubeMX + ادیتور از hal-block.js: mountHalBrainSim). در آن‌جا هم ربات متحرک
+   ادیتورِ اصلیِ STM32 (CubeMX + ادیتور از hal-code-editor.js: mountHalBrainSim). در آن‌جا هم ربات متحرک
    با کدِ خودِ کاربر حرکت می‌کند (hsBrainRobotHw) و همان مأموریت را تکمیل می‌کند. */
 function mountLineLogicMission(container, opts = {}){
   container.innerHTML = '<div id="llRobotMount"></div><div id="llCodeMount" style="margin-top:14px;"></div>';
@@ -1054,7 +1054,7 @@ function mountLineSensorMission(container, opts = {}){
 
 /* ================= STM32 + ROBOTICS SIMS ================= */
 /* مأموریت‌های «STM32 — CubeMX» و کدنویسی HAL (خواندن سنسور، مغز، جهت و سرعت موتور)
-   در دو فایل جدا هستند: cube-block.js (نقشه‌ی چیپ و ساعت) و hal-block.js (ادیتور و اجرا).
+   در دو فایل جدا هستند: cube-block.js (نقشه‌ی چیپ و ساعت) و hal-code-editor.js (ادیتور و اجرا).
    هر دو باید قبل از quest.js بارگذاری شوند. */
 
 /* ---- رباتیک ۶: دنبال‌کردن خط (سنسور + تصمیم + موتور) ---- */

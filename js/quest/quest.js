@@ -663,7 +663,7 @@ const overlay = document.getElementById('overlay');
 /* ================= MISSION SIM REGISTRY =================
    هر مأموریتی که این‌جا لیست شود، به‌جای دکمه‌ی دستی «تکمیل کردم»،
    با نوشتن/اجرای درست کد یا شرط شبیه‌ساز کامل می‌شود.
-   توابع mount* از quest-sims-*.js و cube-block.js / hal-block.js می‌آیند. */
+   توابع mount* از quest-sims-*.js و cube-block.js / hal-code-editor.js می‌آیند. */
 const SIM_MISSIONS = {
   hello:  { task: 'serial', pin: 8 },
   led:    { task: 'ledOn',  pin: 8 },
@@ -692,7 +692,7 @@ const CONCEPT_SIMS = {
   line_sensor: mountLineSensorMission,
   line_logic: mountLineLogicMission,
   line_follow: mountLineFollowSim,
-  // STM32 — quest-sims-stm32.js + cube-block.js / hal-block.js
+  // STM32 — quest-sims-stm32.js + cube-block.js / hal-code-editor.js
   stm32_cube: mountStm32CubeSim,
   stm32_stlink: mountStlinkSim,
   line_read: mountHalReadSim,

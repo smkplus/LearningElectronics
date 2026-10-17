@@ -14,9 +14,9 @@
      در TASKS داخلِ arduino-sim.js تعریف شده‌اند.
    • این فایل باید در HTML، **قبل از** arduino-blocks.js لود شود:
 
-       <script src="arduino-mission-blocks.js"></script>
-       <script src="arduino-blocks.js"></script>
-       <script src="arduino-sim.js"></script>
+       <script src="js/arduino/arduino-mission-blocks.js"></script>
+       <script src="js/arduino/arduino-blocks.js"></script>
+       <script src="js/arduino/arduino-sim.js"></script>
 
    بلوک‌هایی که همیشه، در همه‌ی مأموریت‌ها هستند و لازم نیست این‌جا تکرار
    شوند (این‌ها را ArduinoBlocks خودش همیشه اضافه می‌کند):

@@ -21,21 +21,21 @@ const CHARACTERS = {
   knight: {
     name: 'استاد اهم',
     moods: {
-      happy:   'knight-happy.png',
-      stern:   'knight-stern.png',
-      wink:    'knight-wink.png',
-      powered: 'knight-powered.png'
+      happy:   'assets/images/knight-happy.png',
+      stern:   'assets/images/knight-stern.png',
+      wink:    'assets/images/knight-wink.png',
+      powered: 'assets/images/knight-powered.png'
     }
   },
   voltage: {
     name: 'ولتاژ',
     moods: {
-      happy:   'voltage-happy.png',
-      stern:   'voltage-stern.png',
-      wink:    'voltage-wink.png',
-      powered: 'voltage-powered.png',
-      speedy:  'voltage-speedy.png',
-      approve: 'voltage-approve.png'
+      happy:   'assets/images/voltage-happy.png',
+      stern:   'assets/images/voltage-stern.png',
+      wink:    'assets/images/voltage-wink.png',
+      powered: 'assets/images/voltage-powered.png',
+      speedy:  'assets/images/voltage-speedy.png',
+      approve: 'assets/images/voltage-approve.png'
     }
   }
 };
