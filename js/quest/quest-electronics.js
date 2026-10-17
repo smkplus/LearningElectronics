@@ -87,10 +87,13 @@ const QUESTS_ELECTRONICS = [
    روی بالای باتری. مرکزِ قطب‌ها: ‌(x+10, y-8) برای − و (x+w-10, y-8) برای +؛ سیم‌ها از همان نقطه‌ها شروع می‌شوند. */
 function batterySvg(o){
   const { id, x, y, w, h, textId, text } = o, ty = y - 8, xm = x + 10, xp = x + w - 10, s1 = y + h * 0.3, sh = h * 0.4, cx = x + w / 2, cy = s1 + sh / 2;
-  const mid = textId
+  /* o.rot (درجه): کل باتری را حولِ مرکزش می‌چرخاند؛ علامت‌های −/+ و صاعقه/متن وسط خلافِ جهتِ چرخش برمی‌گردند تا همیشه صاف خوانده شوند. */
+  const rot = o.rot || 0, un = (px, py) => rot ? ` transform="rotate(${-rot} ${px} ${py})"` : '';
+  const mid0 = textId
     ? `<text id="${textId}" x="${cx}" y="${cy + 4}" font-size="13" font-weight="bold" fill="#052e18" text-anchor="middle">${text || ''}</text>`
     : `<path d="M${cx + 2} ${cy - 7} L${cx - 5} ${cy + 1} H${cx} L${cx - 2} ${cy + 7} L${cx + 5} ${cy - 1} H${cx} Z" fill="#052e18"/>`;
-  return `<g>
+  const mid = rot ? `<g${un(cx, cy)}>${mid0}</g>` : mid0;
+  return `<g${rot ? ` transform="rotate(${rot} ${cx} ${cy})"` : ''}>
     <defs>
       <linearGradient id="${id}B" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3fcf85"/><stop offset=".5" stop-color="#27a560"/><stop offset="1" stop-color="#17703f"/></linearGradient>
       <linearGradient id="${id}S" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d4ffe6"/><stop offset="1" stop-color="#8be8b4"/></linearGradient>
@@ -102,9 +105,9 @@ function batterySvg(o){
     <rect x="${x + 3}" y="${y + 3}" width="2" height="${h - 6}" rx="1" fill="#fff" opacity=".18"/>
     ${mid}
     <circle cx="${xm}" cy="${ty}" r="5.2" fill="#cfd5de" stroke="#6d757e" stroke-width="1"/>
-    <text x="${xm}" y="${ty + 3.2}" font-size="9" font-weight="bold" fill="#3a4250" text-anchor="middle">\u2212</text>
+    <text x="${xm}" y="${ty + 3.2}" font-size="9" font-weight="bold" fill="#3a4250" text-anchor="middle"${un(xm, ty)}>\u2212</text>
     <circle cx="${xp}" cy="${ty}" r="5.2" fill="#f2c94c" stroke="#8a6a12" stroke-width="1"/>
-    <text x="${xp}" y="${ty + 3.2}" font-size="9" font-weight="bold" fill="#5a4200" text-anchor="middle">+</text>
+    <text x="${xp}" y="${ty + 3.2}" font-size="9" font-weight="bold" fill="#5a4200" text-anchor="middle"${un(xp, ty)}>+</text>
   </g>`;
 }
 
@@ -1052,31 +1055,36 @@ function mountVoltCurrentSim(container, { onSuccess, alreadyDone } = {}){
     <div class="sim-wrap">
       <div class="sim-board-wrap">
         <svg class="ef-svg" viewBox="0 0 320 300" xmlns="http://www.w3.org/2000/svg">
-          <clipPath id="efBattClip"><rect x="14" y="14" width="50" height="250" rx="10"/></clipPath>
-          <path d="M64,244 H300 V34 H64" class="ef-wire" fill="none"/>
-          <g clip-path="url(#efBattClip)">
-            <rect x="14" y="14" width="50" height="125" class="ef-batt-plus"/>
-            <rect x="14" y="139" width="50" height="125" class="ef-batt-minus"/>
-            <rect x="14" y="135" width="50" height="8" class="ef-batt-divider"/>
+          <defs>${ledRealDefs('ef')}
+            <linearGradient id="efFlapG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9d2e0"/><stop offset="1" stop-color="#7d8aa0"/></linearGradient>
+          </defs>
+          <!-- سیم‌ها: غلاف تیره + رگِ رنگی + برق نازک؛ منفی خاکستری، مثبت قرمز -->
+          <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M138,135 V52 Q138,40 150,40 H224 Q236,40 236,52 V140" stroke="#0b1018" stroke-width="7.5"/>
+            <path id="efWNeg" d="M138,135 V52 Q138,40 150,40 H224 Q236,40 236,52 V140" stroke="#5d6678" stroke-width="4.5"/>
+            <path d="M138,135 V52 Q138,40 150,40 H224 Q236,40 236,52 V140" stroke="#fff" stroke-opacity=".18" stroke-width="1.3" transform="translate(-1 -1)"/>
+            <path d="M216,160 V248 Q216,260 204,260 H150 Q138,260 138,248 V165" stroke="#0b1018" stroke-width="7.5"/>
+            <path id="efWPos" d="M216,160 V248 Q216,260 204,260 H150 Q138,260 138,248 V165" stroke="#b83b32" stroke-width="4.5"/>
+            <path d="M216,160 V248 Q216,260 204,260 H150 Q138,260 138,248 V165" stroke="#fff" stroke-opacity=".18" stroke-width="1.3" transform="translate(-1 -1)"/>
           </g>
-          <rect x="14" y="14" width="50" height="250" rx="10" class="ef-batt-outline" fill="none"/>
-          <text x="39" y="88" text-anchor="middle" class="ef-batt-label ef-batt-label-plus">+</text>
-          <text x="39" y="218" text-anchor="middle" class="ef-batt-label ef-batt-label-minus">−</text>
+          ${batterySvg({ id: 'efBat', x: 50, y: 95, w: 50, h: 110, rot: 90 })}
+          <text x="75" y="196" font-size="11" fill="#cfc8b6" text-anchor="middle">باتری ۵ ولت</text>
 
-          <g transform="translate(160,34)">
-            <rect x="-30" y="-14" width="60" height="28" rx="4" class="ef-valve-housing"/>
-            <rect id="efFlapTop" x="-26" y="-13" width="52" height="14" class="ef-valve-flap"/>
-            <rect id="efFlapBottom" x="-26" y="-1" width="52" height="14" class="ef-valve-flap"/>
+          <g transform="translate(187,40)">
+            <rect x="-32" y="-16" width="64" height="32" rx="5" fill="#222b3b" stroke="#55627a" stroke-width="1.4"/>
+            <rect x="-26" y="-13" width="52" height="26" rx="2" fill="#0a0f17"/>
+            <rect id="efFlapTop" x="-26" y="-13" width="52" height="14" fill="url(#efFlapG)"/>
+            <rect id="efFlapBottom" x="-26" y="-1" width="52" height="14" fill="url(#efFlapG)"/>
+            <g fill="#8d99ab"><circle cx="-29" cy="-12.5" r="1.4"/><circle cx="29" cy="-12.5" r="1.4"/><circle cx="-29" cy="12.5" r="1.4"/><circle cx="29" cy="12.5" r="1.4"/></g>
           </g>
+          <text x="187" y="70" font-size="10" fill="#cfc8b6" text-anchor="middle">مقاومت متغیر</text>
 
-          <g id="efLedGroup" class="sim-led-group" transform="translate(300,140)">
-            <line class="sim-led-ray" x1="-16" y1="-16" x2="-25" y2="-25"/>
-            <line class="sim-led-ray" x1="16" y1="-16" x2="25" y2="-25"/>
-            <line class="sim-led-ray" x1="0" y1="-22" x2="0" y2="-33"/>
-            <circle r="15" class="sim-led-bulb"/>
-          </g>
-          <text id="efBurstMark" x="300" y="140" text-anchor="middle" dominant-baseline="middle" class="ef-burn-mark" opacity="0">💥</text>
+          <g id="efLedGroup" transform="translate(280 150) scale(1 -1)">${ledRealSvg('ef')}</g>
+          <g fill="#c9ced8" stroke="#6d757e" stroke-width="1"><circle cx="236" cy="140" r="3"/><circle cx="216" cy="160" r="3"/></g>
+          <text id="efBurstMark" x="292" y="150" text-anchor="middle" dominant-baseline="middle" class="ef-burn-mark" opacity="0">💥</text>
 
+          <circle class="ef-electron-dot" r="6"/>
+          <circle class="ef-electron-dot" r="6"/>
           <circle class="ef-electron-dot" r="6"/>
           <circle class="ef-electron-dot" r="6"/>
           <circle class="ef-electron-dot" r="6"/>
@@ -1101,25 +1109,38 @@ function mountVoltCurrentSim(container, { onSuccess, alreadyDone } = {}){
   const statusEl  = container.querySelector('#efStatus');
   const readBtn   = container.querySelector('#efReadBtn');
   const dots      = Array.from(container.querySelectorAll('.ef-electron-dot'));
+  const wireNeg   = container.querySelector('#efWNeg');
+  const wirePos   = container.querySelector('#efWPos');
 
-  // Loop path: bottom-left → bottom-right → top-right → top-left (battery sits on the left edge).
-  const P0 = {x:64,y:244}, P1 = {x:300,y:244}, P2 = {x:300,y:34}, P3 = {x:64,y:34};
-  const segs = [
-    {a:P0, b:P1, len:P1.x-P0.x},
-    {a:P1, b:P2, len:P1.y-P2.y},
-    {a:P2, b:P3, len:P2.x-P3.x}
+  // مسیرِ حرکتِ الکترون‌ها دقیقاً روی همان سیم‌های SVG: قطب منفی → بالا → شیر → پایه‌ی کاتد → درونِ LED → پایه‌ی آند → پایین → قطب مثبت.
+  // گوشه‌هایی که r دارند مثل سیم‌ها گرد می‌شوند (شعاع ۱۲، همان Q‌های مسیرِ سیم).
+  const LOOP = [
+    {x:138,y:135}, {x:138,y:40,r:12}, {x:236,y:40,r:12}, {x:236,y:140},
+    {x:266,y:140}, {x:266,y:160}, {x:216,y:160},
+    {x:216,y:260,r:12}, {x:138,y:260,r:12}, {x:138,y:165}
   ];
-  const totalLen = segs.reduce((s,x)=>s+x.len,0);
-  function pointAt(t){
-    let d = t*totalLen;
-    for(const s of segs){
-      if(d <= s.len){
-        const r = s.len===0 ? 0 : d/s.len;
-        return { x: s.a.x+(s.b.x-s.a.x)*r, y: s.a.y+(s.b.y-s.a.y)*r };
-      }
-      d -= s.len;
+  const pts = [LOOP[0]];
+  for(let i = 1; i < LOOP.length - 1; i++){
+    const a = LOOP[i-1], p = LOOP[i], b = LOOP[i+1], r = p.r || 0;
+    if(!r){ pts.push(p); continue; }
+    const la = Math.hypot(p.x-a.x, p.y-a.y), lb = Math.hypot(b.x-p.x, b.y-p.y);
+    const e = { x: p.x + (a.x-p.x)/la*r, y: p.y + (a.y-p.y)/la*r };
+    const o = { x: p.x + (b.x-p.x)/lb*r, y: p.y + (b.y-p.y)/lb*r };
+    for(let k = 0; k <= 6; k++){
+      const t = k/6, u = 1-t;
+      pts.push({ x: u*u*e.x + 2*u*t*p.x + t*t*o.x, y: u*u*e.y + 2*u*t*p.y + t*t*o.y });
     }
-    return P3;
+  }
+  pts.push(LOOP[LOOP.length - 1]);
+  const cum = [0];
+  for(let i = 1; i < pts.length; i++) cum.push(cum[i-1] + Math.hypot(pts[i].x-pts[i-1].x, pts[i].y-pts[i-1].y));
+  const totalLen = cum[cum.length - 1];
+  function pointAt(t){
+    const d = t*totalLen;
+    let i = 1;
+    while(i < cum.length - 1 && cum[i] < d) i++;
+    const seg = cum[i]-cum[i-1], r = seg === 0 ? 0 : (d-cum[i-1])/seg;
+    return { x: pts[i-1].x + (pts[i].x-pts[i-1].x)*r, y: pts[i-1].y + (pts[i].y-pts[i-1].y)*r };
   }
   const electronT = dots.map((_, i) => i/dots.length);
 
@@ -1160,8 +1181,10 @@ function mountVoltCurrentSim(container, { onSuccess, alreadyDone } = {}){
     flapBot.setAttribute('y', (13-flapH).toFixed(2));
     flapBot.setAttribute('height', flapH.toFixed(2));
 
-    ledGroup.classList.remove('is-on');
+    ledRealSet(ledGroup, 0);
     burstMark.setAttribute('opacity', '0');
+    wireNeg.setAttribute('stroke', mA > 0 ? '#8a96ab' : '#5d6678');
+    wirePos.setAttribute('stroke', mA > 0 ? '#ff6a55' : '#b83b32');
     range.style.setProperty('--knob-color', zoneColor(mA));
 
     if(mA <= 0){
@@ -1171,8 +1194,7 @@ function mountVoltCurrentSim(container, { onSuccess, alreadyDone } = {}){
       statusEl.dataset.state = 'idle';
       statusEl.textContent = '🕯️ جریان خیلی کم است — کمی بیشتر باز کن تا LED روشن شود.';
     } else if(mA <= 20){
-      ledGroup.classList.add('is-on');
-      ledGroup.style.setProperty('--sim-led-ratio', Math.min(1, (mA-2)/18).toFixed(2));
+      ledRealSet(ledGroup, 0.35 + 0.65 * Math.min(1, (mA-2)/18));
       statusEl.dataset.state = 'success';
       statusEl.textContent = `✅ عالی! جریان ${mA.toFixed(1)} میلی‌آمپر — LED روشن شد.`;
       if(!succeeded){
