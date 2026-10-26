@@ -126,6 +126,8 @@ const tabQuestBtn = document.getElementById('tabQuestBtn');
 const tabLabBtn = document.getElementById('tabLabBtn');
 const questTab = document.getElementById('questTab');
 const labTab = document.getElementById('labTab');
+const tabCircuitBtn = document.getElementById('tabCircuitBtn');
+const circuitTab = document.getElementById('circuitTab');
 questTab.classList.add('active');
 
 // Whole Lab tab starts locked; quest.js flips this to false once the
@@ -141,12 +143,15 @@ function switchTab(which){
   // screen once we're on the Lab tab.
   if(typeof hideKnightLine === 'function') hideKnightLine();
   if(typeof closeOverlay === 'function') closeOverlay();
-  tabQuestBtn.classList.toggle('active', !toLab);
+  const toCircuit = which === 'circuit';
+  tabQuestBtn.classList.toggle('active', which === 'quest');
   tabLabBtn.classList.toggle('active', toLab);
-  questTab.classList.toggle('active', !toLab);
+  tabCircuitBtn.classList.toggle('active', toCircuit);
+  questTab.classList.toggle('active', which === 'quest');
   labTab.classList.toggle('active', toLab);
+  circuitTab.classList.toggle('active', toCircuit);
   SFX.click();
-  track('tab_switched', { tab: toLab ? 'lab' : 'quest' });
+  track('tab_switched', { tab: which });
   if(toLab){
     requestAnimationFrame(() => { resizeOhmCanvas(); resizeCapCanvas(); resizeTeslaCanvas(); });
     // First-ever visit to the Lab tab gets a one-time intro dialog (see
@@ -155,11 +160,14 @@ function switchTab(which){
     // A lab card may have unlocked while the person was still on the Quest tab;
     // its scroll-to + fade-out-lock animation is played now that it's visible.
     if(typeof runPendingLabUnlocks === 'function') setTimeout(runPendingLabUnlocks, 450);
+  } else if(toCircuit){
+    requestAnimationFrame(() => { if(window.CircuitEditor) CircuitEditor.onShow(); });
   } else {
     requestAnimationFrame(drawPath);
   }
 }
 tabQuestBtn.addEventListener('click', () => switchTab('quest'));
+tabCircuitBtn.addEventListener('click', () => switchTab('circuit'));
 tabLabBtn.addEventListener('click', () => {
   if(labTabLocked){ SFX.locked(); return; }
   switchTab('lab');

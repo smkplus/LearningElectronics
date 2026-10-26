@@ -22,12 +22,14 @@ const TEST_MODE = (() => {
 })();
 
 /* داده‌ی مأموریت‌ها از فایل‌های جدا لود می‌شود:
+   quest-circuit.js     → QUESTS_CIRCUIT
    quest-electronics.js → QUESTS_ELECTRONICS
    quest-arduino.js     → QUESTS_ARDUINO
    quest-stm32.js       → QUESTS_STM32
    quest-robotics.js    → QUESTS_ROBOTICS
    ترتیب قفل‌شدن همان ترتیب این آرایه است. */
 const QUESTS = [
+  ...QUESTS_CIRCUIT,
   ...QUESTS_ELECTRONICS,
   ...QUESTS_ARDUINO,
   ...QUESTS_STM32,
@@ -35,15 +37,17 @@ const QUESTS = [
 ];
 
 const QUEST_GROUPS = [
+  { id: 'circuit', icon: '🔌', title: 'طراحی مدار' },
   { id: 'electronics', icon: '🔋', title: 'الکترونیک' },
   { id: 'arduino',  icon: '⚡', title: 'آردوینو' },
   { id: 'stm32',    icon: '🔵', title: 'STM32' },
   { id: 'robotics', icon: '🤖', title: 'رباتیک' }
 ];
 (function assignQuestGroups(){
-  let g = 'electronics';
+  let g = 'circuit';
   QUESTS.forEach(q => {
-    if(q.id === 'hello') g = 'arduino';
+    if(q.id === 'volt_current') g = 'electronics';
+    else if(q.id === 'hello') g = 'arduino';
     else if(q.id === 'stm32_cube') g = 'stm32';
     else if(q.id === 'line_intro') g = 'robotics';
     q.group = g;
@@ -220,8 +224,8 @@ window.applyCloudProgress = (cloudProgress) => {
 };
 
 function isLocked(index){
-  if(TEST_MODE || index === 0) return false;
-  // اولین مأموریتِ هر بخش (الکترونیک / آردوینو / STM32 / رباتیک) از اول باز است
+  if(TEST_MODE || index === 0 || progress[QUESTS[index].id]) return false;
+  // اولین مأموریتِ هر بخش (طراحی مدار / الکترونیک / آردوینو / STM32 / رباتیک) از اول باز است
   if(QUESTS[index].group !== QUESTS[index-1].group) return false;
   return !progress[QUESTS[index-1].id];
 }
@@ -679,6 +683,9 @@ let activeSim = null;
 
 const CONCEPT_SIMS = {
   // الکترونیک — quest-sims-electronics.js
+  lamp_circuit: mountLampMission,
+  led_circuit: mountLedCircuitMission,
+  traffic_light: mountTrafficLightMission,
   volt_current: mountVoltCurrentSim,
   resistor_calc: mountResistorCalcSim,
   led_diode: mountLedDiodeSim,
@@ -700,7 +707,7 @@ const CONCEPT_SIMS = {
   motor_pwm: mountHalPwmSim
 };
 
-const FIRST_MISSION_INTRO_TEXT = '📖 این اولین مأموریتته و اختیاریه! می‌تونی توضیحات بالا رو مطالعه کنی و با اسلایدر امتحانش کنی، یا اگه دوست نداری همین‌جوری همون دکمه‌ی «مطالعه کردم ✓» رو بزن تا مأموریت تکمیل بشه و بری سراغ مأموریت بعدی.';
+const FIRST_MISSION_INTRO_TEXT = '📖 این مأموریت اختیاریه! می‌تونی توضیحات بالا رو مطالعه کنی و با اسلایدر امتحانش کنی، یا اگه دوست نداری همین‌جوری همون دکمه‌ی «مطالعه کردم ✓» رو بزن تا مأموریت تکمیل بشه و بری سراغ مأموریت بعدی.';
 const RESISTOR_CALC_INTRO_TEXT = '🎨 نوارهای رنگی مقاومت رو با منوی کشویی پایین عوض کن تا عدد روی صفحه دقیقاً ۲۲۰ Ω رو نشون بده — همین‌که بهش رسیدی، مأموریت خودکار تکمیل می‌شه!';
 const HELLO_MISSION_INTRO_TEXT = '📝 تو این ماموریت باید متن Hello World رو با کد چاپ کنی. اگه برنامه‌نویسی بلد نیستی نگران نباش  از حالت بلوکی استفاده کن و بلوک های متن و سریال رو کنار هم بچین.';
 
@@ -713,6 +720,11 @@ const LINE_SENSOR_INTRO_TEXT = '🤖 ربات تعقیب خط اول از همه
 
 const LINE_LOGIC_INTRO_TEXT = '🧠 مغزِ ربات یه فهرست قانونه! اول با ربات متحرک ببین هر قانون چی کار می‌کنه: «شروع» رو بزن و قانون‌های چپ و راست رو روشن کن. بعدش پایین‌تر مثل STM32CubeIDE اول پایه‌ها رو تو CubeMX تنظیم کن و بعد همین قانون‌ها رو با if و else if کد بزن؛ ربات دقیقاً کدِ تو رو اجرا می‌کنه.';
 
+const CIRCUIT_INTRO_TEXT = {
+  lamp_circuit: '💡 همین مدار رو این بار با لامپ می‌بندی. لامپ مقاومت نمی‌خواد؛ فقط مسیر باید بسته باشه!',
+  led_circuit: '🔌 اولین مدارت رو خودت می‌بندی! از فهرست کنار صفحه باتری، کانکتور، مقاومت و LED قرمز رو بردار، روی صفحه بذار و با ابزار «سیم‌کشی» بهم وصل‌شون کن. حواست باشه: LED بدون مقاومت می‌سوزه و آندش باید سمت مثبت باشه! گیر کردی؟ «گزینه‌ها ← نمایش پاسخ».',
+  traffic_light: '🚦 سه تا LED، سه تا مقاومت، یک باتری! هر سه مدار از همون دو سیم کانکتور تغذیه می‌شن.'
+};
 const HAL_INTRO_TEXT = {
   line_read: '📟 حالا خودِ STM32 باید سنسور را بخواند! اول در مرحله‌ی ۱ روی نقشه‌ی چیپ بگو PA0 ورودی است و PC13 خروجی؛ بعد در مرحله‌ی ۲ با HAL_GPIO_ReadPin بخوان و LED را کنترل کن.',
   line_motors: '⚙️ موتورها با دو پایه‌ی جهت کنترل می‌شوند. اول چهار پایه‌ی PB0 و PB1 و PB10 و PB11 را خروجی کن، بعد حرکت‌ها را با WritePin و HAL_Delay بنویس.',
@@ -869,6 +881,10 @@ function onNodeClick(i, locked, evt){
 
   if(q.id === 'line_logic' && !done){
     setTimeout(() => showKnightLine(LINE_LOGIC_INTRO_TEXT, 'happy', 'knight'), 400);
+  }
+
+  if(CIRCUIT_INTRO_TEXT[q.id] && !done){
+    setTimeout(() => showKnightLine(CIRCUIT_INTRO_TEXT[q.id], 'happy', 'knight'), 400);
   }
 
   if(HAL_INTRO_TEXT[q.id] && !done){

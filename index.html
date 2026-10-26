@@ -77,6 +77,7 @@
 <link rel="stylesheet" href="css/quest.css?v=11">
 <link rel="stylesheet" href="css/arduino-blocks.css?v=1">
 <link rel="stylesheet" href="css/lab.css?v=4">
+<link rel="stylesheet" href="css/circuit.css?v=6">
 <style>
   .support-wrap{
     display:flex; justify-content:center; margin:32px auto 44px; padding:0 16px;
@@ -349,6 +350,10 @@
     <svg viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
     آزمایشگاه الکترونیک
   </button>
+  <button class="tab-btn" id="tabCircuitBtn">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M3 12h4l2-5 4 10 2-5h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    طراحی مدار
+  </button>
 </div>
 
 <div class="knight-section" id="knightSection">
@@ -617,6 +622,8 @@
 
 </div>
 
+<div id="circuitTab" class="circuit-tab"></div>
+
 <footer class="credit">سفر به دنیای الکترونیک — اثری از سید مرتضی کمالی</footer>
 
 <div class="support-wrap">
@@ -675,13 +682,14 @@
 
 <!-- Plain: mission blocks + quest data (registered before quest.js runs) -->
 <script src="js/arduino/arduino-mission-blocks.js"></script>
-<script src="js/quest/quest-electronics.js?v=2"></script>
+<script src="js/quest/quest-circuit.js?v=1"></script>
+<script src="js/quest/quest-electronics.js?v=4"></script>
 <script src="js/quest/quest-arduino.js"></script>
 <script src="js/quest/quest-stm32.js?v=2"></script>
 <script src="js/quest/quest-robotics.js"></script>
 
 <!-- Deferred: core -->
-<script src="js/core/common.js?v=2" defer></script>
+<script src="js/core/common.js?v=3" defer></script>
 <!-- Deferred: Arduino blocks + simulator -->
 <script src="js/arduino/arduino-lang.js?v=3" defer></script>
 <script src="js/arduino/arduino-blocks.js?v=2" defer></script>
@@ -694,7 +702,11 @@
 <!-- Not loaded yet: drag-and-drop HAL block editor (needs hal-code-editor.js and cube-block.js)
      <script src="js/stm32/hal-visual-editor.js" defer></script> -->
 <!-- Deferred: quest engine -->
-<script src="js/quest/quest.js?v=10" defer></script>
+<script src="js/circuit/circuit-editor.js?v=6" defer></script>
+<script src="js/circuit/circuit-3d.js?v=1" defer></script>
+<script src="js/circuit/circuit-pcb.js?v=1" defer></script>
+<script src="js/circuit/circuit-missions.js?v=1" defer></script>
+<script src="js/quest/quest.js?v=12" defer></script>
 <!-- Deferred: electronics lab (board pinouts load in the middle; order kept) -->
 <script src="js/lab/component-library.js?v=2" defer></script>
 <script src="js/boards/arduino-nano.js?v=2" defer></script>
