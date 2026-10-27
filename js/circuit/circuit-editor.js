@@ -34,10 +34,6 @@ const DEFS = {
     draw:'<path class="b" d="M-40 0H-4M4 0H40M-4 -14V14M4 -14V14"/>'},
   CP:{fa:'خازن الکترولیتی',pre:'C',val:'100µF',lab:'two',pins:[[-40,0,'+'],[40,0,'−']],box:[-40,-16,40,16],
     draw:'<path class="b" d="M-40 0H-4M7 0H40M-4 -14V14"/><path class="b" d="M11 -14Q4 0 11 14"/><path class="b t" d="M-20 -10h8M-16 -14v8"/>'},
-  L:{fa:'سلف',pre:'L',val:'10mH',lab:'two',pins:[[-40,0,'1'],[40,0,'2']],box:[-40,-10,40,4],edge:'wire',
-    draw:'<path class="b" d="M-40 0H-24a6 6 0 0 1 12 0a6 6 0 0 1 12 0a6 6 0 0 1 12 0a6 6 0 0 1 12 0H40"/>'},
-  POT:{fa:'پتانسیومتر',pre:'RV',val:'10kΩ',lab:'two',pins:[[-40,0,'1'],[40,0,'3'],[0,-40,'2']],box:[-40,-40,40,10],edge:'load',
-    draw:'<path class="b" d="M-40 0H-20M20 0H40"/><rect class="b" x="-20" y="-8" width="40" height="16"/><path class="b" d="M0 -40V-16"/>' + arrow(0,-8,0,1)},
   D:{fa:'دیود',pre:'D',val:'1N4148',lab:'two',pins:[[-40,0,'A'],[40,0,'K']],box:[-40,-14,40,14],edge:'diode',
     draw:'<path class="b" d="M-40 0H-10M10 0H40M10 -12V12"/><path class="b" d="M-10 -12L10 0L-10 12Z"/>'},
   LED:ledDef('LED قرمز','RED','#ff5b5b'),
@@ -45,10 +41,6 @@ const DEFS = {
   LEDG:ledDef('LED سبز','GREEN','#3ddc84'),
   NPN:{fa:'ترانزیستور NPN',pre:'Q',val:'2N3904',lab:'two',side:true,pins:[[-40,0,'B'],[20,-40,'C'],[20,40,'E']],box:[-40,-40,34,40],draw:bjt(false)},
   PNP:{fa:'ترانزیستور PNP',pre:'Q',val:'2N3906',lab:'two',side:true,pins:[[-40,0,'B'],[20,-40,'C'],[20,40,'E']],box:[-40,-40,34,40],draw:bjt(true)},
-  OPAMP:{fa:'آپ‌امپ',pre:'U',val:'LM358',lab:'two',side:true,pins:[[-40,-20,'−'],[-40,20,'+'],[40,0,'OUT']],box:[-40,-40,40,40],
-    draw:'<path class="b" d="M-40 -20H-30M-40 20H-30M30 0H40"/><path class="b" d="M-30 -40L30 0L-30 40Z"/><path class="b t" d="M-26 -20h8M-26 20h8M-22 16v8"/>'},
-  BT:{fa:'باتری ۹ ولت',pre:'BT',val:'9V',lab:'two',pins:[[-40,0,'+'],[40,0,'−']],box:[-40,-18,40,18],
-    draw:'<path class="b" d="M-40 0H-6M6 0H40M-6 -16V16M6 -8V8"/><path class="b t" d="M-22 -10h8M-18 -14v8"/>'},
   BC:{fa:'کانکتور باتری ۹ ولت',pre:'J',val:'9V',lab:'two',side:true,link:[[0,2],[1,3]],
     pins:[[-40,-20,'باتری +'],[-40,20,'باتری −'],[40,-20,'سیم قرمز +'],[40,20,'سیم مشکی −']],box:[-40,-34,40,34],
     draw:'<path class="b" d="M-40 -20H-14M-40 20H-14"/><path class="b red" d="M14 -20H40"/><path class="b gry" d="M14 20H40"/>' +
@@ -70,9 +62,9 @@ const DEFS = {
 };
 const drawOf = (c,d) => typeof d.draw === 'function' ? d.draw(c) : d.draw;
 const GROUPS = [
-  ['قطعات پایه', ['R','C','CP','L','POT']],
-  ['نیمه‌هادی', ['D','LED','LEDY','LEDG','NPN','PNP','OPAMP']],
-  ['منبع و کلید', ['BT','BC','SW','PB','VCC','GND']]
+  ['قطعات پایه', ['R','C','CP']],
+  ['نیمه‌هادی', ['D','LED','LEDY','LEDG','NPN','PNP']],
+  ['منبع و کلید', ['BC','SW','PB','VCC','GND']]
 ];
 const HINTS = {
   select:'انتخاب: روی قطعه یا سیم بزن، بکشش تا جابه‌جا شود. روی کلید دوبار بزن تا باز/بسته شود. روی فضای خالی بکش تا چند مورد را با هم انتخاب کنی.',
@@ -256,8 +248,8 @@ function create(root, opts){
     spec.wires.forEach(a => S.wires.push({id:S.seq++, x1:a[0], y1:a[1], x2:a[2], y2:a[3]}));
   }
   const EXAMPLE = {
-    comps:[{t:'BT',x:-160,y:0,r:1,ref:'BT1'},{t:'R',x:-40,y:-40,ref:'R1',val:'330Ω'},{t:'LED',x:80,y:-40,ref:'D1'},{t:'GND',x:-20,y:40}],
-    wires:[[-160,-40,-80,-40],[0,-40,40,-40],[120,-40,120,40],[120,40,-20,40],[-20,40,-160,40]]
+    comps:[{t:'BC',x:-100,y:0,ref:'J1'},{t:'R',x:20,y:-60,ref:'R1',val:'330Ω'},{t:'LED',x:140,y:0,r:1,ref:'D1'}],
+    wires:[[-60,-20,-60,-60],[-60,-60,-20,-60],[60,-60,140,-60],[140,-60,140,-40],[140,40,140,60],[140,60,-60,60],[-60,60,-60,20]]
   };
   function load(){
     try{
@@ -365,11 +357,9 @@ function create(root, opts){
       if(both){ if(!adj.has(b)) adj.set(b,[]); adj.get(b).push({to:a, comp:c, kind}); }
     };
     const sources = [];
-    const hasBT = S.comps.some(c => c.t === 'BT');
     S.comps.forEach(c => {
       const d = DEFS[c.t];
-      if(c.t === 'BT') sources.push({comp:c, pos:node(c,0), neg:node(c,1)});
-      else if(c.t === 'BC' && !hasBT) sources.push({comp:c, pos:node(c,2), neg:node(c,3)});   // بدون باتری: خود کانکتور منبع است (قرمز +، مشکی −)
+      if(c.t === 'BC') sources.push({comp:c, pos:node(c,2), neg:node(c,3)});   // کانکتور باتری منبع است (سیم قرمز +، مشکی −)
       else if(d.link) d.link.forEach(l => addE(node(c,l[0]), node(c,l[1]), c, 'wire', true));
       else if(d.edge === 'led' || d.edge === 'diode') addE(node(c,0), node(c,1), c, d.edge, false);
       else if(d.edge === 'load' || d.edge === 'wire'){
@@ -488,7 +478,6 @@ function create(root, opts){
         tasksEl.innerHTML = '<div class="cv-props-title">هدف‌ها</div><ul>' +
           opts.tasks.map((t,i) => `<li class="${results[i] ? 'ok' : ''}"><span>${results[i] ? '✓' : '○'}</span>${esc(t.label)}</li>`).join('') + '</ul>';
       }
-      if(!msg && A.wired('BT','BC',true) && !A.wired('BT','BC')){ msg = '🔄 قطب‌های باتری برعکس به کانکتور وصل شده‌اند (+ باید به + برود).'; cls = 'bad'; }
       if(done && !msg){ msg = '✅ مدار درست است!'; cls = 'ok'; }
     }
     msgEl.textContent = msg; msgEl.className = 'cv-msgbar' + (msg ? ' show ' + cls : '');
@@ -864,6 +853,7 @@ function create(root, opts){
   on($('cvZoomIn'), 'click', () => { const r = svg.getBoundingClientRect(); zoomAt(r.width/2, r.height/2, 1.25); });
   on($('cvZoomOut'), 'click', () => { const r = svg.getBoundingClientRect(); zoomAt(r.width/2, r.height/2, 0.8); });
   on($('cvFit'), 'click', fitView);
+  ['pointerenter', 'focus', 'touchstart'].forEach(ev => on($('cv3d'), ev, () => { if(window.Circuit3D && Circuit3D.preload) Circuit3D.preload(); }, {passive:true}));
   on($('cv3d'), 'click', () => {
     if(typeof SFX !== 'undefined') SFX.click();
     if(!window.Circuit3D) return;

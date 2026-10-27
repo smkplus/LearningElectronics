@@ -43,14 +43,14 @@ function cameraBasis(T){
 /* ---------- فوت‌پرینت‌ها ---------- */
 const FAM = t => ({LEDY:'LED', LEDG:'LED', NPN:'BJT', PNP:'BJT'}[t] || t);
 const DEF_FP = {R:'R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal', C:'C_Disc_D5.0mm_W2.5mm_P5.00mm', CP:'CP_Radial_D8.0mm_P3.50mm',
-  L:'L_Axial_L9.5mm_D4.0mm_P12.70mm_Horizontal', POT:'Potentiometer_Bourns_3386P_Vertical', D:'D_DO-35_SOD27_P10.16mm_Horizontal',
-  LED:'LED_D5.0mm', BJT:'TO-92_Inline', OPAMP:'DIP-8_W7.62mm', BT:'TerminalBlock_2P_P10.16mm', BC:'Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical',
+  D:'D_DO-35_SOD27_P10.16mm_Horizontal',
+  LED:'LED_D5.0mm', BJT:'TO-92_Inline', BC:'Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical',
   SW:'SW_Slide_SPST_P10.16mm', PB:'Button_Switch_THT:SW_PUSH_6mm', LAMP:'Lamp_E10_Holder'};
 const fpOf = c => c.t === 'BC' ? DEF_FP.BC : (c.fp || DEF_FP[FAM(c.t)] || '');
-const NAMES = {R:'مقاومت', D:'دیود', LED:'LED قرمز ۵ میلی‌متری', LEDY:'LED زرد ۵ میلی‌متری', LEDG:'LED سبز ۵ میلی‌متری', C:'خازن', CP:'خازن الکترولیتی', L:'سلف',
-  POT:'پتانسیومتر', NPN:'ترانزیستور NPN', PNP:'ترانزیستور PNP', OPAMP:'آپ‌امپ', BT:'باتری ۹ ولت', BC:'کانکتور باتری (هدر ۱×۲)', SW:'کلید', PB:'کلید فشاری ۶ میلی‌متری', LAMP:'لامپ'};
-const SWATCH = {R:'#e1b57d', D:'#c9772e', LED:'#b31a0d', LEDY:'#d9a400', LEDG:'#1d8f45', C:'#e0a23c', CP:'#1f3a78', L:'#c46a2b', POT:'#1b4fa8',
-  NPN:'#262626', PNP:'#262626', OPAMP:'#262626', BT:'#c58a3b', BC:'#262626', SW:'#d0d4db', PB:'#d2d1c7', LAMP:'#ffe27a'};
+const NAMES = {R:'مقاومت', D:'دیود', LED:'LED قرمز ۵ میلی‌متری', LEDY:'LED زرد ۵ میلی‌متری', LEDG:'LED سبز ۵ میلی‌متری', C:'خازن', CP:'خازن الکترولیتی',
+  NPN:'ترانزیستور NPN', PNP:'ترانزیستور PNP', BC:'کانکتور باتری (هدر ۱×۲)', SW:'کلید', PB:'کلید فشاری ۶ میلی‌متری', LAMP:'لامپ'};
+const SWATCH = {R:'#e1b57d', D:'#c9772e', LED:'#b31a0d', LEDY:'#d9a400', LEDG:'#1d8f45', C:'#e0a23c', CP:'#1f3a78',
+  NPN:'#262626', PNP:'#262626', BC:'#262626', SW:'#d0d4db', PB:'#d2d1c7', LAMP:'#ffe27a'};
 const fa = n => Number(n).toLocaleString('fa-IR');
 
 /* ---------- ابعاد برد (میلی‌متر) ---------- */
@@ -165,8 +165,8 @@ function build(T, data){
   const rect = (x0, z0, x1, z1) => [[x0,z0],[x1,z0],[x1,z1],[x0,z1],[x0,z0]];
   const circle = (cx, cz, r) => { const p = []; for(let i = 0; i <= 64; i++){ const t = i / 64 * Math.PI * 2; p.push([cx + r * Math.cos(t), cz + r * Math.sin(t)]); } return p; };
   const SILK = {
-    C:[rect(-3.4,-2.5,3.4,2.5)], CP:[circle(0,0,4)], L:[rect(-4.75,-2,4.75,2)], POT:[rect(-5,-7.5,5,2.5)], BJT:[circle(.5,0,3)],
-    OPAMP:[rect(-3.5,-5,3.5,5)], BT:[rect(-7,-3.8,7,3.8)], SW:[rect(-6.5,-3,6.5,3)], PB:[rect(-3,-3,3,3), circle(0,0,1.9)], LAMP:[circle(0,0,5.5)]
+    C:[rect(-3.4,-2.5,3.4,2.5)], CP:[circle(0,0,4)], BJT:[circle(.5,0,3)],
+    SW:[rect(-6.5,-3,6.5,3)], PB:[rect(-3,-3,3,3), circle(0,0,1.9)], LAMP:[circle(0,0,5.5)]
   };
   function silkFor(g, c, fp){
     const fam = FAM(c.t);
@@ -291,7 +291,6 @@ function build(T, data){
     [0, 6.3].forEach(x => [0, -4.5].forEach(y => put(box(.3, .7, 5, M.silver), x, y, -1)));
   };
   const legs2 = (g, pins, rest, y) => pins.forEach(p => g.add(tube(P3(p[0], 0, p[1]), P3(p[0] * rest, y, 0), .09)));
-  const axialLegs = (g, y, bx) => [-1, 1].forEach(s => { g.add(tube(P3(s * 2, 0, 0), P3(s * 2, y, 0), .09)); g.add(tube(P3(s * 2, y, 0), P3(s * bx, y, 0), .09)); });
   const LEGACY = {
     C(g){
       const d = cyl(.85, .3, mat('#e0a23c', {roughness:.6})); d.rotation.x = Math.PI / 2; d.position.y = 1.35; g.add(d);
@@ -305,38 +304,11 @@ function build(T, data){
       g.add(tube(P3(-2, 0, 0), P3(-.5, .1, 0), .09)); g.add(tube(P3(2, 0, 0), P3(.5, .1, 0), .09));
       g.add(tube(P3(-.5, 0, 0), P3(-.5, .3, 0), .09)); g.add(tube(P3(.5, 0, 0), P3(.5, .3, 0), .09));
     },
-    L(g){
-      const core = cyl(.5, 2.3, mat('#3b2f29')); core.rotation.z = Math.PI / 2; core.position.y = .75; g.add(core);
-      for(let i = 0; i < 8; i++){
-        const ring = new T.Mesh(new T.TorusGeometry(.58, .08, 8, 18), mat('#c46a2b', {metalness:.6, roughness:.35}));
-        ring.rotation.y = Math.PI / 2; ring.position.set(-.95 + i * .27, .75, 0); g.add(ring);
-      }
-      axialLegs(g, .75, 1.15);
-    },
-    POT(g){
-      const b = box(2.8, 1.4, 2.6, mat('#1b4fa8')); b.position.set(0, .7, -.5); g.add(b);
-      const s = cyl(.6, .15, M.metal); s.position.set(0, 1.47, -.5); g.add(s);
-      const slot = box(.9, .06, .14, M.black); slot.position.set(0, 1.57, -.5); g.add(slot);
-      [[-2,0],[2,0],[0,-2]].forEach(p => g.add(tube(P3(p[0], 0, p[1]), P3(p[0] * .55, .25, p[1] * .55 - .5 * (p[1] ? 0 : 1)), .09)));
-    },
     BJT(g){
       const half = new T.Mesh(new T.CylinderGeometry(.9, .9, 1.5, 24, 1, false, -Math.PI / 2, Math.PI), M.black);
       half.rotation.y = Math.PI / 2; half.position.set(.15, 1.0, 0); g.add(half);
       const fl = box(.02, 1.5, 1.8, M.black); fl.position.set(.15, 1.0, 0); g.add(fl);
       g.add(tube(P3(-2, 0, 0), P3(.2, .55, 0), .09)); g.add(tube(P3(1, 0, -2), P3(.3, .55, -.4), .09)); g.add(tube(P3(1, 0, 2), P3(.3, .55, .4), .09));
-    },
-    OPAMP(g){
-      const b = box(2.8, .8, 3.3, M.black); b.position.set(0, .55, 0); g.add(b);
-      const dot = cyl(.15, .02, mat('#6b7280')); dot.position.set(-.9, .96, -1.2); g.add(dot);
-      [-1, 1].forEach(s => [-1.2, -.4, .4, 1.2].forEach(z => { const l = box(.55, .08, .22, M.metal); l.position.set(s * 1.55, .25, z); g.add(l); }));
-      [[-2,-1],[-2,1],[2,0]].forEach(p => g.add(tube(P3(p[0], 0, p[1]), P3(Math.sign(p[0]) * 1.6, .25, p[1]), .08)));
-    },
-    BT(g, c){
-      const hot = c.st === 'short';
-      const low = box(4.4, 1.5, 3.0, mat(hot ? '#7a1f1f' : '#2b2e35', {roughness:.45})); low.position.y = .75; g.add(low);
-      const cap = box(4.4, .55, 3.0, mat('#c58a3b', {metalness:.5, roughness:.4})); cap.position.y = 1.78; g.add(cap);
-      const plus = cyl(.5, .4, M.metal, 24); plus.position.set(-1.3, 2.25, 0); g.add(plus);
-      const minus = cyl(.55, .4, M.metal, 6); minus.position.set(1.3, 2.25, 0); g.add(minus);
     },
     SW(g, c){
       const b = box(3.0, 1.0, 1.7, mat('#2a2d34')); b.position.y = .5; g.add(b);
@@ -411,6 +383,11 @@ function injectCss(){
 .c3d2-stage.drag{cursor:grabbing}
 .c3d2-stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;outline:none}
 .c3d2-stage canvas:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
+.c3d2-load{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(180deg,rgba(196,196,223,.94),rgba(113,113,141,.94));color:#1d1c2b;font:500 14px/1.4 var(--fb);transition:opacity .25s}
+.c3d2-load.done{opacity:0;pointer-events:none}
+.c3d2-spin{width:38px;height:38px;border:3px solid rgba(29,28,43,.2);border-top-color:var(--accent);border-radius:50%;animation:c3d2spin .8s linear infinite}
+@keyframes c3d2spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.c3d2-spin{animation-duration:2.4s}}
 .c3d2-tools{position:absolute;top:10px;right:10px;display:flex;gap:8px}
 .c3d2-hint{position:absolute;left:12px;bottom:10px;margin:0;font:12px/1.3 var(--fm);color:#1d1c2b;background:rgba(255,255,255,.55);padding:4px 8px;pointer-events:none;direction:ltr}
 .c3d2-note{position:absolute;inset:auto 12px 12px 12px;margin:0;padding:8px 10px;background:var(--chip);color:var(--fg);font-size:13px}
@@ -423,29 +400,6 @@ function injectCss(){
 .c3d2-sw{display:inline-block;width:9px;height:9px;margin-inline-end:8px}
 @media (max-width:640px){.c3d2-parts{grid-template-columns:1fr}.c3d2-hint{display:none}}`;
   document.head.appendChild(s);
-}
-
-/* باتری در نمای ۳بعدی نشان داده نمی‌شود؛ فقط کانکتور. باتری و سیم‌هایی که فقط به آن می‌رسند حذف می‌شوند. */
-function withoutBattery(data){
-  const bts = data.comps.filter(c => c.t === 'BT');
-  if(!bts.length) return data;
-  const key = (x, y) => Math.round(x) + ',' + Math.round(y);
-  const pinKeys = new Set();
-  data.comps.forEach(c => { if(c.t !== 'BT') c.pins.forEach(p => pinKeys.add(key(p[0], p[1]))); });
-  const at = new Map();
-  data.wires.forEach((w, i) => [key(w[0], w[1]), key(w[2], w[3])].forEach(k => { if(!at.has(k)) at.set(k, []); at.get(k).push(i); }));
-  const dead = new Set(), stack = [];
-  bts.forEach(c => c.pins.forEach(p => stack.push(key(p[0], p[1]))));
-  while(stack.length){
-    const k = stack.pop();
-    (at.get(k) || []).forEach(i => {
-      if(dead.has(i)) return;
-      dead.add(i);
-      const w = data.wires[i], a = key(w[0], w[1]), b = key(w[2], w[3]), o = a === k ? b : a;
-      if(!pinKeys.has(o) && (at.get(o) || []).length <= 2) stack.push(o);
-    });
-  }
-  return Object.assign({}, data, {comps:data.comps.filter(c => c.t !== 'BT'), wires:data.wires.filter((w, i) => !dead.has(i))});
 }
 
 /* کانکتور باتری فقط یک هدر ۱×۲ با گام ۲٫۵۴ میلی‌متر است: دو پایهٔ خروجی (قرمز/مشکی) نگه داشته می‌شوند
@@ -471,13 +425,14 @@ function simplifyConnector(data){
 
 function open(data){
   close();
-  data = simplifyConnector(withoutBattery(data));
+  data = simplifyConnector(data);
   injectCss();
   const el = document.createElement('div');
   el.className = 'c3d2'; el.dir = 'rtl';
   el.innerHTML = '<div class="c3d2-wrap"><header><h1>نمای ۳بعدی مدار</h1><p class="sub"></p>' +
     '<button type="button" data-a="close" aria-label="بستن">✕</button></header>' +
     '<div class="c3d2-stage"><canvas tabindex="0" aria-label="نمای ۳بعدی مدار. برای چرخش بکش و برای زوم از چرخ ماوس استفاده کن."></canvas>' +
+    '<div class="c3d2-load" role="status" aria-live="polite"><div class="c3d2-spin"></div><span class="c3d2-load-t">در حال بارگذاری…</span></div>' +
     '<div class="c3d2-tools"><button type="button" data-a="reset">بازنشانی نما</button></div>' +
     '<p class="c3d2-hint">Drag to rotate · scroll to zoom · Shift+drag to pan</p><p class="c3d2-note" hidden></p></div>' +
     '<ul class="c3d2-parts"></ul></div>';
@@ -519,20 +474,28 @@ function open(data){
 
   const stage = el.querySelector('.c3d2-stage'), canvas = el.querySelector('canvas'), note = el.querySelector('.c3d2-note');
   const say = t => { note.hidden = !t; note.textContent = t || ''; };
-  if(!data.comps.length){ say('اول چند قطعه روی صفحه بگذار تا نمای ۳بعدی ساخته شود.'); return; }
-  say('در حال بارگذاری…');
+  const load = el.querySelector('.c3d2-load'), loadT = el.querySelector('.c3d2-load-t');
+  const setLoad = t => { loadT.textContent = t; };
+  const hideLoad = () => { load.classList.add('done'); setTimeout(() => { if(load.isConnected) load.hidden = true; }, 300); };
+  if(!data.comps.length){ hideLoad(); say('اول چند قطعه روی صفحه بگذار تا نمای ۳بعدی ساخته شود.'); return; }
+  setLoad(window.THREE ? 'در حال ساخت مدل‌ها…' : 'در حال دریافت کتابخانهٔ ۳بعدی…');
   loadThree().then(() => {
     if(current !== st) return;
-    say('');
-    start(st, stage, canvas, say, data);
-  }).catch(() => { if(current === st) say('بارگذاری three.js ممکن نشد (اینترنت یا فایل js/vendor/three.min.js را چک کن).'); });
+    setLoad('در حال ساخت مدل‌ها…');
+    // اول بگذار اسپینر نقاشی شود، بعد صحنهٔ سنگین (همگام) ساخته شود تا صفحه بدون نشانه هنگ نکند
+    requestAnimationFrame(() => setTimeout(() => {
+      if(current !== st) return;
+      try{ start(st, stage, canvas, say, data, hideLoad); }
+      catch(err){ hideLoad(); say('ساخت نمای ۳بعدی ناموفق بود.'); }
+    }, 30));
+  }).catch(() => { if(current === st){ hideLoad(); say('بارگذاری three.js ممکن نشد (اینترنت یا فایل js/vendor/three.min.js را چک کن).'); } });
 }
 
-function start(st, stage, canvas, say, data){
+function start(st, stage, canvas, say, data, ready){
   const T = window.THREE;
   let renderer;
   try{ renderer = new T.WebGLRenderer({canvas, antialias:true, alpha:true}); }
-  catch(e){ say('این مرورگر WebGL را اجرا نکرد، پس نمای ۳بعدی در دسترس نیست.'); return; }
+  catch(e){ say('این مرورگر WebGL را اجرا نکرد، پس نمای ۳بعدی در دسترس نیست.'); ready(); return; }
   renderer.setClearColor(0x000000, 0);
   st.renderer = renderer;
   const on = (t, ev, fn, o) => { t.addEventListener(ev, fn, o); st.off.push(() => t.removeEventListener(ev, fn, o)); };
@@ -632,11 +595,13 @@ function start(st, stage, canvas, say, data){
     e.preventDefault();
   });
 
+  let shown = false;
   (function loop(now){
     st.raf = requestAnimationFrame(loop);
     const pulse = .88 + .12 * Math.sin(now / 260);
     sprites.forEach(sp => { sp.material.opacity = pulse; });
     renderer.render(scene, cam);
+    if(!shown){ shown = true; requestAnimationFrame(ready); }   // لودینگ بعد از اولین فریم کنار می‌رود
   })(performance.now());
 }
 
@@ -650,5 +615,7 @@ function close(){
   st.el.remove();
 }
 
-window.Circuit3D = {open, close};
+// پیش‌بارگذاری کتابخانه (مثلاً وقتی ماوس روی دکمهٔ ۳بعدی می‌رود) تا با کلیک آماده باشد
+const preload = () => { loadThree().catch(() => {}); };
+window.Circuit3D = {open, close, preload};
 })();
