@@ -108,7 +108,7 @@ function create(root, opts){
     <div class="cv-group cv-seg"><button class="cv-btn on" data-vw="sch">${ico('<path d="M2 12h4l2-5 4 10 4-10 2 5h4"/>')}شماتیک</button><button class="cv-btn" data-vw="pcb">${ico('<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>')}PCB / فوت‌پرینت</button></div>
     <div class="cv-group cv-sch-only">
       <button class="cv-btn" data-tool="select" title="انتخاب (V)">${ico('<path d="m5 3 14 8-6 2-3 6z"/>')}انتخاب</button>
-      <button class="cv-btn" data-tool="wire" title="سیم‌کشی (W)">${ico('<circle cx="5" cy="18" r="2"/><circle cx="19" cy="6" r="2"/><path d="M7 18h6a2 2 0 0 0 2-2V8a2 2 0 0 1 2-2"/>')}سیم‌کشی</button>
+      <button class="cv-btn" data-tool="wire" title="سیم‌کشی (X)">${ico('<circle cx="5" cy="18" r="2"/><circle cx="19" cy="6" r="2"/><path d="M7 18h6a2 2 0 0 0 2-2V8a2 2 0 0 1 2-2"/>')}سیم‌کشی</button>
       <button class="cv-btn" data-tool="pan" title="جابه‌جایی صفحه (H)">${ico('<path d="M18 11V6a2 2 0 0 0-4 0M14 10V4a2 2 0 0 0-4 0v2M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>')}دست</button>
     </div>
     <div class="cv-group cv-sch-only">
@@ -900,7 +900,7 @@ function create(root, opts){
     if(ctrl && e.code === 'KeyA'){ e.preventDefault(); S.comps.forEach(c => sel.add('c'+c.id)); S.wires.forEach(w => sel.add('w'+w.id)); sync(); return; }
     if(ctrl) return;
     if(e.code === 'KeyV') setTool('select');
-    else if(e.code === 'KeyW') setTool('wire');
+    else if(e.code === 'KeyX') setTool('wire');
     else if(e.code === 'KeyH') setTool('pan');
     else if(e.code === 'KeyR'){ e.preventDefault(); rotateSel(); }
     else if(e.code === 'Delete' || e.code === 'Backspace'){ e.preventDefault(); deleteSel(); }

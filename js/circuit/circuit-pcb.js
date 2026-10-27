@@ -52,6 +52,24 @@ const route = ctrl => {
 };
 const pid = p => p.c.id + ':' + p.i;
 
+/* آیکن‌های دکمه‌های نوار کناری (هم‌سبک آیکن‌های ادیتور شماتیک) */
+const svgI = d => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
+const IC = {
+  select:svgI('<path d="m5 3 14 8-6 2-3 6z"/>'),
+  route:svgI('<circle cx="5" cy="18" r="2"/><circle cx="19" cy="6" r="2"/><path d="M7 18h6a2 2 0 0 0 2-2V8a2 2 0 0 1 2-2"/>'),
+  rotate:svgI('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>'),
+  del:svgI('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v5M14 11v5"/>'),
+  layout:svgI('<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>'),
+  routes:svgI('<path d="M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8 19 13M17.8 6.2 19 5M3 21l9-9M12.2 6.2 11 5"/>')
+};
+let cssDone = false;
+function injectCss(){
+  if(cssDone) return; cssDone = true;
+  const s = document.createElement('style');
+  s.textContent = '.pcb-auto{display:inline-flex;align-items:center;justify-content:center;gap:8px}.pcb-auto svg{width:16px;height:16px;flex:none}';
+  document.head.appendChild(s);
+}
+
 function create(host, api){
   const KEY = api.key ? 'cpcb:' + api.key : '';
   let st = {fp:{}, pos:{}, routes:{}, rot:{}, del:{}, extra:{}};
@@ -247,7 +265,7 @@ function create(host, api){
     if(tg === 'INPUT' || tg === 'TEXTAREA' || tg === 'SELECT') return;
     if(e.code === 'KeyR'){ e.preventDefault(); rotateSel(e.shiftKey ? -1 : 1); }
     else if(e.code === 'Delete' || e.code === 'Backspace'){ if(selT){ e.preventDefault(); deleteTrace(); } }
-    else if(e.code === 'KeyW' || e.code === 'KeyX'){ e.preventDefault(); setTool('route'); }
+    else if(e.code === 'KeyX'){ e.preventDefault(); setTool('route'); }
     else if(e.code === 'KeyV'){ setTool('select'); }
     else if(e.code === 'Escape'){
       if(routing){ routing = null; draw(); }
@@ -258,8 +276,8 @@ function create(host, api){
 
   function build(){
     el = document.createElement('div');
-    el.className = 'pcb';
-    el.innerHTML = '<aside class="pcb-side"><div class="pcb-h">تخصیص فوت‌پرینت <small>Assign Footprints</small></div><div class="pcb-tbl"></div><button class="pcb-auto" data-tool="select" title="انتخاب و جابه‌جایی (V)">انتخاب (V)</button><button class="pcb-auto" data-tool="route" title="سیم‌کشی ترک (W یا X)">سیم‌کشی (W / X)</button><button class="pcb-auto" data-a="rotate" title="چرخش فوت‌پرینت انتخاب‌شده (R)">چرخش (R)</button><button class="pcb-auto" data-a="del" title="حذف ترک انتخاب‌شده (Delete)">حذف ترک (Delete)</button><button class="pcb-auto" data-a="layout">چیدمان خودکار</button><button class="pcb-auto" data-a="routes">ترک‌کشی خودکار</button><div class="pcb-hint" style="font-size:12px;line-height:1.7;opacity:.7;margin-top:8px">قطعه را انتخاب کن و R بزن تا بچرخد (Shift+R برعکس). ترک را بگیر و بکش تا مسیرش عوض شود؛ Delete = حذف ترک (اتصال خط‌چین می‌ماند). دوبار کلیک روی نقطه = حذف نقطه، روی ترک = مسیر خودکار. سیم‌کشی (W یا X): روی یک پد بزن، نقطه بگذار و روی پدِ هم‌شبکه تمام کن؛ Esc = لغو.</div></aside>' +
+    el.className = 'pcb'; injectCss();
+    el.innerHTML = '<aside class="pcb-side"><div class="pcb-h">تخصیص فوت‌پرینت <small>Assign Footprints</small></div><div class="pcb-tbl"></div><button class="pcb-auto" data-tool="select" title="انتخاب و جابه‌جایی (V)">' + IC.select + 'انتخاب (V)</button><button class="pcb-auto" data-tool="route" title="سیم‌کشی ترک (X)">' + IC.route + 'سیم‌کشی (X)</button><button class="pcb-auto" data-a="rotate" title="چرخش فوت‌پرینت انتخاب‌شده (R)">' + IC.rotate + 'چرخش (R)</button><button class="pcb-auto" data-a="del" title="حذف ترک انتخاب‌شده (Delete)">' + IC.del + 'حذف ترک (Delete)</button><button class="pcb-auto" data-a="layout">' + IC.layout + 'چیدمان خودکار</button><button class="pcb-auto" data-a="routes">' + IC.routes + 'ترک‌کشی خودکار</button><div class="pcb-hint" style="font-size:12px;line-height:1.7;opacity:.7;margin-top:8px">قطعه را انتخاب کن و R بزن تا بچرخد (Shift+R برعکس). ترک را بگیر و بکش تا مسیرش عوض شود؛ Delete = حذف ترک (اتصال خط‌چین می‌ماند). دوبار کلیک روی نقطه = حذف نقطه، روی ترک = مسیر خودکار. سیم‌کشی (X): روی یک پد بزن، نقطه بگذار و روی پدِ هم‌شبکه تمام کن؛ Esc = لغو.</div></aside>' +
       '<div class="pcb-stage"><svg class="pcb-svg" xmlns="http://www.w3.org/2000/svg"></svg><div class="pcb-fab"><button data-z="1.25">+</button><button data-z=".8">−</button><button data-z="0">⤢</button></div><div class="pcb-stat"></div></div>';
     host.appendChild(el);
     document.addEventListener('keydown', onKey);
