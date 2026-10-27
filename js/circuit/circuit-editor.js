@@ -117,7 +117,7 @@ function create(root, opts){
       <button class="cv-btn cv-ico" id="cvRedo" title="ازنو (Ctrl+Y)" aria-label="ازنو"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 5 4 4-4 4"/><path d="M20 9H10a6 6 0 0 0 0 12h4"/></svg></button>
     </div>
     <div class="cv-group">
-      <button class="cv-btn cv-3d" id="cv3d" title="نمای ۳بعدی مدار (مثل KiCad)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 3 4 7.5v9L12 21l8-4.5v-9z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/></svg><span>۳بعدی</span></button>
+      <button class="cv-btn cv-3d" id="cv3d" title="نمای ۳بعدی مدار (مثل KiCad)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 3 4 7.5v9L12 21l8-4.5v-9z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/></svg><span>سه بعدی</span></button>
     </div>
     <div class="cv-group cv-menu-wrap">
       <button class="cv-btn" id="cvMenuBtn">${mission ? 'گزینه‌ها ▾' : 'فایل ▾'}</button>

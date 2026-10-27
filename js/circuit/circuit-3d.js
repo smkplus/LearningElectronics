@@ -243,7 +243,7 @@ function build(T, data){
     LED(g, c){
       const m = modelGroup(g), def = LEDS[c.t] || LEDS.LED, lit = c.st === 'on', burnt = c.st === 'burnt';
       const color = burnt ? 0x2a2a2a : def.c;
-      const red = phong(color, 0x2a2a2a, 30, lit ? {emissive:new T.Color(def.on), emissiveIntensity:.85} : {});
+      const red = phong(color, 0x2a2a2a, 30, {});
       const prof = [new V2(2.45, 4), new V2(2.45, 9.15)];
       for(let i = 1; i <= 32; i++){ const t = i / 32 * HALF; prof.push(new V2(2.45 * Math.cos(t), 9.15 + 2.45 * Math.sin(t))); }
       m.add(new T.Mesh(axisToZ(new T.LatheGeometry(prof, 72)), red));
@@ -256,7 +256,6 @@ function build(T, data){
         m.add(tube(P3(s * half, 0, -2.5), P3(s * half, 0, 1.4), .2));
         m.add(tube(P3(s * half, 0, 1.4), P3(s * 1.27, 0, 3.2), .2));
       });
-      if(lit) glow(g, def.on, 9, 16);
     },
     // کانکتور باتری: هدر ۱×۲ با گام ۲٫۵۴ میلی‌متر، عیناً مدل HTML
     BC(g){
