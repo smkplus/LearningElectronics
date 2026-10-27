@@ -1,4 +1,4 @@
-/* نمای ۳بعدی مدار — همان صحنه، مدل‌ها، دوربین و صفحه‌آرایی فایل «LED Board 3D View»
+/* نمای سه بعدی مدار — همان صحنه، مدل‌ها، دوربین و صفحه‌آرایی فایل «LED Board 3D View»
    واحد = میلی‌متر. LED، مقاومت، دیود و هدر با مدل‌های همان فایل ساخته می‌شوند.
    three.js فقط هنگام باز شدن بارگذاری می‌شود. API همان قبلی: Circuit3D.open(data) / Circuit3D.close() */
 (function(){
@@ -365,30 +365,29 @@ function injectCss(){
   document.head.appendChild(lk);
   const s = document.createElement('style');
   s.textContent = `
-.c3d2{--bg:#eceaf3;--fg:#23212e;--muted:#615e72;--line:#cfcbdd;--accent:#b31a0d;--chip:#ffffff;
+.c3d2{--bg:#14131b;--fg:#ecebf4;--muted:#a09db4;--line:#34324a;--accent:#ff6a55;--chip:#1e1c2a;color-scheme:dark;
  --fd:"Chakra Petch","Vazirmatn","Segoe UI",system-ui,sans-serif;--fb:"IBM Plex Sans","Vazirmatn","Segoe UI",system-ui,sans-serif;--fm:"IBM Plex Mono",ui-monospace,Menlo,monospace;
  position:fixed;inset:0;z-index:10000;overflow:auto;background:var(--bg);color:var(--fg);font:15px/1.5 var(--fb);
  padding:20px max(16px,env(safe-area-inset-left,0px)) 32px max(16px,env(safe-area-inset-right,0px));box-sizing:border-box}
-@media (prefers-color-scheme:dark){.c3d2{--bg:#14131b;--fg:#ecebf4;--muted:#a09db4;--line:#34324a;--accent:#ff6a55;--chip:#1e1c2a;color-scheme:dark}}
 .c3d2 *{box-sizing:border-box}
 .c3d2-wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
-.c3d2 header{display:flex;align-items:baseline;justify-content:space-between;gap:8px 24px;flex-wrap:wrap}
+.c3d2 header{display:flex;align-items:baseline;justify-content:flex-start;align-items:center;gap:8px 16px;flex-wrap:wrap}
 .c3d2 h1{margin:0;font:600 22px/1.2 var(--fd);letter-spacing:.01em;text-wrap:balance}
-.c3d2 .sub{margin:0;margin-inline-end:auto;color:var(--muted);font:12px var(--fm);letter-spacing:.04em;direction:ltr}
+.c3d2 .sub{margin:0;margin-inline-start:auto;color:var(--muted);font:12px var(--fm);letter-spacing:.04em;direction:ltr}
 .c3d2 button{font:500 13px/1 var(--fb);color:var(--fg);background:var(--chip);border:1px solid var(--line);padding:9px 12px;cursor:pointer}
 .c3d2 button:hover{border-color:var(--accent)}
 .c3d2 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.c3d2-stage{position:relative;width:min(100%,calc(76vh*915/749));aspect-ratio:915/749;margin:0 auto;background:linear-gradient(180deg,#c4c4df,#71718d);border:1px solid var(--line);overflow:hidden;touch-action:none;cursor:grab}
+.c3d2-stage{position:relative;width:min(100%,calc(76vh*915/749));aspect-ratio:915/749;margin:0 auto;background:linear-gradient(180deg,#2b2a42,#15141f);border:1px solid var(--line);overflow:hidden;touch-action:none;cursor:grab}
 .c3d2-stage.drag{cursor:grabbing}
 .c3d2-stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;outline:none}
 .c3d2-stage canvas:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
-.c3d2-load{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(180deg,rgba(196,196,223,.94),rgba(113,113,141,.94));color:#1d1c2b;font:500 14px/1.4 var(--fb);transition:opacity .25s}
+.c3d2-load{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(180deg,rgba(43,42,66,.96),rgba(21,20,31,.96));color:#ecebf4;font:500 14px/1.4 var(--fb);transition:opacity .25s}
 .c3d2-load.done{opacity:0;pointer-events:none}
-.c3d2-spin{width:38px;height:38px;border:3px solid rgba(29,28,43,.2);border-top-color:var(--accent);border-radius:50%;animation:c3d2spin .8s linear infinite}
+.c3d2-spin{width:38px;height:38px;border:3px solid rgba(236,235,244,.2);border-top-color:var(--accent);border-radius:50%;animation:c3d2spin .8s linear infinite}
 @keyframes c3d2spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.c3d2-spin{animation-duration:2.4s}}
 .c3d2-tools{position:absolute;top:10px;right:10px;display:flex;gap:8px}
-.c3d2-hint{position:absolute;left:12px;bottom:10px;margin:0;font:12px/1.3 var(--fm);color:#1d1c2b;background:rgba(255,255,255,.55);padding:4px 8px;pointer-events:none;direction:ltr}
+.c3d2-hint{position:absolute;left:12px;bottom:10px;margin:0;font:12px/1.3 var(--fm);color:#ecebf4;background:rgba(0,0,0,.45);padding:4px 8px;pointer-events:none;direction:ltr}
 .c3d2-note{position:absolute;inset:auto 12px 12px 12px;margin:0;padding:8px 10px;background:var(--chip);color:var(--fg);font-size:13px}
 .c3d2-note[hidden]{display:none}
 .c3d2-parts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0;padding:0;list-style:none}
@@ -428,9 +427,9 @@ function open(data){
   injectCss();
   const el = document.createElement('div');
   el.className = 'c3d2'; el.dir = 'rtl';
-  el.innerHTML = '<div class="c3d2-wrap"><header><h1>نمای ۳بعدی مدار</h1><p class="sub"></p>' +
-    '<button type="button" data-a="close" aria-label="بستن">✕</button></header>' +
-    '<div class="c3d2-stage"><canvas tabindex="0" aria-label="نمای ۳بعدی مدار. برای چرخش بکش و برای زوم از چرخ ماوس استفاده کن."></canvas>' +
+  el.innerHTML = '<div class="c3d2-wrap"><header><button type="button" data-a="close" aria-label="بستن">✕</button>' +
+    '<h1>نمای سه بعدی مدار</h1><p class="sub"></p></header>' +
+    '<div class="c3d2-stage"><canvas tabindex="0" aria-label="نمای سه بعدی مدار. برای چرخش بکش و برای زوم از چرخ ماوس استفاده کن."></canvas>' +
     '<div class="c3d2-load" role="status" aria-live="polite"><div class="c3d2-spin"></div><span class="c3d2-load-t">در حال بارگذاری…</span></div>' +
     '<div class="c3d2-tools"><button type="button" data-a="reset">بازنشانی نما</button></div>' +
     '<p class="c3d2-hint">Drag to rotate · scroll to zoom · Shift+drag to pan</p><p class="c3d2-note" hidden></p></div>' +
@@ -476,8 +475,8 @@ function open(data){
   const load = el.querySelector('.c3d2-load'), loadT = el.querySelector('.c3d2-load-t');
   const setLoad = t => { loadT.textContent = t; };
   const hideLoad = () => { load.classList.add('done'); setTimeout(() => { if(load.isConnected) load.hidden = true; }, 300); };
-  if(!data.comps.length){ hideLoad(); say('اول چند قطعه روی صفحه بگذار تا نمای ۳بعدی ساخته شود.'); return; }
-  setLoad(window.THREE ? 'در حال ساخت مدل‌ها…' : 'در حال دریافت کتابخانهٔ ۳بعدی…');
+  if(!data.comps.length){ hideLoad(); say('اول چند قطعه روی صفحه بگذار تا نمای سه بعدی ساخته شود.'); return; }
+  setLoad(window.THREE ? 'در حال ساخت مدل‌ها…' : 'در حال دریافت کتابخانهٔ سه بعدی…');
   loadThree().then(() => {
     if(current !== st) return;
     setLoad('در حال ساخت مدل‌ها…');
@@ -485,7 +484,7 @@ function open(data){
     requestAnimationFrame(() => setTimeout(() => {
       if(current !== st) return;
       try{ start(st, stage, canvas, say, data, hideLoad); }
-      catch(err){ hideLoad(); say('ساخت نمای ۳بعدی ناموفق بود.'); }
+      catch(err){ hideLoad(); say('ساخت نمای سه بعدی ناموفق بود.'); }
     }, 30));
   }).catch(() => { if(current === st){ hideLoad(); say('بارگذاری three.js ممکن نشد (اینترنت یا فایل js/vendor/three.min.js را چک کن).'); } });
 }
@@ -494,7 +493,7 @@ function start(st, stage, canvas, say, data, ready){
   const T = window.THREE;
   let renderer;
   try{ renderer = new T.WebGLRenderer({canvas, antialias:true, alpha:true}); }
-  catch(e){ say('این مرورگر WebGL را اجرا نکرد، پس نمای ۳بعدی در دسترس نیست.'); ready(); return; }
+  catch(e){ say('این مرورگر WebGL را اجرا نکرد، پس نمای سه بعدی در دسترس نیست.'); ready(); return; }
   renderer.setClearColor(0x000000, 0);
   st.renderer = renderer;
   const on = (t, ev, fn, o) => { t.addEventListener(ev, fn, o); st.off.push(() => t.removeEventListener(ev, fn, o)); };
@@ -614,7 +613,7 @@ function close(){
   st.el.remove();
 }
 
-// پیش‌بارگذاری کتابخانه (مثلاً وقتی ماوس روی دکمهٔ ۳بعدی می‌رود) تا با کلیک آماده باشد
+// پیش‌بارگذاری کتابخانه (مثلاً وقتی ماوس روی دکمهٔ سه بعدی می‌رود) تا با کلیک آماده باشد
 const preload = () => { loadThree().catch(() => {}); };
 window.Circuit3D = {open, close, preload};
 })();
