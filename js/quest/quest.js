@@ -29,24 +29,24 @@ const TEST_MODE = (() => {
    quest-robotics.js    → QUESTS_ROBOTICS
    ترتیب قفل‌شدن همان ترتیب این آرایه است. */
 const QUESTS = [
-  ...QUESTS_CIRCUIT,
   ...QUESTS_ELECTRONICS,
   ...QUESTS_ARDUINO,
   ...QUESTS_STM32,
+  ...QUESTS_CIRCUIT,
   ...QUESTS_ROBOTICS
 ];
 
 const QUEST_GROUPS = [
-  { id: 'circuit', icon: '🔌', title: 'طراحی مدار' },
   { id: 'electronics', icon: '🔋', title: 'الکترونیک' },
   { id: 'arduino',  icon: '⚡', title: 'آردوینو' },
   { id: 'stm32',    icon: '🔵', title: 'STM32' },
+  { id: 'circuit', icon: '🔌', title: 'طراحی مدار' },
   { id: 'robotics', icon: '🤖', title: 'رباتیک' }
 ];
 (function assignQuestGroups(){
-  let g = 'circuit';
+  let g = 'electronics';
   QUESTS.forEach(q => {
-    if(q.id === 'volt_current') g = 'electronics';
+    if(q.id === 'schematic_intro') g = 'circuit';
     else if(q.id === 'hello') g = 'arduino';
     else if(q.id === 'stm32_cube') g = 'stm32';
     else if(q.id === 'line_intro') g = 'robotics';
@@ -681,6 +681,9 @@ const modalSim = document.getElementById('modalSim');
 const nextMissionBtn = document.getElementById('nextMissionBtn');
 let activeSim = null;
 
+const READ_ONLY_SIMS = { schematic_intro: mountSchematicIntroSim, footprint_intro: mountFootprintIntroSim };
+const READ_ONLY_MISSIONS = new Set(Object.keys(READ_ONLY_SIMS));
+
 const CONCEPT_SIMS = {
   // الکترونیک — quest-sims-electronics.js
   led_circuit: mountLedCircuitMission,
@@ -720,6 +723,8 @@ const LINE_SENSOR_INTRO_TEXT = '🤖 ربات تعقیب خط اول از همه
 const LINE_LOGIC_INTRO_TEXT = '🧠 مغزِ ربات یه فهرست قانونه! اول با ربات متحرک ببین هر قانون چی کار می‌کنه: «شروع» رو بزن و قانون‌های چپ و راست رو روشن کن. بعدش پایین‌تر مثل STM32CubeIDE اول پایه‌ها رو تو CubeMX تنظیم کن و بعد همین قانون‌ها رو با if و else if کد بزن؛ ربات دقیقاً کدِ تو رو اجرا می‌کنه.';
 
 const CIRCUIT_INTRO_TEXT = {
+  schematic_intro: '📐 قبل از بستن مدار باید زبان نقشه‌ی مدار را بدانی! مدار را در دو حالت «عکس واقعی» و «شماتیک» ببین و بخوان هر نماد چه قطعه‌ای است. بعد «مطالعه کردم ✓» را بزن.',
+  footprint_intro: '🧩 شماتیک فقط اتصال‌ها را می‌گوید؛ فوت‌پرینت جای پایه‌های قطعه روی برد است. هر قطعه را انتخاب کن و فوت‌پرینتش را ببین. بعد «مطالعه کردم ✓» را بزن.',
   led_circuit: '🔌 اولین مدارت رو خودت می‌بندی! از فهرست کنار صفحه کانکتور باتری، مقاومت و LED قرمز رو بردار، روی صفحه بذار و با ابزار «سیم‌کشی» بهم وصل‌شون کن. حواست باشه: LED بدون مقاومت می‌سوزه و آندش باید سمت مثبت باشه! گیر کردی؟ «گزینه‌ها ← نمایش پاسخ».',
   traffic_light: '🚦 سه تا LED، سه تا مقاومت، یک کانکتور باتری! هر سه مدار از همون دو سیم کانکتور تغذیه می‌شن.'
 };
@@ -959,12 +964,20 @@ function onNodeClick(i, locked, evt){
       nextMissionBtn.style.display = '';
       nextMissionBtn.textContent = 'مأموریت بعدی ⟶';
     }
+  } else if(READ_ONLY_MISSIONS.has(q.id)){
+    modalSim.style.display = '';
+    modalSim.closest('.modal').classList.add('has-sim');
+    document.querySelector('.modal .reward-row').style.display = '';
+    activeSim = READ_ONLY_SIMS[q.id](modalSim, { alreadyDone: done });
+    btn.style.display = '';
+    btn.textContent = done ? 'قبلاً تکمیل شده ✓' : 'مطالعه کردم ✓';
+    btn.disabled = done;
   } else {
     modalSim.style.display = 'none';
     modalSim.closest('.modal').classList.remove('has-sim');
     document.querySelector('.modal .reward-row').style.display = '';
     btn.style.display = '';
-    btn.textContent = done ? 'قبلاً تکمیل شده ✓' : 'مأموریت را تکمیل کردم';
+    btn.textContent = done ? 'قبلاً تکمیل شده ✓' : (READ_ONLY_MISSIONS.has(q.id) ? 'مطالعه کردم ✓' : 'مأموریت را تکمیل کردم');
     btn.disabled = done;
   }
   openOverlay();
