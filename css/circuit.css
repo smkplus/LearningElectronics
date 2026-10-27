@@ -4,12 +4,15 @@
 .cv-wrap{ max-width:1180px; margin:16px auto 0; padding:0 14px 24px; }
 
 .cv-toolbar{ display:flex; flex-wrap:wrap; gap:8px 14px; margin-bottom:10px; }
+.cv-side .cv-toolbar{ margin-bottom:0; }
 .cv-group{ display:flex; gap:6px; position:relative; }
 .cv-btn{
   font-family:'Vazirmatn'; font-weight:700; font-size:13px; color:var(--parchment);
   background:var(--panel); border:1px solid var(--panel-border); border-radius:9px;
   padding:8px 13px; cursor:pointer; transition:all .15s ease;
 }
+.cv-btn{ display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+.cv-btn svg{ width:16px; height:16px; flex:none; }
 .cv-btn:hover{ border-color:var(--copper); }
 .cv-btn.cv-ico{ padding:8px 10px; display:inline-flex; align-items:center; }
 .cv-btn.cv-ico svg{ width:17px; height:17px; }

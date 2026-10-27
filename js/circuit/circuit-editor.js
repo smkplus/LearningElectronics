@@ -95,6 +95,7 @@ function create(root, opts){
   const cleanup = [];
   const on = (t, ev, fn, o) => { t.addEventListener(ev, fn, o); cleanup.push(() => t.removeEventListener(ev, fn, o)); };
 
+  const ico = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
   const glowDefs = Object.keys(GLOWS).map(c => `<radialGradient id="${uid}-gl${GLOWS[c]}"><stop offset="0" stop-color="${c}" stop-opacity=".65"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></radialGradient>`).join('');
   const menu = mission
     ? '<button data-act="solution">نمایش پاسخ</button><button data-act="clear" class="danger">پاک‌کردن همه</button>'
@@ -104,15 +105,15 @@ function create(root, opts){
 <div class="cv-wrap${mission ? ' cv-mission' : ''}">
   ${opts.note ? `<div class="sim-hw-note">${opts.note}</div>` : ''}
   <div class="cv-toolbar">
-    ${'<div class="cv-group cv-seg"><button class="cv-btn on" data-vw="sch">شماتیک</button><button class="cv-btn" data-vw="pcb">PCB / فوت‌پرینت</button></div>'}
+    <div class="cv-group cv-seg"><button class="cv-btn on" data-vw="sch">${ico('<path d="M2 12h4l2-5 4 10 4-10 2 5h4"/>')}شماتیک</button><button class="cv-btn" data-vw="pcb">${ico('<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>')}PCB / فوت‌پرینت</button></div>
     <div class="cv-group cv-sch-only">
-      <button class="cv-btn" data-tool="select" title="انتخاب (V)">انتخاب</button>
-      <button class="cv-btn" data-tool="wire" title="سیم‌کشی (W)">سیم‌کشی</button>
-      <button class="cv-btn" data-tool="pan" title="جابه‌جایی صفحه (H)">دست</button>
+      <button class="cv-btn" data-tool="select" title="انتخاب (V)">${ico('<path d="m5 3 14 8-6 2-3 6z"/>')}انتخاب</button>
+      <button class="cv-btn" data-tool="wire" title="سیم‌کشی (W)">${ico('<circle cx="5" cy="18" r="2"/><circle cx="19" cy="6" r="2"/><path d="M7 18h6a2 2 0 0 0 2-2V8a2 2 0 0 1 2-2"/>')}سیم‌کشی</button>
+      <button class="cv-btn" data-tool="pan" title="جابه‌جایی صفحه (H)">${ico('<path d="M18 11V6a2 2 0 0 0-4 0M14 10V4a2 2 0 0 0-4 0v2M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>')}دست</button>
     </div>
     <div class="cv-group cv-sch-only">
-      <button class="cv-btn" id="cvRotate" title="چرخش (R)">چرخش</button>
-      <button class="cv-btn" id="cvDelete" title="حذف (Delete)">حذف</button>
+      <button class="cv-btn" id="cvRotate" title="چرخش (R)">${ico('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>')}چرخش</button>
+      <button class="cv-btn" id="cvDelete" title="حذف (Delete)">${ico('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v5M14 11v5"/>')}حذف</button>
       <button class="cv-btn cv-ico" id="cvUndo" title="واگرد (Ctrl+Z)" aria-label="واگرد"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5 4 9l4 4"/><path d="M4 9h10a6 6 0 0 1 0 12h-4"/></svg></button>
       <button class="cv-btn cv-ico" id="cvRedo" title="ازنو (Ctrl+Y)" aria-label="ازنو"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 5 4 4-4 4"/><path d="M20 9H10a6 6 0 0 0 0 12h4"/></svg></button>
     </div>
@@ -120,7 +121,7 @@ function create(root, opts){
       <button class="cv-btn cv-3d" id="cv3d" title="نمای ۳بعدی مدار (مثل KiCad)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 3 4 7.5v9L12 21l8-4.5v-9z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/></svg><span>سه بعدی</span></button>
     </div>
     <div class="cv-group cv-menu-wrap">
-      <button class="cv-btn" id="cvMenuBtn">${mission ? 'گزینه‌ها ▾' : 'فایل ▾'}</button>
+      <button class="cv-btn" id="cvMenuBtn">${ico('<path d="M4 7h16M4 12h16M4 17h16"/>')}${mission ? 'گزینه‌ها ▾' : 'فایل ▾'}</button>
       <div class="cv-menu" id="cvMenu">${menu}</div>
       <input type="file" id="cvFile" accept=".json,application/json" hidden>
     </div>
@@ -152,6 +153,7 @@ function create(root, opts){
 </div>`;
 
   const $ = id => root.querySelector('#' + id);
+  $('cvPalette').before(root.querySelector('.cv-toolbar'));
   const wrap = root.querySelector('.cv-wrap');
   const svg = $('cvSvg'), world = $('cvWorld'), stage = $('cvStage'), gridPat = root.querySelector(`#${uid}-grid`), bg = $('cvBg');
   const propsEl = $('cvProps'), hintEl = $('cvHint'), coordEl = $('cvCoord'), zoomEl = $('cvZoomTxt'), savedEl = $('cvSaved');
