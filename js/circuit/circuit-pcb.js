@@ -215,7 +215,7 @@ function create(host, api){
     get3D(){
       rebuild(); save();
       return {
-        comps:M.comps.map(c => ({t:c.t, x:c.px, y:c.py, r:c.r, ref:c.ref, val:c.val, on:c.on, st:c.st, power:false, box:c.bb, pins:c.abs.map(a => [a.x, a.y])})),
+        comps:M.comps.map(c => ({t:c.t, x:c.px, y:c.py, r:c.r, ref:c.ref, val:c.val, on:c.on, st:c.st, power:false, fp:c.f.n, box:c.bb, pins:c.abs.map(a => [a.x, a.y])})),
         wires:M.segs
       };
     }
