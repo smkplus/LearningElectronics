@@ -179,3 +179,21 @@
   .pcb{ flex-direction:column-reverse; }
   .pcb-side{ width:auto; max-height:38%; border-inline-end:0; border-top:1px solid #26354d; }
 }
+
+/* آشنایی با طراحی مدار: شماتیک و فوت‌پرینت */
+.ci-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.ci-tabs .sim-btn.on{outline:2px solid var(--trace,#57d8a3)}
+.ci-svg,.ci-sym{width:100%;max-width:420px;display:block;margin:8px auto;background:#161c28;border:1px solid var(--panel-border,#2a3345);border-radius:10px}
+.ci-sym{max-width:200px;height:90px}
+.ci-svg .b,.ci-sym .b,.ci-part svg .b{fill:none;stroke:#e79a54;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ci-svg .w{fill:none;stroke:#57d8a3;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ci-svg text{fill:#e8e2d0;font:600 12px Vazirmatn,sans-serif}
+.ci-cap{font-size:14px;line-height:1.9;color:var(--parchment,#e8e2d0);margin:6px 2px 8px}
+.ci-title{font-weight:700;font-size:14px;color:var(--gold,#d4af37);margin:12px 2px 0}
+.ci-parts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:10px 0}
+.ci-part{border:1px solid var(--panel-border,#2a3345);border-radius:10px;padding:10px;background:#111722}
+.ci-part svg{width:100%;height:60px;background:#161c28;border-radius:8px}
+.ci-part b{display:block;margin:8px 0 2px;color:var(--parchment,#e8e2d0)}
+.ci-part p{margin:0;font-size:13px;line-height:1.9;color:var(--muted,#9aa3b2)}
+.ci-chk{display:flex;align-items:center;gap:8px;justify-content:center;margin:6px 0;cursor:pointer;font-size:14px}
+.ci-pad{cursor:pointer}
