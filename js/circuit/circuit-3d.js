@@ -45,12 +45,12 @@ const FAM = t => ({LEDY:'LED', LEDG:'LED', NPN:'BJT', PNP:'BJT'}[t] || t);
 const DEF_FP = {R:'R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal', C:'C_Disc_D5.0mm_W2.5mm_P5.00mm', CP:'CP_Radial_D8.0mm_P3.50mm',
   L:'L_Axial_L9.5mm_D4.0mm_P12.70mm_Horizontal', POT:'Potentiometer_Bourns_3386P_Vertical', D:'D_DO-35_SOD27_P10.16mm_Horizontal',
   LED:'LED_D5.0mm', BJT:'TO-92_Inline', OPAMP:'DIP-8_W7.62mm', BT:'TerminalBlock_2P_P10.16mm', BC:'Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical',
-  SW:'SW_Slide_SPST_P10.16mm', LAMP:'Lamp_E10_Holder'};
+  SW:'SW_Slide_SPST_P10.16mm', PB:'Button_Switch_THT:SW_PUSH_6mm', LAMP:'Lamp_E10_Holder'};
 const fpOf = c => c.t === 'BC' ? DEF_FP.BC : (c.fp || DEF_FP[FAM(c.t)] || '');
 const NAMES = {R:'مقاومت', D:'دیود', LED:'LED قرمز ۵ میلی‌متری', LEDY:'LED زرد ۵ میلی‌متری', LEDG:'LED سبز ۵ میلی‌متری', C:'خازن', CP:'خازن الکترولیتی', L:'سلف',
-  POT:'پتانسیومتر', NPN:'ترانزیستور NPN', PNP:'ترانزیستور PNP', OPAMP:'آپ‌امپ', BT:'باتری ۹ ولت', BC:'کانکتور باتری (هدر ۱×۲)', SW:'کلید', LAMP:'لامپ'};
+  POT:'پتانسیومتر', NPN:'ترانزیستور NPN', PNP:'ترانزیستور PNP', OPAMP:'آپ‌امپ', BT:'باتری ۹ ولت', BC:'کانکتور باتری (هدر ۱×۲)', SW:'کلید', PB:'کلید فشاری ۶ میلی‌متری', LAMP:'لامپ'};
 const SWATCH = {R:'#e1b57d', D:'#c9772e', LED:'#b31a0d', LEDY:'#d9a400', LEDG:'#1d8f45', C:'#e0a23c', CP:'#1f3a78', L:'#c46a2b', POT:'#1b4fa8',
-  NPN:'#262626', PNP:'#262626', OPAMP:'#262626', BT:'#c58a3b', BC:'#262626', SW:'#d0d4db', LAMP:'#ffe27a'};
+  NPN:'#262626', PNP:'#262626', OPAMP:'#262626', BT:'#c58a3b', BC:'#262626', SW:'#d0d4db', PB:'#d2d1c7', LAMP:'#ffe27a'};
 const fa = n => Number(n).toLocaleString('fa-IR');
 
 /* ---------- ابعاد برد (میلی‌متر) ---------- */
@@ -166,7 +166,7 @@ function build(T, data){
   const circle = (cx, cz, r) => { const p = []; for(let i = 0; i <= 64; i++){ const t = i / 64 * Math.PI * 2; p.push([cx + r * Math.cos(t), cz + r * Math.sin(t)]); } return p; };
   const SILK = {
     C:[rect(-3.4,-2.5,3.4,2.5)], CP:[circle(0,0,4)], L:[rect(-4.75,-2,4.75,2)], POT:[rect(-5,-7.5,5,2.5)], BJT:[circle(.5,0,3)],
-    OPAMP:[rect(-3.5,-5,3.5,5)], BT:[rect(-7,-3.8,7,3.8)], SW:[rect(-6.5,-3,6.5,3)], LAMP:[circle(0,0,5.5)]
+    OPAMP:[rect(-3.5,-5,3.5,5)], BT:[rect(-7,-3.8,7,3.8)], SW:[rect(-6.5,-3,6.5,3)], PB:[rect(-3,-3,3,3), circle(0,0,1.9)], LAMP:[circle(0,0,5.5)]
   };
   function silkFor(g, c, fp){
     const fam = FAM(c.t);
@@ -279,6 +279,17 @@ function build(T, data){
   };
 
   /* قطعاتی که در فایل HTML نبودند: همان مدل ساده‌ی قبلی، با مقیاس میلی‌متر و متریال Phong */
+  // کلید فشاری 6mm (SW_PUSH_6mm) — از فایل STEP؛ مبدأ = مرکز چهار پایه
+  REAL.PB = (g, c) => {
+    const m = modelGroup(g), s = new T.Group(); s.position.set(-3.15, 2.25, 0); m.add(s);
+    const shell = phong(0xd2d1c7, 0x888888, 60), dark = phong(0x252525, 0x111111, 20);
+    const put = (o, x, y, z) => { o.position.set(x, y, z); s.add(o); };
+    const zcyl = (r, h, mt) => new T.Mesh(axisToZ(new T.CylinderGeometry(r, r, h, 32)), mt);
+    put(box(6, 6, 3.5, shell), 3.15, -2.25, 1.75);
+    put(zcyl(1.75, .8, dark), 3.15, -2.25, 3.9 - (c.on ? .35 : 0));
+    [[1.15, -4.25], [5.15, -4.25], [1.15, -.25], [5.15, -.25]].forEach(p => put(zcyl(.5, .5, dark), p[0], p[1], 3.85));
+    [0, 6.3].forEach(x => [0, -4.5].forEach(y => put(box(.3, .7, 5, M.silver), x, y, -1)));
+  };
   const legs2 = (g, pins, rest, y) => pins.forEach(p => g.add(tube(P3(p[0], 0, p[1]), P3(p[0] * rest, y, 0), .09)));
   const axialLegs = (g, y, bx) => [-1, 1].forEach(s => { g.add(tube(P3(s * 2, 0, 0), P3(s * 2, y, 0), .09)); g.add(tube(P3(s * 2, y, 0), P3(s * bx, y, 0), .09)); });
   const LEGACY = {

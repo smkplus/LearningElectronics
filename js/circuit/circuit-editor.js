@@ -57,6 +57,8 @@ const DEFS = {
   SW:{fa:'کلید',pre:'SW',val:'SW',lab:'two',pins:[[-40,0,'1'],[40,0,'2']],box:[-40,-18,40,6],edge:'wire',sw:true,
     draw:c => '<path class="b" d="M-40 0H-20M20 0H40"/>' + (c && c.on ? '<path class="b" d="M-20 0H20"/>' : '<path class="b" d="M-20 0L18 -14"/>') +
       '<circle class="b" cx="-20" cy="0" r="2.5"/><circle class="b" cx="20" cy="0" r="2.5"/>'},
+  PB:{fa:'کلید فشاری ۶mm',pre:'SW',val:'SW_Push',lab:'two',pins:[[-40,0,'1'],[40,0,'2']],box:[-40,-30,40,8],edge:'wire',sw:true,push:true,
+    draw:c => { const y = c && c.on ? -6 : -14; return '<path class="b" d="M-40 0H-24M24 0H40"/><circle class="b" cx="-20" cy="0" r="4"/><circle class="b" cx="20" cy="0" r="4"/>' + `<path class="b" d="M-24 ${y}H24M0 ${y}V-28"/>`; }},
   LAMP:{fa:'لامپ',pre:'LA',val:'6V',lab:'two',pins:[[-40,0,'1'],[40,0,'2']],box:[-40,-16,40,16],edge:'load',
     draw:'<path class="b" d="M-40 0H-16M16 0H40"/><circle class="b" r="16"/><path class="b" d="M-11.3 -11.3L11.3 11.3M-11.3 11.3L11.3 -11.3"/>',
     lit:'<circle r="15" fill="#ffd95a" opacity=".92"/>', glow:'#ffd95a'},
@@ -70,7 +72,7 @@ const drawOf = (c,d) => typeof d.draw === 'function' ? d.draw(c) : d.draw;
 const GROUPS = [
   ['قطعات پایه', ['R','C','CP','L','POT']],
   ['نیمه‌هادی', ['D','LED','LEDY','LEDG','NPN','PNP','OPAMP']],
-  ['منبع و کلید', ['BT','BC','SW','LAMP','VCC','GND']]
+  ['منبع و کلید', ['BT','BC','SW','PB','VCC','GND']]
 ];
 const HINTS = {
   select:'انتخاب: روی قطعه یا سیم بزن، بکشش تا جابه‌جا شود. روی کلید دوبار بزن تا باز/بسته شود. روی فضای خالی بکش تا چند مورد را با هم انتخاب کنی.',
@@ -234,7 +236,7 @@ function create(root, opts){
       if(!c || !Object.prototype.hasOwnProperty.call(DEFS, c.t)) return;
       const x = num(c.x), y = num(c.y);
       if(x === null || y === null) return;
-      out.comps.push({id:out.seq++, t:c.t, x, y, r:(Number(c.r)|0)&3, ref:String(c.ref||'').slice(0,12), val:String(c.val||'').slice(0,24), on:!!c.on});
+      out.comps.push({id:out.seq++, t:c.t, x, y, r:(Number(c.r)|0)&3, ref:String(c.ref||'').slice(0,12), val:String(c.val||'').slice(0,24), on:!!c.on && c.t !== 'PB'});
     });
     d.wires.slice(0,5000).forEach(w => {
       if(!w) return;
@@ -556,7 +558,8 @@ function create(root, opts){
       propsEl.innerHTML = `<div class="cv-props-title">${esc(d.fa)}</div>` +
         (d.power ? '' : `<label>نام<input id="cvRef" value="${esc(c.ref)}" maxlength="12"></label>`) +
         (d.lab === 'none' ? '' : `<label>مقدار<input id="cvVal" value="${esc(c.val)}" maxlength="24"></label>`) +
-        (d.sw ? `<button class="cv-btn" id="cvSw">${c.on ? 'کلید بسته است — باز کن' : 'کلید باز است — ببند'}</button>` : '') +
+        (d.push ? '<button class="cv-btn" id="cvPush">نگه دار تا کلید فشرده شود</button>' : '') +
+        (d.sw && !d.push ? `<button class="cv-btn" id="cvSw">${c.on ? 'کلید بسته است — باز کن' : 'کلید باز است — ببند'}</button>` : '') +
         `<div class="cv-pins">پایه‌ها: ${d.pins.map(p => esc(p[2])).join(' • ')}</div>`;
       const bind = (id,prop) => {
         const el = propsEl.querySelector('#'+id); if(!el) return;
@@ -569,6 +572,11 @@ function create(root, opts){
       bind('cvRef','ref'); bind('cvVal','val');
       const sw = propsEl.querySelector('#cvSw');
       if(sw) sw.addEventListener('click', () => toggleSw(c));
+      const pb = propsEl.querySelector('#cvPush');
+      if(pb){
+        const rel = () => { window.removeEventListener('pointerup', rel); window.removeEventListener('pointercancel', rel); if(c.on){ c.on = false; render(); } };
+        pb.addEventListener('pointerdown', e => { e.preventDefault(); if(c.on) return; c.on = true; render(); window.addEventListener('pointerup', rel); window.addEventListener('pointercancel', rel); });
+      }
       return;
     }
     if(total === 1){
@@ -842,6 +850,7 @@ function create(root, opts){
     const h = hitTest(toWorld(e));
     if(!h || h.k !== 'c') return;
     const c = S.comps.find(x => x.id === h.id);
+    if(c && DEFS[c.t].push){ c.on = true; render(); setTimeout(() => { c.on = false; if(!stopped) render(); }, 350); return; }
     if(c && DEFS[c.t].sw){ toggleSw(c); return; }
     const el = propsEl.querySelector('#cvVal') || propsEl.querySelector('#cvRef');
     if(el){ el.focus(); el.select(); }
