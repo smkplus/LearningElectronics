@@ -20,6 +20,17 @@ const CIRCUIT_MISSIONS = {
       [{t:'R',x:20,y:-60,ref:'R1',val:'330Ω'},{t:'LED',x:140,y:0,r:1,ref:'D1'}],
       [[-60,-20,-60,-60],[-60,-60,-20,-60],[60,-60,140,-60],[140,-60,140,-40],[140,40,140,60],[140,60,-60,60],[-60,60,-60,20]])
   },
+  switch_lamp:{
+    note:'هدف: یک کلید را سری با مقاومت و LED ببند. کلید در ابتدا باز است؛ روی آن دوبار بزن (یا از پنل کنارش) تا ببندی و چراغ روشن شود.',
+    palette:['BC','R','LED','SW'],
+    tasks:[
+      cktPartsTask('کانکتور باتری، مقاومت، LED و کلید را روی صفحه بگذار', ['BC','R','LED','SW']),
+      {label:'کلید را در مسیر مدار وصل کن و ببند تا LED روشن شود', test:A => A.lit('SW') >= 1 && A.lit('LED') >= 1 && A.burnt === 0}
+    ],
+    solution:cktSolution(
+      [{t:'R',x:20,y:-60,ref:'R1',val:'330Ω'},{t:'SW',x:140,y:-60,ref:'SW1',on:true},{t:'LED',x:240,y:0,r:1,ref:'D1'}],
+      [[-60,-20,-60,-60],[-60,-60,-20,-60],[60,-60,100,-60],[180,-60,240,-60],[240,-60,240,-40],[240,40,240,60],[240,60,-60,60],[-60,60,-60,20]])
+  },
   traffic_light:{
     note:'هدف: سه LED قرمز، زرد و سبز را هرکدام با مقاومت خودش به کانکتور باتری ۹ ولتی وصل کن تا هر سه روشن شوند. کلید (SW) اختیاری است: روی آن دوبار بزن تا باز/بسته شود.',
     palette:['BC','R','LED','LEDY','LEDG','SW'],
@@ -53,6 +64,7 @@ function mountCircuitMission(container, id, { onSuccess, alreadyDone } = {}){
   return { stop(){ ed.stop(); } };
 }
 const mountLedCircuitMission = (c, o) => mountCircuitMission(c, 'led_circuit', o);
+const mountSwitchLampMission = (c, o) => mountCircuitMission(c, 'switch_lamp', o);
 const mountTrafficLightMission = (c, o) => mountCircuitMission(c, 'traffic_light', o);
 
 /* ---------- آشنایی با طراحی مدار: شماتیک و فوت‌پرینت (آموزشی) ---------- */

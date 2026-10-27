@@ -687,6 +687,7 @@ const READ_ONLY_MISSIONS = new Set(Object.keys(READ_ONLY_SIMS));
 const CONCEPT_SIMS = {
   // الکترونیک — quest-sims-electronics.js
   led_circuit: mountLedCircuitMission,
+  switch_lamp: mountSwitchLampMission,
   traffic_light: mountTrafficLightMission,
   volt_current: mountVoltCurrentSim,
   resistor_calc: mountResistorCalcSim,
@@ -726,6 +727,7 @@ const CIRCUIT_INTRO_TEXT = {
   schematic_intro: '📐 قبل از بستن مدار باید زبان نقشه‌ی مدار را بدانی! مدار را در دو حالت «عکس واقعی» و «شماتیک» ببین و بخوان هر نماد چه قطعه‌ای است. بعد «مطالعه کردم ✓» را بزن.',
   footprint_intro: '🧩 شماتیک فقط اتصال‌ها را می‌گوید؛ فوت‌پرینت جای پایه‌های قطعه روی برد است. هر قطعه را انتخاب کن و فوت‌پرینتش را ببین. بعد «مطالعه کردم ✓» را بزن.',
   led_circuit: '🔌 اولین مدارت رو خودت می‌بندی! از فهرست کنار صفحه کانکتور باتری، مقاومت و LED قرمز رو بردار، روی صفحه بذار و با ابزار «سیم‌کشی» بهم وصل‌شون کن. حواست باشه: LED بدون مقاومت می‌سوزه و آندش باید سمت مثبت باشه! گیر کردی؟ «گزینه‌ها ← نمایش پاسخ».',
+  switch_lamp: '💡 یک کلید بین مقاومت و LED بگذار و مدار را ببند. کلید اول باز است؛ روی آن دوبار بزن تا ببندد و چراغ روشن شود. گیر کردی؟ «گزینه‌ها ← نمایش پاسخ».',
   traffic_light: '🚦 سه تا LED، سه تا مقاومت، یک کانکتور باتری! هر سه مدار از همون دو سیم کانکتور تغذیه می‌شن.'
 };
 const HAL_INTRO_TEXT = {
