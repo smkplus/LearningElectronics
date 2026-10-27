@@ -44,11 +44,11 @@ function cameraBasis(T){
 const FAM = t => ({LEDY:'LED', LEDG:'LED', NPN:'BJT', PNP:'BJT'}[t] || t);
 const DEF_FP = {R:'R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal', C:'C_Disc_D5.0mm_W2.5mm_P5.00mm', CP:'CP_Radial_D8.0mm_P3.50mm',
   L:'L_Axial_L9.5mm_D4.0mm_P12.70mm_Horizontal', POT:'Potentiometer_Bourns_3386P_Vertical', D:'D_DO-35_SOD27_P10.16mm_Horizontal',
-  LED:'LED_D5.0mm', BJT:'TO-92_Inline', OPAMP:'DIP-8_W7.62mm', BT:'TerminalBlock_2P_P10.16mm', BC:'PinHeader_2x02_P5.08mm_Vertical',
+  LED:'LED_D5.0mm', BJT:'TO-92_Inline', OPAMP:'DIP-8_W7.62mm', BT:'TerminalBlock_2P_P10.16mm', BC:'Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical',
   SW:'SW_Slide_SPST_P10.16mm', LAMP:'Lamp_E10_Holder'};
-const fpOf = c => c.fp || DEF_FP[FAM(c.t)] || '';
+const fpOf = c => c.t === 'BC' ? DEF_FP.BC : (c.fp || DEF_FP[FAM(c.t)] || '');
 const NAMES = {R:'مقاومت', D:'دیود', LED:'LED قرمز ۵ میلی‌متری', LEDY:'LED زرد ۵ میلی‌متری', LEDG:'LED سبز ۵ میلی‌متری', C:'خازن', CP:'خازن الکترولیتی', L:'سلف',
-  POT:'پتانسیومتر', NPN:'ترانزیستور NPN', PNP:'ترانزیستور PNP', OPAMP:'آپ‌امپ', BT:'باتری ۹ ولت', BC:'کانکتور باتری', SW:'کلید', LAMP:'لامپ'};
+  POT:'پتانسیومتر', NPN:'ترانزیستور NPN', PNP:'ترانزیستور PNP', OPAMP:'آپ‌امپ', BT:'باتری ۹ ولت', BC:'کانکتور باتری (هدر ۱×۲)', SW:'کلید', LAMP:'لامپ'};
 const SWATCH = {R:'#e1b57d', D:'#c9772e', LED:'#b31a0d', LEDY:'#d9a400', LEDG:'#1d8f45', C:'#e0a23c', CP:'#1f3a78', L:'#c46a2b', POT:'#1b4fa8',
   NPN:'#262626', PNP:'#262626', OPAMP:'#262626', BT:'#c58a3b', BC:'#262626', SW:'#d0d4db', LAMP:'#ffe27a'};
 const fa = n => Number(n).toLocaleString('fa-IR');
@@ -182,7 +182,11 @@ function build(T, data){
       const big = /DO-41/.test(fp), hx = big ? 2.5 : 1.9, hy = big ? 1.3 : .95;
       silk(g, rect(-hx, -hy, hx, hy)); silk(g, [[hx - .8, -hy], [hx - .8, hy]]);
     } else if(fam === 'BC'){
-      [-5.08, 5.08].forEach(x => silk(g, rect(x - 1.33, -3.87, x + 1.33, 3.87)));
+      // سیلک هدر ۱×۲ دقیقاً مثل HTML (پین ۱ در z=‎−۱٫۲۷)
+      const sk = pts => silk(g, pts.map(q => [q[0], q[1] - 1.27]));
+      sk([[0, -1.33], [-1.33, -1.33], [-1.33, 0]]);
+      sk([[-1.33, 1.27], [-1.33, 3.87], [1.33, 3.87], [1.33, 1.27], [-1.33, 1.27]]);
+      sk([[0, -1.33], [1.33, -1.33], [1.33, 0]]);
     } else (SILK[fam] || []).forEach(p => silk(g, p));
   }
 
@@ -254,17 +258,22 @@ function build(T, data){
       });
       if(lit) glow(g, def.on, 9, 16);
     },
-    // کانکتور باتری: دو ستون هدر ۱×۲ با گام ۵٫۰۸ میلی‌متر (مدل هدر HTML)
+    // کانکتور باتری: هدر ۱×۲ با گام ۲٫۵۴ میلی‌متر، عیناً مدل HTML
     BC(g){
-      [-5.08, 5.08].forEach(x => {
-        const pl = new T.Mesh(new T.BoxGeometry(2.54, 2.54, 7.62), M.plastic); pl.position.set(x, 1.27, 0); g.add(pl);
-        [-2.54, 2.54].forEach(z => {
-          const shaft = new T.Mesh(new T.BoxGeometry(.64, 11.22, .64), M.gold); shaft.position.set(x, 2.77, z); g.add(shaft);
-          const tg = new T.CylinderGeometry(.2263, .4525, .16, 4, 1); tg.rotateY(Math.PI / 4);
-          const tip = new T.Mesh(tg, M.gold); tip.position.set(x, 8.46, z); g.add(tip);
-          const bg = new T.CylinderGeometry(.4525, .2263, .16, 4, 1); bg.rotateY(Math.PI / 4);
-          const bot = new T.Mesh(bg, M.gold); bot.position.set(x, -2.92, z); g.add(bot);
-        });
+      const m = modelGroup(g), plastic = M.plastic, gold = M.gold;
+      const pts = [[-1.016, 1.27], [-1.27, 1.016], [-1.27, -1.016], [-1.016, -1.27], [-1.27, -1.524], [-1.27, -3.556],
+        [-1.016, -3.81], [1.016, -3.81], [1.27, -3.556], [1.27, -1.524], [1.016, -1.27], [1.27, -1.016],
+        [1.27, 1.016], [1.016, 1.27]];
+      const sh = new T.Shape();
+      pts.forEach((q, k) => { if(k) sh.lineTo(q[0], q[1] + 1.27); else sh.moveTo(q[0], q[1] + 1.27); });
+      sh.closePath();
+      m.add(new T.Mesh(new T.ExtrudeGeometry(sh, {depth:2.54, bevelEnabled:false}), plastic));
+      [1.27, -1.27].forEach(y => {
+        const shaft = new T.Mesh(new T.BoxGeometry(.64, .64, 11.22), gold); shaft.position.set(0, y, 2.77); m.add(shaft);
+        const tg = new T.CylinderGeometry(.2263, .4525, .16, 4, 1); tg.rotateY(Math.PI / 4); axisToZ(tg);
+        const tip = new T.Mesh(tg, gold); tip.position.set(0, y, 8.46); m.add(tip);
+        const bg = new T.CylinderGeometry(.4525, .2263, .16, 4, 1); bg.rotateY(Math.PI / 4); axisToZ(bg);
+        const bot = new T.Mesh(bg, gold); bot.position.set(0, y, -2.92); m.add(bot);
       });
     }
   };
@@ -345,13 +354,14 @@ function build(T, data){
   data.comps.forEach(c => {
     if(c.power) return;
     const g = new T.Group();
-    g.position.set(c.x * MM, 0, c.y * MM);
+    const pc = c.hc || [c.x, c.y];
+    g.position.set(pc[0] * MM, 0, pc[1] * MM);
     g.rotation.y = -(c.r & 3) * HALF;
     const fp = fpOf(c), fam = FAM(c.t);
     (REAL[fam] ? REAL[fam] : legacy)(g, c, fp);
     silkFor(g, c, fp);
     group.add(g);
-    c.pins.forEach((p, i) => pad(p[0] * MM, p[1] * MM, i === 0 && c.t !== 'BC'));
+    c.pins.forEach((p, i) => pad(p[0] * MM, p[1] * MM, i === 0));
     const lb = label(c.ref, '#c8c8c8', 2.0);
     lb.position.x = (c.box.x0 + c.box.x1) / 2 * MM; lb.position.z = c.box.y0 * MM - 2.2; group.add(lb);
     if(c.val){ const vl = label(c.val, '#9fa6b2', 1.7); vl.position.x = (c.box.x0 + c.box.x1) / 2 * MM; vl.position.z = c.box.y1 * MM + 2.2; group.add(vl); }
@@ -404,8 +414,53 @@ function injectCss(){
   document.head.appendChild(s);
 }
 
+/* باتری در نمای ۳بعدی نشان داده نمی‌شود؛ فقط کانکتور. باتری و سیم‌هایی که فقط به آن می‌رسند حذف می‌شوند. */
+function withoutBattery(data){
+  const bts = data.comps.filter(c => c.t === 'BT');
+  if(!bts.length) return data;
+  const key = (x, y) => Math.round(x) + ',' + Math.round(y);
+  const pinKeys = new Set();
+  data.comps.forEach(c => { if(c.t !== 'BT') c.pins.forEach(p => pinKeys.add(key(p[0], p[1]))); });
+  const at = new Map();
+  data.wires.forEach((w, i) => [key(w[0], w[1]), key(w[2], w[3])].forEach(k => { if(!at.has(k)) at.set(k, []); at.get(k).push(i); }));
+  const dead = new Set(), stack = [];
+  bts.forEach(c => c.pins.forEach(p => stack.push(key(p[0], p[1]))));
+  while(stack.length){
+    const k = stack.pop();
+    (at.get(k) || []).forEach(i => {
+      if(dead.has(i)) return;
+      dead.add(i);
+      const w = data.wires[i], a = key(w[0], w[1]), b = key(w[2], w[3]), o = a === k ? b : a;
+      if(!pinKeys.has(o) && (at.get(o) || []).length <= 2) stack.push(o);
+    });
+  }
+  return Object.assign({}, data, {comps:data.comps.filter(c => c.t !== 'BT'), wires:data.wires.filter((w, i) => !dead.has(i))});
+}
+
+/* کانکتور باتری فقط یک هدر ۱×۲ با گام ۲٫۵۴ میلی‌متر است: دو پایهٔ خروجی (قرمز/مشکی) نگه داشته می‌شوند
+   و سیم‌های متصل به آن‌ها به پدهای جدید می‌رسند. */
+function simplifyConnector(data){
+  if(!data.comps.some(c => c.t === 'BC' && c.pins.length >= 4)) return data;
+  const key = (x, y) => Math.round(x) + ',' + Math.round(y);
+  const move = new Map();
+  const comps = data.comps.map(c => {
+    if(c.t !== 'BC' || c.pins.length < 4) return c;
+    const a = c.pins[2], b = c.pins[3], mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    const L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, dx = (b[0] - a[0]) / L, dy = (b[1] - a[1]) / L, h = 10;   // ۱٫۲۷ میلی‌متر
+    const a2 = [mx - dx * h, my - dy * h, a[2]], b2 = [mx + dx * h, my + dy * h, b[2]];
+    move.set(key(a[0], a[1]), a2); move.set(key(b[0], b[1]), b2);
+    return Object.assign({}, c, {pins:[a2, b2], hc:[mx, my], box:{x0:mx - 30, y0:my - 30, x1:mx + 30, y1:my + 30}});
+  });
+  const wires = data.wires.map(w => {
+    const p = move.get(key(w[0], w[1])), q = move.get(key(w[2], w[3]));
+    return (p || q) ? [p ? p[0] : w[0], p ? p[1] : w[1], q ? q[0] : w[2], q ? q[1] : w[3]] : w;
+  });
+  return Object.assign({}, data, {comps, wires});
+}
+
 function open(data){
   close();
+  data = simplifyConnector(withoutBattery(data));
   injectCss();
   const el = document.createElement('div');
   el.className = 'c3d2'; el.dir = 'rtl';

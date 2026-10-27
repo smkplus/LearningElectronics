@@ -7,8 +7,7 @@ const rc = (x0, y0, x1, y1) => `<rect x="${x0}" y="${y0}" width="${x1 - x0}" hei
 const ci = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r}"/>`;
 const ln = (a, b, c, d) => `<path d="M${a} ${b}L${c} ${d}"/>`;
 const FP = {
-  R:[{n:'R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal', b:[-3.15,-1.25,3.15,1.25], s:rc(-3.15,-1.25,3.15,1.25)},
-     {n:'R_Axial_DIN0411_L9.9mm_D3.6mm_P12.70mm_Horizontal', b:[-4.95,-1.8,4.95,1.8], s:rc(-4.95,-1.8,4.95,1.8)}],
+  R:[{n:'R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal', b:[-3.27,-1.37,3.27,1.37], pads:[[-3.81,0],[3.81,0]], s:'<path d="M-3.27 -1.04V-1.37H3.27V-1.04M-3.27 1.04V1.37H3.27V1.04"/>'}],
   C:[{n:'C_Disc_D5.0mm_W2.5mm_P5.00mm', b:[-3.4,-2.5,3.4,2.5], s:rc(-3.4,-2.5,3.4,2.5) + ln(-.5,-1.6,-.5,1.6) + ln(.5,-1.6,.5,1.6)},
      {n:'C_Rect_L7.2mm_W2.5mm_P5.00mm', b:[-3.6,-1.25,3.6,1.25], s:rc(-3.6,-1.25,3.6,1.25)}],
   CP:[{n:'CP_Radial_D8.0mm_P3.50mm', b:[-4,-4,4,4], s:ci(0,0,4) + ln(-6.2,-1.2,-4.6,-1.2) + ln(-5.4,-2,-5.4,-.4)},
@@ -19,16 +18,14 @@ const FP = {
        {n:'Potentiometer_Piher_PT-10_Vertical', b:[-6,-8,6,3], s:rc(-6,-8,6,3) + ci(0,-3,2.2)}],
   D:[{n:'D_DO-35_SOD27_P10.16mm_Horizontal', b:[-1.9,-.95,1.9,.95], s:rc(-1.9,-.95,1.9,.95) + ln(1.1,-.95,1.1,.95)},
      {n:'D_DO-41_SOD81_P10.16mm_Horizontal', b:[-2.5,-1.3,2.5,1.3], s:rc(-2.5,-1.3,2.5,1.3) + ln(1.5,-1.3,1.5,1.3)}],
-  LED:[{n:'LED_D5.0mm', b:[-2.9,-2.9,2.9,2.9], s:'<path d="M-2.5 -1.6A2.9 2.9 0 1 1 -2.5 1.6Z"/>'},
-       {n:'LED_D3.0mm', b:[-1.9,-1.9,1.9,1.9], s:'<path d="M-1.4 -1A1.7 1.7 0 1 1 -1.4 1Z"/>'}],
+  LED:[{n:'LED_D5.0mm', b:[-2.9,-2.9,2.9,2.9], pads:[[-1.27,0],[1.27,0]], s:ci(0,0,2.5) + '<path d="M2.5 -1.6A2.9 2.9 0 1 0 2.5 1.6Z"/>'}],
   BJT:[{n:'TO-92_Inline', b:[-3,-3,4,3], s:'<path d="M-2.4 -1.8A3 3 0 1 1 -2.4 1.8Z" transform="translate(.5 0)"/>'},
        {n:'TO-92_Inline_Wide', b:[-3.4,-3.4,4.4,3.4], s:'<path d="M-2.8 -2A3.4 3.4 0 1 1 -2.8 2Z" transform="translate(.5 0)"/>'}],
   OPAMP:[{n:'DIP-8_W7.62mm', b:[-3.5,-5,3.5,5], s:rc(-3.5,-5,3.5,5) + '<path d="M-1 -5A1 1 0 0 0 1 -5"/>'},
          {n:'DIP-8_W7.62mm_LongPads', b:[-3.8,-5.4,3.8,5.4], s:rc(-3.8,-5.4,3.8,5.4) + '<path d="M-1 -5.4A1 1 0 0 0 1 -5.4"/>'}],
   BT:[{n:'TerminalBlock_2P_P10.16mm', b:[-7,-3.8,7,3.8], s:rc(-7,-3.8,7,3.8) + ci(-5.08,0,2.3) + ci(5.08,0,2.3)},
       {n:'BatteryHolder_9V_Clip', b:[-7.5,-4.5,7.5,4.5], s:rc(-7.5,-4.5,7.5,4.5) + ln(-7.5,-2,-3.5,-2)}],
-  BC:[{n:'PinHeader_2x02_P5.08mm_Vertical', b:[-7,-4.8,7,4.8], s:rc(-7,-4.8,7,4.8) + ln(-1.5,-4.8,-1.5,4.8) + ln(1.5,-4.8,1.5,4.8)},
-      {n:'JST_XH_2x02_P5.08mm', b:[-7.4,-5.2,7.4,5.2], s:rc(-7.4,-5.2,7.4,5.2)}],
+  BC:[{n:'Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical', b:[-1.33,-2.6,1.33,2.6], pads:[[0,-1.27],[0,1.27]], use:[2,3], s:'<path d="M0 -2.6H-1.33V-1.27M0 -2.6H1.33V-1.27"/>' + rc(-1.33,0,1.33,2.6)}],
   SW:[{n:'SW_Slide_SPST_P10.16mm', b:[-6.5,-3,6.5,3], s:rc(-6.5,-3,6.5,3) + rc(-1.5,-1.6,1.5,1.6)},
       {n:'SW_Push_6mm_P10.16mm', b:[-3.5,-3.5,3.5,3.5], s:rc(-3.5,-3.5,3.5,3.5) + ci(0,0,2)}],
   LAMP:[{n:'Lamp_E10_Holder', b:[-5.5,-5.5,5.5,5.5], s:ci(0,0,5.5) + ci(0,0,2.5)},
@@ -53,7 +50,8 @@ function create(host, api){
     Object.keys(st.pos).forEach(k => { if(!ids.has(k)) delete st.pos[k]; });
     const comps = items.map(c => {
       const fam = FP[FAM(c.t)], fi = Math.min(st.fp[c.id] | 0, fam.length - 1), f = fam[fi];
-      const pads = c.lpins.map(p => ({lx:p[0] / MM, ly:p[1] / MM, name:p[2]}));
+      const pm = f.use || c.lpins.map((_, i) => i);
+      const pads = f.pads ? f.pads.map((q, i) => ({lx:q[0], ly:q[1], name:(c.lpins[pm[i]] || [])[2], pi:pm[i]})) : c.lpins.map((p, i) => ({lx:p[0] / MM, ly:p[1] / MM, name:p[2], pi:i}));
       let x0 = f.b[0], y0 = f.b[1], x1 = f.b[2], y1 = f.b[3];
       pads.forEach(p => { x0 = Math.min(x0, p.lx - 1.15); x1 = Math.max(x1, p.lx + 1.15); y0 = Math.min(y0, p.ly - 1.15); y1 = Math.max(y1, p.ly + 1.15); });
       return Object.assign({}, c, {fam, fi, f, pads, cr:[x0 - .25, y0 - .25, x1 + .25, y1 + .25]});
@@ -106,7 +104,7 @@ function create(host, api){
     const nets = new Map();
     comps.forEach(c => {
       const sp = byId.get(c.id).spins;
-      c.abs.forEach((a, i) => { const r = find(k(sp[i][0], sp[i][1])); if(!nets.has(r)) nets.set(r, []); nets.get(r).push({c, i, x:a.x, y:a.y}); });
+      c.abs.forEach((a, i) => { const sq = sp[c.pads[i].pi], r = find(k(sq[0], sq[1])); if(!nets.has(r)) nets.set(r, []); nets.get(r).push({c, i, x:a.x, y:a.y}); });
     });
     const segs = [], paths = [];
     nets.forEach(pl => {
@@ -143,7 +141,7 @@ function create(host, api){
         `<g fill="none" stroke="${COL.silk}" stroke-width=".2" stroke-linejoin="round">${c.f.s}</g>` +
         `<rect x="${c.cr[0]}" y="${c.cr[1]}" width="${c.cr[2] - c.cr[0]}" height="${c.cr[3] - c.cr[1]}" fill="${on ? 'rgba(77,224,255,.08)' : 'none'}" stroke="${on ? COL.sel : COL.crt}" stroke-width="${on ? 2 : 1}" vector-effect="non-scaling-stroke"/></g>`);
       c.pads.forEach((p, i) => {
-        const a = c.abs[i], sq = !i && c.t !== 'BC';
+        const a = c.abs[i], sq = !i && (c.t !== 'BC' || !!c.f.use);
         o.push(sq ? `<rect x="${a.x - .9 * MM}" y="${a.y - .9 * MM}" width="${1.8 * MM}" height="${1.8 * MM}" fill="${COL.cu}"/>` : `<circle cx="${a.x}" cy="${a.y}" r="${.9 * MM}" fill="${COL.cu}"/>`);
         o.push(`<circle cx="${a.x}" cy="${a.y}" r="${.5 * MM}" fill="${COL.bg}" stroke="#d9d9d9" stroke-width=".6"/>`);
         o.push(`<text x="${a.x}" y="${a.y - 1.9 * MM}" fill="#fff" font-size="6.5" text-anchor="middle" font-family="Arial,sans-serif" opacity=".85">${i + 1}</text>`);

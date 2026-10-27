@@ -60,10 +60,11 @@ const DEFS = {
   LAMP:{fa:'لامپ',pre:'LA',val:'6V',lab:'two',pins:[[-40,0,'1'],[40,0,'2']],box:[-40,-16,40,16],edge:'load',
     draw:'<path class="b" d="M-40 0H-16M16 0H40"/><circle class="b" r="16"/><path class="b" d="M-11.3 -11.3L11.3 11.3M-11.3 11.3L11.3 -11.3"/>',
     lit:'<circle r="15" fill="#ffd95a" opacity=".92"/>', glow:'#ffd95a'},
-  VCC:{fa:'تغذیه (VCC)',pre:'',val:'+5V',lab:'top',power:true,pins:[[0,0,'VCC']],box:[-10,-16,10,0],
-    draw:'<path class="b" d="M0 0V-14M-8 -14H8"/>'},
-  GND:{fa:'زمین (GND)',pre:'',val:'GND',lab:'none',power:true,pins:[[0,0,'GND']],box:[-14,0,14,24],
-    draw:'<path class="b" d="M0 0V12M-12 12H12M-8 17H8M-4 22H4"/>'}
+  VCC:{fa:'تغذیه (VCC)',pre:'',val:'VCC',lab:'top',power:true,pins:[[0,0,'VCC']],box:[-10,-30,10,0],
+    draw:'<path class="b" d="M0 0V-28M-9 -14L0 -28L9 -14"/>'},
+
+  GND:{fa:'زمین (GND)',pre:'',val:'GND',lab:'top',power:true,pins:[[0,0,'GND']],box:[-14,-30,14,0],
+    draw:'<path class="b" d="M0 0V-14M-12 -14H12L0 -28Z"/>'}
 };
 const drawOf = (c,d) => typeof d.draw === 'function' ? d.draw(c) : d.draw;
 const GROUPS = [
@@ -91,7 +92,7 @@ function create(root, opts){
 
   let S = {comps:[], wires:[], seq:1};
   let sel = new Set();
-  let tool = 'select', placeType = null, placeRot = 0;
+  let tool = 'pan', placeType = null, placeRot = 0;
   let view = {x:0, y:0, z:1};
   let cursor = {x:0, y:0};
   let wireStart = null, drag = null, spaceDown = false, pinch = null, fitted = false, focusIn = false, succeeded = !!opts.alreadyDone;
@@ -138,7 +139,7 @@ function create(root, opts){
       <div class="cv-palette" id="cvPalette"></div>
     </aside>
     <div class="cv-stage" id="cvStage">
-      <svg id="cvSvg" xmlns="http://www.w3.org/2000/svg">
+      <svg id="cvSvg" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%">
         <defs><pattern id="${uid}-grid" patternUnits="userSpaceOnUse" width="20" height="20"><circle cx="0" cy="0" r="1" class="cv-dot"/></pattern>${glowDefs}</defs>
         <rect id="cvBg" width="100%" height="100%" fill="url(#${uid}-grid)"/>
         <g id="cvWorld"></g>
@@ -362,9 +363,11 @@ function create(root, opts){
       if(both){ if(!adj.has(b)) adj.set(b,[]); adj.get(b).push({to:a, comp:c, kind}); }
     };
     const sources = [];
+    const hasBT = S.comps.some(c => c.t === 'BT');
     S.comps.forEach(c => {
       const d = DEFS[c.t];
       if(c.t === 'BT') sources.push({comp:c, pos:node(c,0), neg:node(c,1)});
+      else if(c.t === 'BC' && !hasBT) sources.push({comp:c, pos:node(c,2), neg:node(c,3)});   // بدون باتری: خود کانکتور منبع است (قرمز +، مشکی −)
       else if(d.link) d.link.forEach(l => addE(node(c,l[0]), node(c,l[1]), c, 'wire', true));
       else if(d.edge === 'led' || d.edge === 'diode') addE(node(c,0), node(c,1), c, d.edge, false);
       else if(d.edge === 'load' || d.edge === 'wire'){
@@ -827,7 +830,7 @@ function create(root, opts){
   on(svg, 'contextmenu', e => {
     e.preventDefault();
     if(wireStart){ wireStart = null; render(); }
-    else if(tool === 'place') setTool('select');
+    else if(tool === 'place') setTool('pan');
   });
   on(svg, 'wheel', e => {
     e.preventDefault();
@@ -903,7 +906,7 @@ function create(root, opts){
     else if(e.code === 'Enter' && wireStart){ wireStart = null; render(); }
     else if(e.code === 'Escape'){
       if(wireStart){ wireStart = null; render(); }
-      else if(tool === 'place' || tool === 'wire') setTool('select');
+      else if(tool === 'place' || tool === 'wire') setTool('pan');
       else if(sel.size){ sel.clear(); sync(); }
     }
   });
@@ -920,7 +923,7 @@ function create(root, opts){
 
   buildPalette();
   load();
-  setTool('select');
+  setTool('pan');
   renderProps();
 
   return {
