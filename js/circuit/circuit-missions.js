@@ -103,7 +103,13 @@ function openCircuitDesigner(){
         '.cdz-body .cv-pal-title{font-size:13px}.cdz-body .cv-pal-grid{gap:8px}' +
         '.cdz-body .cv-pal-item{padding:9px 4px;font-size:12px}.cdz-body .cv-pal-item svg{width:48px;height:48px}' +
         '.cdz-body .cv-status{flex:none}' +
-      '}';
+      '}' +
+      '.cdz-body .cv-wrap.pcb-on .cv-stage,.cdz-body .cv-wrap.pcb-on .cv-props,.cdz-body .cv-wrap.pcb-on .cv-palette{display:none}' +
+      '.cdz-body .cv-wrap.pcb-on .cv-main{flex-direction:column;gap:10px}' +
+      '.cdz-body .cv-wrap.pcb-on .cv-side{width:auto;flex:none;overflow:visible}' +
+      '.cdz-body .cv-wrap.pcb-on .cv-side .cv-toolbar .cv-group{flex:0 1 auto}' +
+      '.cdz-body .cv-main > .pcb{position:relative;inset:auto;z-index:auto;flex:1;min-width:0;min-height:0}' +
+      '@media (max-width:760px){.cdz-body .cv-main > .pcb{flex:none;height:70vh;min-height:360px}}';
     document.head.appendChild(css);
   }
   const el = document.createElement('div');
