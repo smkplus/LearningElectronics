@@ -60,13 +60,22 @@ const IC = {
   rotate:svgI('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>'),
   del:svgI('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v5M14 11v5"/>'),
   layout:svgI('<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>'),
+  pdf:svgI('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 11v6M9.5 14.5 12 17l2.5-2.5"/>'),
   routes:svgI('<path d="M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8 19 13M17.8 6.2 19 5M3 21l9-9M12.2 6.2 11 5"/>')
 };
 let cssDone = false;
 function injectCss(){
   if(cssDone) return; cssDone = true;
   const s = document.createElement('style');
-  s.textContent = '.pcb-auto{display:inline-flex;align-items:center;justify-content:center;gap:8px}.pcb-auto svg{width:16px;height:16px;flex:none}';
+  s.textContent = '.pcb-auto{display:inline-flex;align-items:center;justify-content:center;gap:8px}.pcb-auto svg{width:16px;height:16px;flex:none}' +
+    '.pcb-exp{position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(0,8,20,.62)}' +
+    '.pcb-exp-card{width:min(380px,100%);max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:9px;padding:14px;background:#0a1426;border:1px solid #26354d;border-radius:12px;box-shadow:0 18px 50px -12px rgba(0,0,0,.8);direction:rtl;font-family:Vazirmatn,sans-serif;color:var(--parchment,#e8e2d0);outline:none}' +
+    '.pcb-exp-card label{display:flex;align-items:center;gap:8px;font-size:13.5px;line-height:1.6;cursor:pointer}.pcb-exp-card label small{opacity:.6;font:11px monospace;direction:ltr}' +
+    '.pcb-exp-card label.sub{margin-inline-start:26px;font-size:12.5px;opacity:.9}.pcb-exp-card input[type=checkbox]{width:17px;height:17px;accent-color:#57d8a3;flex:none}' +
+    '.pcb-exp-card select{margin-inline-start:auto;font:12.5px Vazirmatn,sans-serif;color:#e8e8e8;background:#001023;border:1px solid #34455f;border-radius:7px;padding:5px 7px}' +
+    '.pcb-exp-msg{min-height:20px;font-size:12px;line-height:1.7;color:#ffd98a}.pcb-exp-row{display:flex;gap:8px}' +
+    '.pcb-exp-row button{flex:1;font:700 13.5px Vazirmatn,sans-serif;padding:9px;border-radius:9px;border:1px solid #34455f;background:#101c33;color:var(--parchment,#e8e2d0);cursor:pointer}' +
+    '.pcb-exp-row button:hover{border-color:var(--copper,#e79a54)}.pcb-exp-row button.go{color:#08150f;background:linear-gradient(90deg,#2fbf8a,#57d8a3);border-color:#57d8a3}';
   document.head.appendChild(s);
 }
 
@@ -361,6 +370,144 @@ function anneal(P, nets, o){
   return {X:X.map(v => v - mx), Y:Y.map(v => v - my), R:R.slice(), cost:final, ok};
 }
 
+/* ====================================================================
+   خروجی PDF (مثل Plot در KiCad): لایه‌های مس (ترک + پد)، سیلک‌اسکرین و لبهٔ برد
+   برداری، با مقیاس ۱:۱ روی A4 (یا هم‌اندازهٔ برد)، سیاه‌وسفید یا رنگی، و حالت آینه‌ای
+   ==================================================================== */
+const HW = [278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
+const pdfTxt = s => String(s).replace(/Ω/g, ' ohm').replace(/μ/g, '\xb5').replace(/[^\x20-\x7e\xb5]/g, '');
+const pdfW = (s, fs) => { let w = 0; for(const ch of s){ const c = ch.charCodeAt(0); w += c >= 32 && c <= 126 ? HW[c - 32] : 556; } return w * fs / 1000; };
+const pdfEsc = s => s.replace(/[\\()]/g, '\\$&').replace(/\xb5/g, '\\265');
+const fx = n => String(+n.toFixed(3));
+
+// کمان SVG → منحنی‌های بزیه
+function arcToBez(x1, y1, rx, ry, phi, fa, fs, x2, y2){
+  if(!rx || !ry) return [[x1, y1, x2, y2, x2, y2]];
+  rx = Math.abs(rx); ry = Math.abs(ry);
+  const cp = Math.cos(phi), sp = Math.sin(phi), dx = (x1 - x2) / 2, dy = (y1 - y2) / 2;
+  const x1p = cp * dx + sp * dy, y1p = -sp * dx + cp * dy, l = x1p * x1p / (rx * rx) + y1p * y1p / (ry * ry);
+  if(l > 1){ const s = Math.sqrt(l); rx *= s; ry *= s; }
+  const num = rx * rx * ry * ry - rx * rx * y1p * y1p - ry * ry * x1p * x1p, den = rx * rx * y1p * y1p + ry * ry * x1p * x1p;
+  const co = (fa === fs ? -1 : 1) * Math.sqrt(Math.max(0, num / den)), cxp = co * rx * y1p / ry, cyp = -co * ry * x1p / rx;
+  const cx = cp * cxp - sp * cyp + (x1 + x2) / 2, cy = sp * cxp + cp * cyp + (y1 + y2) / 2;
+  const ang = (ux, uy, vx, vy) => Math.atan2(ux * vy - uy * vx, ux * vx + uy * vy);
+  const th1 = ang(1, 0, (x1p - cxp) / rx, (y1p - cyp) / ry);
+  let dth = ang((x1p - cxp) / rx, (y1p - cyp) / ry, (-x1p - cxp) / rx, (-y1p - cyp) / ry);
+  if(!fs && dth > 0) dth -= 2 * Math.PI; else if(fs && dth < 0) dth += 2 * Math.PI;
+  const n = Math.max(1, Math.ceil(Math.abs(dth) / (Math.PI / 2) - 1e-9)), d = dth / n, t = 4 / 3 * Math.tan(d / 4), out = [];
+  let a = th1;
+  const map = (u, v) => [cx + rx * u * cp - ry * v * sp, cy + rx * u * sp + ry * v * cp];
+  for(let i = 0; i < n; i++, a += d){
+    const c1 = Math.cos(a), s1 = Math.sin(a), c2 = Math.cos(a + d), s2 = Math.sin(a + d);
+    out.push([].concat(map(c1 - t * s1, s1 + t * c1), map(c2 + t * s2, s2 - t * c2), map(c2, s2)));
+  }
+  return out;
+}
+const bez = b => ({t:'C', c1:[b[0], b[1]], c2:[b[2], b[3]], p:[b[4], b[5]]});
+const circleCmds = (cx, cy, r) => [{t:'M', p:[cx + r, cy]}]
+  .concat(arcToBez(cx + r, cy, r, r, 0, 0, 1, cx - r, cy).map(bez), arcToBez(cx - r, cy, r, r, 0, 0, 1, cx + r, cy).map(bez), [{t:'Z'}]);
+const rectCmds = (x0, y0, x1, y1) => [{t:'M', p:[x0, y0]}, {t:'L', p:[x1, y0]}, {t:'L', p:[x1, y1]}, {t:'L', p:[x0, y1]}, {t:'Z'}];
+// d مسیر SVG (M L H V C A Z، بزرگ و کوچک) → فرمان‌ها
+function parseD(d){
+  const tk = d.match(/[MmLlHhVvAaCcZz]|-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/g) || [], out = [];
+  let i = 0, cmd = '', x = 0, y = 0, sx = 0, sy = 0;
+  const num = () => parseFloat(tk[i++]);
+  while(i < tk.length){
+    if(/[A-Za-z]/.test(tk[i])) cmd = tk[i++];
+    else if(cmd === 'M') cmd = 'L'; else if(cmd === 'm') cmd = 'l';
+    const rel = cmd === cmd.toLowerCase(), C = cmd.toUpperCase();
+    if(C === 'Z'){ out.push({t:'Z'}); x = sx; y = sy; if(i < tk.length && !/[A-Za-z]/.test(tk[i])) break; continue; }
+    if(C === 'M' || C === 'L'){ let nx = num(), ny = num(); if(rel){ nx += x; ny += y; } out.push({t:C, p:[nx, ny]}); x = nx; y = ny; if(C === 'M'){ sx = x; sy = y; } }
+    else if(C === 'H'){ let nx = num(); if(rel) nx += x; out.push({t:'L', p:[nx, y]}); x = nx; }
+    else if(C === 'V'){ let ny = num(); if(rel) ny += y; out.push({t:'L', p:[x, ny]}); y = ny; }
+    else if(C === 'C'){ const v = [num(), num(), num(), num(), num(), num()]; if(rel) for(let j = 0; j < 6; j += 2){ v[j] += x; v[j + 1] += y; } out.push(bez(v)); x = v[4]; y = v[5]; }
+    else if(C === 'A'){
+      const rx = num(), ry = num(), ph = num() * Math.PI / 180, fa = num(), fs = num(); let nx = num(), ny = num();
+      if(rel){ nx += x; ny += y; }
+      arcToBez(x, y, rx, ry, ph, fa, fs, nx, ny).forEach(b => out.push(bez(b))); x = nx; y = ny;
+    } else break;
+  }
+  return out;
+}
+const shapeCache = new Map();
+// کد SVG سیلک یک فوت‌پرینت (مختصات میلی‌متر) → فهرست مسیرها
+function silkShapes(s){
+  if(shapeCache.has(s)) return shapeCache.get(s);
+  const out = [];
+  try{
+    const doc = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg">' + s + '</svg>', 'image/svg+xml');
+    doc.querySelectorAll('rect,circle,path').forEach(n => {
+      const g = a => parseFloat(n.getAttribute(a)) || 0, tr = /translate\(\s*(-?[\d.]+)[\s,]+(-?[\d.]+)\s*\)/.exec(n.getAttribute('transform') || '');
+      const tx = tr ? +tr[1] : 0, ty = tr ? +tr[2] : 0;
+      let cm = n.tagName === 'rect' ? rectCmds(g('x'), g('y'), g('x') + g('width'), g('y') + g('height'))
+        : n.tagName === 'circle' ? circleCmds(g('cx'), g('cy'), g('r')) : parseD(n.getAttribute('d') || '');
+      if(tx || ty) cm = cm.map(c => c.t === 'Z' ? c : c.t === 'C' ? {t:'C', c1:[c.c1[0] + tx, c.c1[1] + ty], c2:[c.c2[0] + tx, c.c2[1] + ty], p:[c.p[0] + tx, c.p[1] + ty]} : {t:c.t, p:[c.p[0] + tx, c.p[1] + ty]});
+      out.push(cm);
+    });
+  }catch(_){}
+  shapeCache.set(s, out);
+  return out;
+}
+const pathOps = (cmds, T) => cmds.map(c => {
+  if(c.t === 'Z') return 'h';
+  if(c.t === 'C'){ const a = T(c.c1[0], c.c1[1]), b = T(c.c2[0], c.c2[1]), p = T(c.p[0], c.p[1]); return [a[0], a[1], b[0], b[1], p[0], p[1]].map(fx).join(' ') + ' c'; }
+  const p = T(c.p[0], c.p[1]); return fx(p[0]) + ' ' + fx(p[1]) + (c.t === 'M' ? ' m' : ' l');
+}).join(' ');
+
+/* o = {cu, silk, val, edge, mirror, bw, page:'a4'|'board'} → {blob, scale, w, h} (w و h به میلی‌متر) */
+function pcbPdf(M, o){
+  const b = M.board, bw = (b.x1 - b.x0) / MM, bh = (b.y1 - b.y0) / MM, pt = 72 / 25.4;
+  let pw, ph, sc = 1;
+  if(o.page === 'board'){ pw = bw + 10; ph = bh + 10; }
+  else { const land = bw > bh; pw = land ? 297 : 210; ph = land ? 210 : 297; sc = Math.min(1, (pw - 20) / bw, (ph - 20) / bh); }
+  const ox = (pw - bw * sc) / 2, oy = (ph - bh * sc) / 2, k = sc * pt / MM;
+  const X = x => (o.mirror ? b.x1 - x : x - b.x0) * k + ox * pt, Y = y => (ph - oy) * pt - (y - b.y0) * k, T0 = (x, y) => [X(x), Y(y)];
+  const CL = o.bw ? {cu:[0, 0, 0], silk:[0, 0, 0], edge:[0, 0, 0]} : {cu:[.78, .2, .2], silk:[0, .55, .72], edge:[.8, .6, 0]};
+  const col = a => a.map(fx).join(' ') + ' RG ' + a.map(fx).join(' ') + ' rg';
+  const q = ['1 J 1 j'];
+  if(o.cu){
+    q.push(col(CL.cu), fx(.9 * MM * k) + ' w');
+    M.paths.forEach(p => q.push(p.pts.map((r, i) => fx(X(r[0])) + ' ' + fx(Y(r[1])) + (i ? ' l' : ' m')).join(' ') + ' S'));
+    M.comps.forEach(c => c.abs.forEach((a, i) => {
+      const r = .9 * MM, sq = !i && (c.t !== 'BC' || !!c.f.use);
+      q.push(pathOps(sq ? rectCmds(a.x - r, a.y - r, a.x + r, a.y + r) : circleCmds(a.x, a.y, r), T0) + ' f');
+    }));
+    q.push('1 1 1 rg');
+    M.comps.forEach(c => c.abs.forEach(a => q.push(pathOps(circleCmds(a.x, a.y, .5 * MM), T0) + ' f')));
+  }
+  if(o.silk){
+    q.push(col(CL.silk), fx(.2 * MM * k) + ' w');
+    const text = (str, cx, y, fs, bold) => {
+      const s = pdfTxt(str); if(!s) return;
+      const sz = fs * k, w = pdfW(s, sz);
+      q.push('BT /F' + (bold ? 2 : 1) + ' ' + fx(sz) + ' Tf ' + (o.mirror ? -1 : 1) + ' 0 0 1 ' + fx(X(cx) + (o.mirror ? w / 2 : -w / 2)) + ' ' + fx(Y(y)) + ' Tm (' + pdfEsc(s) + ') Tj ET');
+    };
+    M.comps.forEach(c => {
+      const T = (lx, ly) => { const r = rot(lx * MM, ly * MM, c.r); return [X(c.px + r[0]), Y(c.py + r[1])]; };
+      silkShapes(c.f.s).forEach(cm => q.push(pathOps(cm, T) + ' S'));
+      const mx = (c.bb.x0 + c.bb.x1) / 2;
+      text(c.ref, mx, c.bb.y0 - 6, 14, true);
+      if(o.val) text(c.val, mx, c.bb.y1 + 14, 12, false);
+    });
+  }
+  if(o.edge) q.push(col(CL.edge), fx(.2 * MM * k) + ' w', pathOps(rectCmds(b.x0, b.y0, b.x1, b.y1), T0) + ' S');
+  const content = q.join('\n'), W = fx(pw * pt), H = fx(ph * pt);
+  const objs = [null,
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + W + ' ' + H + '] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>',
+    '<< /Length ' + content.length + ' >>\nstream\n' + content + '\nendstream',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>'];
+  let pdf = '%PDF-1.4\n'; const off = [];
+  for(let i = 1; i < objs.length; i++){ off[i] = pdf.length; pdf += i + ' 0 obj\n' + objs[i] + '\nendobj\n'; }
+  const xr = pdf.length;
+  pdf += 'xref\n0 ' + objs.length + '\n0000000000 65535 f \n' + off.slice(1).map(n => String(n).padStart(10, '0') + ' 00000 n \n').join('') +
+    'trailer\n<< /Size ' + objs.length + ' /Root 1 0 R >>\nstartxref\n' + xr + '\n%%EOF';
+  return {blob:new Blob([pdf], {type:'application/pdf'}), scale:sc, w:bw, h:bh};
+}
+const EXP = {cu:true, silk:false, val:false, edge:true, mirror:false, bw:true, page:'a4'};   // انتخاب‌های آخرین خروجی
+
 function create(host, api){
   const KEY = api.key ? 'cpcb:' + api.key : '';
   let st = {fp:{}, pos:{}, routes:{}, rot:{}, del:{}, extra:{}};
@@ -556,6 +703,7 @@ function create(host, api){
     if(!el || !el.getClientRects().length || e.ctrlKey || e.metaKey || e.altKey) return;
     const modal = document.querySelector('.cdz, .c3d2');   // صفحهٔ طراحی آزاد یا نمای سه‌بعدی
     if(modal && !modal.contains(el)) return;                // PCB پشت آن است؛ کلیدها مالِ پنجرهٔ بالاست
+    if(el.querySelector('.pcb-exp')) return;                // پنجرهٔ خروجی PDF باز است
     const tg = e.target && e.target.tagName;
     if(tg === 'INPUT' || tg === 'TEXTAREA' || tg === 'SELECT') return;
     if(e.code === 'KeyR'){ e.preventDefault(); rotateSel(e.shiftKey ? -1 : 1); }
@@ -683,10 +831,55 @@ function create(host, api){
     return {failed:best.res.failed.length};
   }
 
+  // پنجرهٔ خروجی PDF: انتخاب لایه‌ها (مس / سیلک / لبهٔ برد) مثل Plot در KiCad
+  function exportDialog(){
+    if(!M || !el || el.querySelector('.pcb-exp')) return;
+    const d = document.createElement('div'); d.className = 'pcb-exp';
+    d.innerHTML = '<div class="pcb-exp-card" role="dialog" aria-label="خروجی PDF" tabindex="-1">' +
+      '<div class="pcb-h">خروجی PDF <small>Plot — مثل KiCad</small></div>' +
+      '<label><input type="checkbox" data-k="cu">ترک‌ها و پدها <small>مس · F.Cu</small></label>' +
+      '<label><input type="checkbox" data-k="silk">سیلک‌اسکرین (طرح قطعه و نام) <small>F.Silkscreen</small></label>' +
+      '<label class="sub"><input type="checkbox" data-k="val">مقدار قطعه هم چاپ شود</label>' +
+      '<label><input type="checkbox" data-k="edge">لبهٔ برد <small>Edge.Cuts</small></label>' +
+      '<label><input type="checkbox" data-k="mirror">آینه‌ای (برای انتقال حرارتی) <small>Mirror</small></label>' +
+      '<label><input type="checkbox" data-k="bw">سیاه‌وسفید</label>' +
+      '<label>صفحه <select data-k="page"><option value="a4">A4 — مقیاس ۱:۱</option><option value="board">هم‌اندازهٔ برد</option></select></label>' +
+      '<div class="pcb-exp-msg" role="status"></div>' +
+      '<div class="pcb-exp-row"><button type="button" class="go" data-x="go">ساخت PDF</button><button type="button" data-x="close">بستن</button></div></div>';
+    el.appendChild(d);
+    const card = d.firstChild, msg = d.querySelector('.pcb-exp-msg'), inp = k => d.querySelector('[data-k="' + k + '"]');
+    const KS = ['cu', 'silk', 'val', 'edge', 'mirror', 'bw'];
+    KS.forEach(k => { inp(k).checked = !!EXP[k]; });
+    inp('page').value = EXP.page;
+    const read = () => { KS.forEach(k => { EXP[k] = inp(k).checked; }); EXP.page = inp('page').value; };
+    const hint = () => {
+      read(); inp('val').disabled = !EXP.silk;
+      msg.textContent = EXP.cu && EXP.silk && EXP.bw ? 'در سیاه‌وسفید، سیلک روی ترک دیده نمی‌شود؛ برای چاپ بهتر است هر لایه را جدا خروجی بگیری (یا «سیاه‌وسفید» را بردار).' : '';
+    };
+    d.addEventListener('change', hint);
+    d.addEventListener('click', e => {
+      const x = e.target.closest('[data-x]'), act = x ? x.dataset.x : '';
+      if(e.target === d || act === 'close'){ d.remove(); return; }
+      if(act !== 'go') return;
+      read();
+      if(!EXP.cu && !EXP.silk && !EXP.edge){ msg.textContent = 'حداقل یک لایه را انتخاب کن.'; return; }
+      try{
+        const r = pcbPdf(M, EXP), a = document.createElement('a');
+        a.href = URL.createObjectURL(r.blob);
+        a.download = 'pcb-' + [EXP.cu && 'copper', EXP.silk && 'silkscreen', EXP.edge && !EXP.cu && !EXP.silk && 'outline'].filter(Boolean).join('-') + (EXP.mirror ? '-mirror' : '') + '.pdf';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+        msg.textContent = r.scale < 1 ? 'ساخته شد. برد از A4 بزرگ‌تر است و با مقیاس ' + Math.round(r.scale * 100) + '٪ چاپ می‌شود؛ برای ۱:۱ «هم‌اندازهٔ برد» را بزن.' : 'ساخته شد (' + r.w.toFixed(1) + ' × ' + r.h.toFixed(1) + ' mm) — هنگام چاپ «اندازهٔ واقعی / 100%» را بزن.';
+      }catch(err){ msg.textContent = 'ساخت PDF نشد: ' + err.message; }
+    });
+    d.addEventListener('keydown', e => { if(e.key === 'Escape'){ e.stopPropagation(); d.remove(); } });
+    hint(); card.focus();
+  }
+
   function build(){
     el = document.createElement('div');
     el.className = 'pcb'; injectCss();
-    el.innerHTML = '<aside class="pcb-side"><div class="pcb-h">تخصیص فوت‌پرینت <small>Assign Footprints</small></div><div class="pcb-tbl"></div><button class="pcb-auto" data-tool="select" title="انتخاب و جابه‌جایی (V)">' + IC.select + 'انتخاب (V)</button><button class="pcb-auto" data-tool="route" title="سیم‌کشی ترک (X)">' + IC.route + 'سیم‌کشی (X)</button><button class="pcb-auto" data-a="rotate" title="چرخش فوت‌پرینت انتخاب‌شده (R)">' + IC.rotate + 'چرخش (R)</button><button class="pcb-auto" data-a="del" title="حذف ترک انتخاب‌شده (Delete)">' + IC.del + 'حذف ترک (Delete)</button><button class="pcb-auto" data-a="layout">' + IC.layout + 'چیدمان خودکار</button><button class="pcb-auto" data-a="routes">' + IC.routes + 'ترک‌کشی خودکار</button><div class="pcb-hint" style="font-size:12px;line-height:1.7;opacity:.7;margin-top:8px">قطعه را انتخاب کن و R بزن تا بچرخد (Shift+R برعکس). ترک را بگیر و بکش تا مسیرش عوض شود؛ Delete = حذف ترک (اتصال خط‌چین می‌ماند). دوبار کلیک روی نقطه = حذف نقطه، روی ترک = مسیر خودکار. چیدمان و ترک‌کشی خودکار قطعه‌ها را جابه‌جا و در صورت نیاز می‌چرخاند و ترک‌ها را طوری می‌کشد که به پد و ترک شبکهٔ دیگر نخورند. سیم‌کشی (X): روی یک پد بزن، نقطه بگذار و روی پدِ هم‌شبکه تمام کن؛ Esc = لغو.</div></aside>' +
+    el.innerHTML = '<aside class="pcb-side"><div class="pcb-h">تخصیص فوت‌پرینت <small>Assign Footprints</small></div><div class="pcb-tbl"></div><button class="pcb-auto" data-tool="select" title="انتخاب و جابه‌جایی (V)">' + IC.select + 'انتخاب (V)</button><button class="pcb-auto" data-tool="route" title="سیم‌کشی ترک (X)">' + IC.route + 'سیم‌کشی (X)</button><button class="pcb-auto" data-a="rotate" title="چرخش فوت‌پرینت انتخاب‌شده (R)">' + IC.rotate + 'چرخش (R)</button><button class="pcb-auto" data-a="del" title="حذف ترک انتخاب‌شده (Delete)">' + IC.del + 'حذف ترک (Delete)</button><button class="pcb-auto" data-a="layout">' + IC.layout + 'چیدمان خودکار</button><button class="pcb-auto" data-a="routes">' + IC.routes + 'ترک‌کشی خودکار</button><button class="pcb-auto" data-a="pdf" title="خروجی PDF برای چاپ (ترک‌ها / سیلک‌اسکرین)">' + IC.pdf + 'خروجی PDF (چاپ)</button><div class="pcb-hint" style="font-size:12px;line-height:1.7;opacity:.7;margin-top:8px">قطعه را انتخاب کن و R بزن تا بچرخد (Shift+R برعکس). ترک را بگیر و بکش تا مسیرش عوض شود؛ Delete = حذف ترک (اتصال خط‌چین می‌ماند). دوبار کلیک روی نقطه = حذف نقطه، روی ترک = مسیر خودکار. چیدمان و ترک‌کشی خودکار قطعه‌ها را جابه‌جا و در صورت نیاز می‌چرخاند و ترک‌ها را طوری می‌کشد که به پد و ترک شبکهٔ دیگر نخورند. سیم‌کشی (X): روی یک پد بزن، نقطه بگذار و روی پدِ هم‌شبکه تمام کن؛ Esc = لغو.</div></aside>' +
       '<div class="pcb-stage"><svg class="pcb-svg" xmlns="http://www.w3.org/2000/svg"></svg><div class="pcb-fab"><button data-z="1.25">+</button><button data-z=".8">−</button><button data-z="0">⤢</button></div><div class="pcb-stat"></div></div>';
     host.appendChild(el);
     document.addEventListener('keydown', onKey);
@@ -694,6 +887,7 @@ function create(host, api){
     el.tbl.addEventListener('change', e => { const s = e.target.closest('select'); if(!s) return; st.fp[s.dataset.id] = +s.value; save(); rebuild(); table(); draw(); });
     el.tbl.addEventListener('click', e => { const r = e.target.closest('.pcb-row'); if(!r || e.target.closest('select')) return; sel = +r.dataset.id; selT = null; table(); draw(); });
     el.querySelector('[data-a="rotate"]').addEventListener('click', () => rotateSel(1));
+    el.querySelector('[data-a="pdf"]').addEventListener('click', exportDialog);
     el.querySelector('[data-a="del"]').addEventListener('click', () => { if(!deleteTrace()) say('اول یک ترک را انتخاب کن.'); });
     el.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
     el.querySelector('[data-a="layout"]').addEventListener('click', () => { const r = autoLayout(); fit(); table(); say(r.failed ? failMsg(r.failed) : 'چیدمان و ترک‌کشی بدون برخورد انجام شد'); });
