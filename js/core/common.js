@@ -133,6 +133,8 @@ questTab.classList.add('active');
 // Whole Lab tab starts locked; quest.js flips this to false once the
 // first mission is completed (see updateLabTabLock in quest.js).
 let labTabLocked = true;
+// تب «طراحی مدار» هم تا سطح ۳ قفل است؛ quest.js (updateCircuitTabLock) آن را باز می‌کند.
+let circuitTabLocked = true;
 
 function switchTab(which){
   const toLab = which === 'lab';
@@ -167,7 +169,14 @@ function switchTab(which){
   }
 }
 tabQuestBtn.addEventListener('click', () => switchTab('quest'));
-tabCircuitBtn.addEventListener('click', () => switchTab('circuit'));
+tabCircuitBtn.addEventListener('click', () => {
+  if(circuitTabLocked){
+    SFX.locked();
+    if(typeof showKnightLine === 'function' && typeof circuitTabLockText === 'function') showKnightLine(circuitTabLockText(), 'stern');
+    return;
+  }
+  switchTab('circuit');
+});
 tabLabBtn.addEventListener('click', () => {
   if(labTabLocked){ SFX.locked(); return; }
   switchTab('lab');

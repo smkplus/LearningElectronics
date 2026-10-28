@@ -72,9 +72,9 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/common.css">
+<link rel="stylesheet" href="css/common.css?v=2">
 <link rel="stylesheet" href="css/dialogue.css?v=1">
-<link rel="stylesheet" href="css/quest.css?v=11">
+<link rel="stylesheet" href="css/quest.css?v=13">
 <link rel="stylesheet" href="css/arduino-blocks.css?v=1">
 <link rel="stylesheet" href="css/lab.css?v=4">
 <link rel="stylesheet" href="css/circuit.css?v=7">
@@ -335,6 +335,7 @@
     <div class="xp-wrap">
       <div class="xp-label"><span class="mono" id="xpText">0 / 0 XP</span><span id="pctText">0%</span></div>
       <div class="xp-bar"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
+      <div class="xp-total" id="completionText">تکمیل مسیر: ۰%</div>
     </div>
     <div class="level-badge">⚜️ سطح <span class="mono" id="levelNum">۰</span></div>
   </div>
@@ -689,7 +690,7 @@
 <script src="js/quest/quest-robotics.js"></script>
 
 <!-- Deferred: core -->
-<script src="js/core/common.js?v=3" defer></script>
+<script src="js/core/common.js?v=4" defer></script>
 <!-- Deferred: Arduino blocks + simulator -->
 <script src="js/arduino/arduino-lang.js?v=3" defer></script>
 <script src="js/arduino/arduino-blocks.js?v=2" defer></script>
@@ -706,7 +707,7 @@
 <script src="js/circuit/circuit-3d.js?v=1" defer></script>
 <script src="js/circuit/circuit-pcb.js?v=1" defer></script>
 <script src="js/circuit/circuit-missions.js?v=1" defer></script>
-<script src="js/quest/quest.js?v=13" defer></script>
+<script src="js/quest/quest.js?v=18" defer></script>
 <!-- Deferred: electronics lab (board pinouts load in the middle; order kept) -->
 <script src="js/lab/component-library.js?v=2" defer></script>
 <script src="js/boards/arduino-nano.js?v=2" defer></script>

@@ -63,6 +63,7 @@
   .xp-wrap{ display:flex; flex-direction:column; gap:4px; min-width:160px; }
   .xp-label{ font-size:11px; color:var(--muted); display:flex; justify-content:space-between; }
   .xp-bar{ height:8px; border-radius:5px; background:#1c2330; overflow:hidden; border:1px solid var(--panel-border);}
+  .xp-total{ font-size:11px; color:var(--gold); opacity:.9; white-space:nowrap; }
   .xp-fill{ height:100%; background:linear-gradient(90deg,var(--trace),var(--gold)); transition:width .5s ease; }
   .level-badge{
     display:flex; align-items:center; gap:6px;

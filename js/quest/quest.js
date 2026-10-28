@@ -224,7 +224,9 @@ window.applyCloudProgress = (cloudProgress) => {
 };
 
 function isLocked(index){
-  if(TEST_MODE || index === 0 || progress[QUESTS[index].id]) return false;
+  if(TEST_MODE || progress[QUESTS[index].id]) return false;
+  if(groupLocked(QUESTS[index].group)) return true;
+  if(index === 0) return false;
   // اولین مأموریتِ هر بخش (طراحی مدار / الکترونیک / آردوینو / STM32 / رباتیک) از اول باز است
   if(QUESTS[index].group !== QUESTS[index-1].group) return false;
   return !progress[QUESTS[index-1].id];
@@ -236,6 +238,11 @@ function completedCount(){ return QUESTS.filter(q=>progress[q.id]).length; }
 const LEVEL_XP = 15;
 const levelFor = xp => Math.floor(Math.sqrt(xp / LEVEL_XP));
 const xpForLevel = lv => LEVEL_XP * lv * lv;
+// حداقل سطح لازم برای باز شدن هر بخش از مسیر
+const GROUP_MIN_LEVEL = { electronics:0, arduino:2, stm32:3, circuit:3, robotics:3 };
+const groupMinLevel = g => GROUP_MIN_LEVEL[g] || 0;
+const groupLocked = g => !TEST_MODE && levelFor(earnedXP()) < groupMinLevel(g);
+const groupsOpenedBy = (from, to) => QUEST_GROUPS.filter(g => groupMinLevel(g.id) > from && groupMinLevel(g.id) <= to);
 
 const container = document.getElementById('nodesContainer');
 // موتور باننر گفتگو (شوالیه/ولتاژ) به dialogue.js منتقل شد —
@@ -412,6 +419,14 @@ const LAB_INTRO_TEXT = 'به آزمایشگاه الکترونیک خوش اوم
 // introduces itself as the lab's own guide (see maybeShowLabIntro below).
 const VOLTAGE_INTRO_TEXT = 'سلام! من ولتاژ هستم ⚡ از این به بعد تو آزمایشگاه کنارتم و کمکت می‌کنم مفهوم‌ها رو با چشم خودت حس کنی.';
 
+const circuitTabLockText = () => `🔒 تب «طراحی مدار» از سطح ${toFa(groupMinLevel('circuit'))} باز می‌شود. با انجام مأموریت‌ها XP بگیر و سطحت را بالا ببر.`;
+function updateCircuitTabLock(){
+  const locked = groupLocked('circuit');
+  tabCircuitBtn.classList.toggle('locked', locked);
+  tabCircuitBtn.title = locked ? `از سطح ${toFa(groupMinLevel('circuit'))} باز می‌شود` : '';
+  circuitTabLocked = locked;   // global flag from common.js, read by tabCircuitBtn's click handler
+}
+
 function updateLabTabLock(){
   const done = completedCount();
   const unlocked = TEST_MODE || done >= LAB_TAB_UNLOCK_MISSIONS;
@@ -523,22 +538,83 @@ groupBar.setAttribute('role', 'tablist');
 questTabEl.insertBefore(groupBar, document.getElementById('pathWrap'));
 groupBar.addEventListener('click', (e) => {
   const b = e.target.closest('.qg-tab'); if(!b || b.dataset.g === activeGroup) return;
+  if(groupLocked(b.dataset.g)){
+    SFX.locked();
+    showKnightLine(`🔒 این بخش از سطح ${toFa(groupMinLevel(b.dataset.g))} باز می‌شود. با انجام مأموریت‌ها XP بگیر و سطحت را بالا ببر.`, 'stern');
+    return;
+  }
   SFX.click();
+  freshGroups.delete(b.dataset.g);
   activeGroup = b.dataset.g; saveActiveGroup(); render();
 });
+const freshGroups = new Set();   // بخش‌هایی که تازه باز شده‌اند و هنوز دیده نشده‌اند
 function pickInitialGroup(){
   let g = null;
   try{ g = localStorage.getItem(QUEST_GROUP_KEY); }catch(e){}
-  if(QUEST_GROUPS.some(x => x.id === g)) return g;
-  const firstOpen = QUESTS.find(q => !progress[q.id]);
+  if(QUEST_GROUPS.some(x => x.id === g) && !groupLocked(g)) return g;
+  const firstOpen = QUESTS.find(q => !progress[q.id] && !groupLocked(q.group));
   return firstOpen ? firstOpen.group : QUEST_GROUPS[0].id;
 }
 function paintGroupBar(){
   groupBar.innerHTML = QUEST_GROUPS.map(gr => {
     const all = QUESTS.filter(q => q.group === gr.id), done = all.filter(q => progress[q.id]).length;
-    const on = gr.id === activeGroup;
-    return `<button type="button" class="qg-tab${on ? ' on' : ''}${done === all.length ? ' full' : ''}" role="tab" aria-selected="${on}" data-g="${gr.id}"><span class="qg-ic" aria-hidden="true">${gr.icon}</span><span class="qg-t">${gr.title}</span><small class="qg-n">${toFa(done)}/${toFa(all.length)}</small></button>`;
+    const on = gr.id === activeGroup, lock = groupLocked(gr.id);
+    return `<button type="button" class="qg-tab${on ? ' on' : ''}${done === all.length ? ' full' : ''}${lock ? ' locked' : ''}${freshGroups.has(gr.id) ? ' fresh' : ''}" role="tab" aria-selected="${on}" data-g="${gr.id}"><span class="qg-ic" aria-hidden="true">${lock ? '🔒' : gr.icon}</span><span class="qg-t">${gr.title}</span><small class="qg-n">${lock ? 'سطح ' + toFa(groupMinLevel(gr.id)) : toFa(done) + '/' + toFa(all.length)}</small></button>`;
   }).join('');
+}
+
+/* پیام باز شدنِ قفلِ بخش(های) جدید */
+function showUnlockPopup(groups, level){
+  const old = document.getElementById('ulPop'); if(old) old.remove();
+  const many = groups.length > 1;
+  const pop = document.createElement('div');
+  pop.id = 'ulPop'; pop.className = 'ul-pop'; pop.dir = 'rtl';
+  pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-modal', 'true'); pop.setAttribute('aria-label', 'بخش جدید باز شد');
+  pop.innerHTML = `
+    <div class="ul-card">
+      <div class="ul-lock">
+        ${[0, 60, 120, 180, 240, 300].map(a => `<i class="ul-sp" style="--a:${a}deg"></i>`).join('')}
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <defs><linearGradient id="ulGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f5d676"/><stop offset="1" stop-color="#c8952c"/></linearGradient></defs>
+          <g class="ul-wiggle">
+            <path class="ul-shackle" d="M22 30V20a10 10 0 0 1 20 0v10" fill="none" stroke="#e3e8f0" stroke-width="5" stroke-linecap="round"/>
+            <rect x="13" y="28" width="38" height="30" rx="7" fill="url(#ulGold)"/>
+            <circle cx="32" cy="41" r="4" fill="#3a2a08"/><rect x="30.2" y="43" width="3.6" height="8" rx="1.8" fill="#3a2a08"/>
+          </g>
+        </svg>
+      </div>
+      <div class="ul-eyebrow">سطح ${toFa(level)} را رد کردی!</div>
+      <div class="ul-title">قفل باز شد</div>
+      <div class="ul-groups">${groups.map(g => `<span class="ul-chip"><span aria-hidden="true">${g.icon}</span>${g.title}</span>`).join('')}</div>
+      <div class="ul-sub">${many ? 'مأموریت‌های تازهٔ این بخش‌ها' : 'مأموریت‌های تازهٔ این بخش'} منتظر توست.${groups.some(g => g.id === 'circuit') ? ' تب «طراحی مدار» هم باز شد.' : ''}</div>
+      <div class="ul-btns">
+        <button type="button" class="ul-go">${many ? 'ببین چی باز شد' : 'برو به ' + groups[0].title}</button>
+        <button type="button" class="ul-later">بعداً</button>
+      </div>
+    </div>`;
+  const onKey = e => { if(e.key === 'Escape') close(); };
+  const close = () => {
+    document.removeEventListener('keydown', onKey);
+    pop.classList.add('out'); setTimeout(() => pop.remove(), 220);
+  };
+  pop.addEventListener('click', e => { if(e.target === pop) close(); });
+  pop.querySelector('.ul-later').addEventListener('click', () => { SFX.click(); close(); });
+  pop.querySelector('.ul-go').addEventListener('click', () => {
+    SFX.click(); close();
+    closeOverlay();   // پنجرهٔ مأموریت ممکن است هنوز باز باشد (مثلاً بعد از شبیه‌ساز)
+    if(!questTabEl.classList.contains('active')) switchTab('quest');
+    freshGroups.delete(groups[0].id);
+    activeGroup = groups[0].id; saveActiveGroup(); render();
+    requestAnimationFrame(() => groupBar.scrollIntoView({ behavior:'smooth', block:'start' }));
+  });
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(pop);
+  SFX.unlock();
+  screenFlash();
+  confettiBurst(.5, .38, 140, true);
+  setTimeout(() => confettiBurst(.25, .45, 60, false), 220);
+  setTimeout(() => confettiBurst(.75, .45, 60, false), 380);
+  pop.querySelector('.ul-go').focus();
 }
 
 function render(){
@@ -601,20 +677,25 @@ function render(){
   drawPath();
   updateLabLocks();
   updateLabTabLock();
+  updateCircuitTabLock();
 }
 
 let lastEarned = 0, lastLevel = 0;
 function updateHUD(){
   const earned = earnedXP(), total = totalXP();
-  const pct = Math.round((earned/total)*100);
+  const level = levelFor(earned);
+  const maxed = level >= levelFor(total);
+  const from = xpForLevel(level), span = xpForLevel(level + 1) - from;
+  const pct = maxed ? 100 : Math.round(((earned - from) / span) * 100);
   const xpFill = document.getElementById('xpFill');
-  document.getElementById('xpText').textContent = `${toFa(earned)} / ${toFa(total)} XP`;
-  document.getElementById('pctText').textContent = toFa(pct) + '%';
+  document.getElementById('xpText').textContent = maxed ? `${toFa(earned)} XP · سطح نهایی` : `${toFa(earned - from)} / ${toFa(span)} XP`;
+  document.getElementById('pctText').textContent = maxed ? '' : toFa(pct) + '%';
   xpFill.style.width = pct + '%';
+  const done = completedCount(), all = QUESTS.length;
+  document.getElementById('completionText').textContent = `تکمیل مسیر: ${toFa(Math.round((done / all) * 100))}% · ${toFa(done)} از ${toFa(all)} مأموریت`;
   if(earned > lastEarned){
     xpFill.classList.remove('filling'); void xpFill.offsetWidth; xpFill.classList.add('filling');
   }
-  const level = levelFor(earned);
   const levelEl = document.getElementById('levelNum');
   const badge = document.querySelector('.level-badge');
   badge.title = earned < total ? `${toFa(xpForLevel(level + 1) - earned)} XP تا سطح بعد` : '';
@@ -830,7 +911,9 @@ function onNodeClick(i, locked, evt){
     if(nodeEl){
       nodeEl.classList.remove('shake'); void nodeEl.offsetWidth; nodeEl.classList.add('shake');
     }
-    showKnightLine(KNIGHT_LOCKED[Math.floor(Math.random()*KNIGHT_LOCKED.length)], 'stern');
+    showKnightLine(groupLocked(QUESTS[i].group)
+      ? `🔒 این بخش از سطح ${toFa(groupMinLevel(QUESTS[i].group))} باز می‌شود. با انجام مأموریت‌ها XP بگیر و سطحت را بالا ببر.`
+      : KNIGHT_LOCKED[Math.floor(Math.random()*KNIGHT_LOCKED.length)], 'stern');
     return;
   }
   SFX.open();
@@ -1019,8 +1102,10 @@ function closeOverlay(){
 function completeMission(q, { closeOverlayAfter = 420 } = {}){
   if(progress[q.id]) return;
 
+  const levelBefore = levelFor(earnedXP());
   progress[q.id] = true;
   saveProgress();
+  const opened = groupsOpenedBy(levelBefore, levelFor(earnedXP()));
 
   track('mission_completed', { id: q.id, title: q.title, xp: q.xp, boss: !!q.boss });
   if (completedCount() === QUESTS.length){
@@ -1046,7 +1131,12 @@ function completeMission(q, { closeOverlayAfter = 420 } = {}){
     q.boss ? 'powered' : 'wink'
   );
 
+  opened.forEach(g => freshGroups.add(g.id));
   render();
+  if(opened.length){
+    const lv = levelFor(earnedXP());
+    setTimeout(() => showUnlockPopup(opened, lv), (closeOverlayAfter || 0) + 500);
+  }
   // celebrate the freshly completed node in the path
   requestAnimationFrame(() => {
     const doneNode = Array.from(container.querySelectorAll('.node')).find(n =>
