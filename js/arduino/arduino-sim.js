@@ -843,6 +843,41 @@ void loop() {
       }
     },
 
+    esp32blink: {
+      board: () => esp32BoardSVG({ led: true }),
+      blocksTask: 'blink',
+      hint: 'کد چشمک‌زن را بنویس و «اجرا کن» را بزن — LED روی GPIO2 باید چشمک بزند.',
+      successText: '🎉 آفرین! LED روی GPIO2 روشن و خاموش شد — اولین چشمک‌زن ESP32 تو آماده است.',
+      successLog: '✓ چشمک‌زدن LED روی GPIO2 تشخیص داده شد.',
+      starter: pins => `int ledPin = ${pins.led};
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+}
+
+void loop() {
+
+}
+`,
+      check(state) {
+        if (state.pinModes[state.pins.led] !== 'OUTPUT') {
+          return { ok: false, reason: `پایه ${state.pins.led} هنوز با ()pinMode روی OUTPUT تنظیم نشده.` };
+        }
+        const pinEvents = ledEventsOf(state);
+        if (pinEvents.length < 2) {
+          return { ok: false, reason: 'هنوز LED روشن و خاموش (چشمک) نشده — از ()digitalWrite با HIGH و LOW روی پایه‌ی ۲ استفاده کن.' };
+        }
+        let toggles = 0;
+        for (let i = 1; i < pinEvents.length; i++) {
+          if (pinEvents[i].val !== pinEvents[i - 1].val && pinEvents[i].ms > pinEvents[i - 1].ms) toggles++;
+        }
+        if (toggles < 2) {
+          return { ok: false, reason: 'LED باید حداقل یک‌بار کامل روشن ← خاموش ← روشن شود (با delay() بین هرکدام).' };
+        }
+        return { ok: true };
+      }
+    },
+
     button: {
       board: pins => ledButtonSVG(pins.led, pins.button),
       hasButton: true,

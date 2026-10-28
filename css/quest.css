@@ -868,3 +868,19 @@ body.sim-fullscreen-lock #knightSection{ z-index:1200 !important; }
 .hs-simmount .sim-board-wrap > *{ width:100% !important; max-width:none !important; }
 .hs-simmount .sim-board-wrap .ls-svg{ width:100% !important; max-width:none !important; height:auto !important; }
 .hs-simmount .sim-board-wrap .ir-tabs{ margin-bottom:10px; }
+
+
+/* ===== مأموریت آشنایی با ESP32 ===== */
+.es-wrap .sim-board-wrap{ margin:10px 0; }
+.es-part{ cursor:pointer; outline:none; }
+.es-hl{ fill:transparent; stroke:transparent; stroke-width:1.6; stroke-dasharray:3 2; }
+.es-part:hover .es-hl, .es-part:focus-visible .es-hl{ stroke:var(--gold,#d4af37); fill:rgba(212,175,55,.08); }
+.es-part.es-seen .es-hl{ stroke:rgba(110,230,184,.45); }
+.es-part.es-on .es-hl{ stroke:var(--trace-bright,#6ee6b8); fill:rgba(110,230,184,.1); stroke-dasharray:none; }
+.es-info{ min-height:74px; padding:12px 14px; border-radius:12px; border:1px solid var(--panel-border,#2a3346); background:var(--panel,#121826); font-size:13.5px; line-height:2; }
+.es-info b{ display:block; margin-bottom:2px; color:var(--gold,#d4af37); font-size:14.5px; }
+.es-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.es-chip{ font-family:inherit; font-size:12px; font-weight:700; padding:5px 11px; border-radius:999px; cursor:pointer; color:var(--muted,#8b95a5); background:transparent; border:1px solid var(--panel-border,#2a3346); }
+.es-chip.seen{ color:var(--trace-bright,#6ee6b8); border-color:rgba(110,230,184,.5); }
+.es-chip.on{ color:var(--gold,#d4af37); border-color:var(--gold,#d4af37); background:rgba(212,175,55,.14); }
+.es-prog{ margin-top:8px; font-size:12px; color:var(--muted,#8b95a5); }

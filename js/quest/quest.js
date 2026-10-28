@@ -4,6 +4,7 @@
    داده‌ی مأموریت‌ها و شبیه‌سازها در فایل‌های جدا:
      quest-electronics.js
      quest-arduino.js
+     quest-esp32.js
      quest-stm32.js
      quest-robotics.js
    به common.js (SFX) و dialogue.js نیاز دارد.
@@ -25,12 +26,14 @@ const TEST_MODE = (() => {
    quest-circuit.js     → QUESTS_CIRCUIT
    quest-electronics.js → QUESTS_ELECTRONICS
    quest-arduino.js     → QUESTS_ARDUINO
+   quest-esp32.js       → QUESTS_ESP32
    quest-stm32.js       → QUESTS_STM32
    quest-robotics.js    → QUESTS_ROBOTICS
    ترتیب قفل‌شدن همان ترتیب این آرایه است. */
 const QUESTS = [
   ...QUESTS_ELECTRONICS,
   ...QUESTS_ARDUINO,
+  ...QUESTS_ESP32,
   ...QUESTS_STM32,
   ...QUESTS_CIRCUIT,
   ...QUESTS_ROBOTICS
@@ -39,6 +42,7 @@ const QUESTS = [
 const QUEST_GROUPS = [
   { id: 'electronics', icon: '🔋', title: 'الکترونیک' },
   { id: 'arduino',  icon: '⚡', title: 'آردوینو' },
+  { id: 'esp32',    icon: '📡', title: 'ESP32' },
   { id: 'stm32',    icon: '🔵', title: 'STM32' },
   { id: 'circuit', icon: '🔌', title: 'طراحی مدار' },
   { id: 'robotics', icon: '🤖', title: 'رباتیک' }
@@ -48,6 +52,7 @@ const QUEST_GROUPS = [
   QUESTS.forEach(q => {
     if(q.id === 'schematic_intro') g = 'circuit';
     else if(q.id === 'hello') g = 'arduino';
+    else if(q.id === 'esp32_intro') g = 'esp32';
     else if(q.id === 'stm32_cube') g = 'stm32';
     else if(q.id === 'line_intro') g = 'robotics';
     q.group = g;
@@ -239,7 +244,7 @@ const LEVEL_XP = 15;
 const levelFor = xp => Math.floor(Math.sqrt(xp / LEVEL_XP));
 const xpForLevel = lv => LEVEL_XP * lv * lv;
 // حداقل سطح لازم برای باز شدن هر بخش از مسیر
-const GROUP_MIN_LEVEL = { electronics:0, arduino:2, stm32:3, circuit:3, robotics:3 };
+const GROUP_MIN_LEVEL = { electronics:0, arduino:2, esp32:3, stm32:3, circuit:3, robotics:3 };
 const groupMinLevel = g => GROUP_MIN_LEVEL[g] || 0;
 const groupLocked = g => !TEST_MODE && levelFor(earnedXP()) < groupMinLevel(g);
 const groupsOpenedBy = (from, to) => QUEST_GROUPS.filter(g => groupMinLevel(g.id) > from && groupMinLevel(g.id) <= to);
@@ -761,6 +766,7 @@ const SIM_MISSIONS = {
   button: { task: 'button', pin: 8, buttonPin: 2 },
   pot:    { task: 'pot',    pin: 9, potPin: 'A0' },
   servo:  { task: 'servo',  pin: 9 },
+  esp32_blink: { task: 'esp32blink', pin: 2 },
   stm32_blink: { task: 'stm32blink', pin: 'PC13' }
 };
 const modalSim = document.getElementById('modalSim');
@@ -788,6 +794,8 @@ const CONCEPT_SIMS = {
   line_sensor: mountLineSensorMission,
   line_logic: mountLineLogicMission,
   line_follow: mountLineFollowSim,
+  // ESP32 — quest-esp32.js
+  esp32_intro: mountEsp32IntroSim,
   // STM32 — quest-sims-stm32.js + cube-block.js / hal-code-editor.js
   stm32_cube: mountStm32CubeSim,
   stm32_stlink: mountStlinkSim,
@@ -822,12 +830,18 @@ const HAL_INTRO_TEXT = {
   motor_pwm: '🎚️ جهت را داری؛ حالا سرعت. پایه‌های PA8 و PA9 را تایمر کن، PWM را قبل از حلقه روشن کن و با __HAL_TIM_SET_COMPARE سرعت بده.'
 };
 
+const ESP32_INTRO_TEXT = {
+  esp32_intro: '📡 به بخش ESP32 خوش اومدی! این برد Wi-Fi و بلوتوث داخل خودش داره و با همون کد آردوینو برنامه می‌گیره. روی هر بخش برد بزن تا بفهمی چی کجاست؛ هر ۷ بخش رو که دیدی مأموریت تکمیل می‌شه.',
+  esp32_blink: '💡 کد آردوینو رو بلدی؟ پس ESP32 رو هم بلدی! LED داخل برد روی پایه‌ی ۲ نشسته؛ همون چشمک‌زن همیشگی رو بنویس. حواست باشه ولتاژ منطقش ۳٫۳ ولته، نه ۵ ولت.'
+};
+
 const EDITOR_GUIDE = {
   hello:  (c) => 'اینجا باید دو کار بکنی: ۱) در {{setup()}} با {{Serial.begin(9600)}} ارتباط سریال را باز کن. ۲) با {{Serial.println("Hello World")}} پیام را چاپ کن. بعدش «اجرا کن» را بزن. در حالت بلوکی هم همین دو کار را با بلوک‌های سریال انجام بده.',
   led:    (c) => `برای روشن‌شدن LED در {{setup()}} پین ${c.pin} را با {{pinMode(${c.pin}, OUTPUT)}} خروجی کن و بعد با {{digitalWrite(${c.pin}, HIGH)}} روشنش کن. بعدش «اجرا کن» را بزن.`,
   blink:  (c) => `پین ${c.pin} را در {{setup()}} خروجی کن. در {{loop()}} این چهار خط را پشت‌سرهم بنویس: {{digitalWrite(${c.pin}, HIGH)}} ← {{delay(500)}} ← {{digitalWrite(${c.pin}, LOW)}} ← {{delay(500)}}. بعد اجرا کن.`,
   button: (c) => `در {{setup()}} پین ${c.buttonPin} را {{INPUT_PULLUP}} و پین ${c.pin} را {{OUTPUT}} کن. در {{loop()}} اگر {{digitalRead(${c.buttonPin}) == LOW}} بود (دکمه فشرده است) پین ${c.pin} را {{HIGH}} کن، وگرنه {{LOW}}. بعد اجرا کن و دکمه را فشار بده.`,
   pot:    (c) => `در {{loop()}} مقدار ولوم را با {{analogRead(${c.potPin})}} بخوان، با {{map(v, 0, 1023, 0, 255)}} به بازه‌ی PWM ببر و با {{analogWrite(${c.pin}, ...)}} به LED بده. اجرا کن و ولوم را بچرخان.`,
+  esp32_blink: (c) => `پین ${c.pin} در کد اولیه با {{pinMode(ledPin, OUTPUT)}} خروجی شده. در {{loop()}} این چهار خط را پشت‌سرهم بنویس: {{digitalWrite(ledPin, HIGH)}} ← {{delay(500)}} ← {{digitalWrite(ledPin, LOW)}} ← {{delay(500)}}. روی ESP32 مقدار HIGH یعنی LED روشن. بعد اجرا کن.`,
   stm32_blink: () => 'داخل {{main()}} بعد از راه‌اندازی‌ها، در حلقه‌ی {{while (1)}} این دو خط را بنویس: {{HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13)}} و بعد {{HAL_Delay(500)}}. روی Blue Pill مقدار صفر یعنی LED روشن. بعد «اجرا کن» را بزن.',
   servo:  (c) => `اول {{#include <Servo.h>}} و یک شیء {{Servo}} بساز، بعد در {{setup()}} با {{attach(${c.pin})}} وصلش کن. با یک حلقه‌ی {{for}} زاویه را از ۰ تا ۱۸۰ ببر و در هر مرحله {{servo.write(angle)}} و {{delay(15)}} بگذار. بعد اجرا کن.`
 };
@@ -978,6 +992,10 @@ function onNodeClick(i, locked, evt){
 
   if(CIRCUIT_INTRO_TEXT[q.id] && !done){
     setTimeout(() => showKnightLine(CIRCUIT_INTRO_TEXT[q.id], 'happy', 'knight'), 400);
+  }
+
+  if(ESP32_INTRO_TEXT[q.id] && !done){
+    setTimeout(() => showKnightLine(ESP32_INTRO_TEXT[q.id], 'happy', 'knight'), 400);
   }
 
   if(HAL_INTRO_TEXT[q.id] && !done){
