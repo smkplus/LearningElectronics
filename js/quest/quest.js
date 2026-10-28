@@ -232,6 +232,10 @@ function isLocked(index){
 function totalXP(){ return QUESTS.reduce((s,q)=>s+q.xp,0); }
 function earnedXP(){ return QUESTS.reduce((s,q)=>s+(progress[q.id]?q.xp:0),0); }
 function completedCount(){ return QUESTS.filter(q=>progress[q.id]).length; }
+// سطح بر اساس XP است نه تعداد مأموریت: سطح L با ۱۵×L² امتیاز شروع می‌شود (۱۵، ۶۰، ۱۳۵، ۲۴۰ …)
+const LEVEL_XP = 15;
+const levelFor = xp => Math.floor(Math.sqrt(xp / LEVEL_XP));
+const xpForLevel = lv => LEVEL_XP * lv * lv;
 
 const container = document.getElementById('nodesContainer');
 // موتور باننر گفتگو (شوالیه/ولتاژ) به dialogue.js منتقل شد —
@@ -610,11 +614,12 @@ function updateHUD(){
   if(earned > lastEarned){
     xpFill.classList.remove('filling'); void xpFill.offsetWidth; xpFill.classList.add('filling');
   }
-  const level = Math.min(completedCount(), QUESTS.length);
+  const level = levelFor(earned);
   const levelEl = document.getElementById('levelNum');
+  const badge = document.querySelector('.level-badge');
+  badge.title = earned < total ? `${toFa(xpForLevel(level + 1) - earned)} XP تا سطح بعد` : '';
   if(level !== lastLevel){
     animateCount(levelEl, lastLevel, level, 400);
-    const badge = document.querySelector('.level-badge');
     badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump');
   } else {
     levelEl.textContent = toFa(level);
