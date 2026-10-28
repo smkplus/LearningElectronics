@@ -61,11 +61,86 @@ function mountCircuitMission(container, id, { onSuccess, alreadyDone } = {}){
     isActive:() => container.isConnected && container.offsetParent !== null
   });
   requestAnimationFrame(() => requestAnimationFrame(() => ed.onShow()));
+  addDesignerButton(container);
   return { stop(){ ed.stop(); } };
 }
 const mountLedCircuitMission = (c, o) => mountCircuitMission(c, 'led_circuit', o);
 const mountSwitchLampMission = (c, o) => mountCircuitMission(c, 'switch_lamp', o);
 const mountTrafficLightMission = (c, o) => mountCircuitMission(c, 'traffic_light', o);
+
+/* ---------- طراحی آزاد: صفحهٔ تمام‌صفحه با ادیتور کامل (همهٔ قطعه‌ها، بدون مأموریت) ---------- */
+const CIRCUIT_FREE_KEY = 'circuit-free-design-v1';
+let circuitDesigner = null;
+
+function openCircuitDesigner(){
+  if(circuitDesigner || typeof CircuitEditor === 'undefined') return;
+  if(!document.getElementById('cdzCss')){
+    const css = document.createElement('style');
+    css.id = 'cdzCss';
+    css.textContent = '.cdz{position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;background:var(--bg,#0f1420);color:var(--fg,#e8eaf0);box-sizing:border-box}' +
+      '.cdz *{box-sizing:border-box}' +
+      '.cdz-bar{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;padding:8px max(12px,env(safe-area-inset-right,0px)) 8px max(12px,env(safe-area-inset-left,0px));border-bottom:1px solid rgba(255,255,255,.12)}' +
+      '.cdz-bar b{font-size:16px}.cdz-sub{opacity:.65;font-size:12px;margin-inline-end:auto}' +
+      '.cdz-bar button{font:inherit;font-size:13px;color:inherit;background:transparent;border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:6px 12px;cursor:pointer}' +
+      '.cdz-bar button:hover{border-color:#ff6a55}.cdz-bar button:focus-visible{outline:2px solid #ff6a55;outline-offset:2px}' +
+      '.cdz-body{flex:1;min-height:0;position:relative;overflow:auto}' +
+      '.cdz-body .cv-wrap{max-width:none;max-height:none;margin:0;padding:0 12px 12px}' +
+      '@media (min-width:761px){' +
+        '.cdz-body{overflow:hidden}' +
+        '.cdz-body .cv-wrap{height:100%;display:flex;flex-direction:column}' +
+        '.cdz-body .cv-main{flex:1;min-height:0;margin-top:12px}' +
+        '.cdz-body .cv-wrap .cv-stage{height:auto;min-height:0}' +
+        '.cdz-body .cv-wrap .cv-side{width:340px;flex:0 0 340px;gap:12px;min-height:0;overflow-y:auto;overflow-x:hidden;color-scheme:dark;scrollbar-width:thin;scrollbar-color:#2c3548 transparent}' +
+        '.cdz-body .cv-props,.cdz-body .cv-tasks{flex:none}' +
+        '.cdz-body .cv-props-title{font-size:16px}.cdz-body .cv-props-empty{font-size:13.5px}' +
+        '.cdz-body .cv-wrap .cv-palette{max-height:none;overflow:visible;flex:none}' +
+        '.cdz-body .cv-side .cv-toolbar{gap:8px;flex:none}' +
+        '.cdz-body .cv-side .cv-toolbar .cv-group{flex:1 1 100%;flex-wrap:wrap;gap:8px}' +
+        '.cdz-body .cv-side .cv-toolbar .cv-group:nth-last-child(-n+2){flex-basis:calc(50% - 4px)}' +
+        '.cdz-body .cv-side .cv-toolbar .cv-btn{flex:1 1 auto;min-height:42px;padding:9px 12px;font-size:14px}' +
+        '.cdz-body .cv-side .cv-toolbar .cv-btn svg{width:18px;height:18px}' +
+        '.cdz-body .cv-side .cv-menu{inset-inline-start:auto;inset-inline-end:0}' +
+        '.cdz-body .cv-pal-title{font-size:13px}.cdz-body .cv-pal-grid{gap:8px}' +
+        '.cdz-body .cv-pal-item{padding:9px 4px;font-size:12px}.cdz-body .cv-pal-item svg{width:48px;height:48px}' +
+        '.cdz-body .cv-status{flex:none}' +
+      '}';
+    document.head.appendChild(css);
+  }
+  const el = document.createElement('div');
+  el.className = 'cdz'; el.dir = 'rtl';
+  el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'طراحی آزاد مدار');
+  el.innerHTML = '<div class="cdz-bar"><button type="button" data-a="close" aria-label="بستن">✕ بستن</button><b>طراحی آزاد مدار</b>' +
+    '<span class="cdz-sub">همهٔ قطعه‌ها در دسترس است · طرح شما خودکار ذخیره می‌شود</span>' +
+    '<button type="button" data-a="new">طرح جدید (صفحهٔ خالی)</button></div><div class="cdz-body"></div>';
+  document.body.appendChild(el);
+  const prevOverflow = document.body.style.overflow;
+  document.body.style.overflow = 'hidden';
+  const body = el.querySelector('.cdz-body');
+  const ed = CircuitEditor.create(body, { storageKey:CIRCUIT_FREE_KEY, isActive:() => el.isConnected });
+  requestAnimationFrame(() => requestAnimationFrame(() => ed.onShow()));
+  el.addEventListener('click', e => {
+    const b = e.target.closest('[data-a]'); if(!b) return;
+    if(b.dataset.a === 'close') closeCircuitDesigner();
+    else if(b.dataset.a === 'new'){ const c = body.querySelector('[data-act="clear"]'); if(c) c.click(); }   // همان «پاک‌کردن همه» (با تأیید و قابل واگرد)
+  });
+  circuitDesigner = { el, ed, prevOverflow };
+}
+function closeCircuitDesigner(){
+  if(!circuitDesigner) return;
+  const d = circuitDesigner; circuitDesigner = null;
+  d.ed.stop(); d.el.remove();
+  document.body.style.overflow = d.prevOverflow || '';
+}
+// دکمهٔ «طراحی آزاد» کنار دکمه‌های نوار ابزارِ مأموریت
+function addDesignerButton(container){
+  const bar = container.querySelector('.cv-toolbar');
+  if(!bar || bar.querySelector('[data-cdz]')) return;
+  const g = document.createElement('div');
+  g.className = 'cv-group';
+  g.innerHTML = '<button type="button" class="cv-btn" data-cdz title="صفحهٔ جدید برای طراحی آزاد مدار با همهٔ قطعه‌ها"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 12v6M9 15h6"/></svg>طراحی آزاد</button>';
+  g.firstChild.addEventListener('click', openCircuitDesigner);
+  bar.insertBefore(g, bar.querySelector('.cv-menu-wrap'));
+}
 
 /* ---------- آشنایی با طراحی مدار: شماتیک و فوت‌پرینت (آموزشی) ---------- */
 const CI_SYM = {

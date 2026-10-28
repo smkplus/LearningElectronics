@@ -554,6 +554,8 @@ function create(host, api){
   }
   const onKey = e => {
     if(!el || !el.getClientRects().length || e.ctrlKey || e.metaKey || e.altKey) return;
+    const modal = document.querySelector('.cdz, .c3d2');   // صفحهٔ طراحی آزاد یا نمای سه‌بعدی
+    if(modal && !modal.contains(el)) return;                // PCB پشت آن است؛ کلیدها مالِ پنجرهٔ بالاست
     const tg = e.target && e.target.tagName;
     if(tg === 'INPUT' || tg === 'TEXTAREA' || tg === 'SELECT') return;
     if(e.code === 'KeyR'){ e.preventDefault(); rotateSel(e.shiftKey ? -1 : 1); }
