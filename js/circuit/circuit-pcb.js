@@ -70,6 +70,297 @@ function injectCss(){
   document.head.appendChild(s);
 }
 
+
+/* ====================================================================
+   چیدمان و ترک‌کشی خودکار — بدون برخورد
+   • مسیریاب: A* روی شبکهٔ ۰٫۶۳۵ میلی‌متری با حرکت‌های ۰/۴۵/۹۰ درجه. پدها و ترک‌های
+     شبکه‌های دیگر مانع‌اند (با فاصلهٔ ایمنی)، پس ترک دور می‌زند به‌جای اینکه از روی آن‌ها رد شود.
+   • چیدمان: شبیه‌سازی تبرید (جابه‌جایی، چرخش، جابه‌جاییِ دو قطعه) با هزینهٔ طول سیم، هم‌پوشانی
+     و تقاطع؛ بهترین چیدمان‌ها واقعاً ترک‌کشی می‌شوند و بهترین نتیجه نگه داشته می‌شود.
+   ==================================================================== */
+const TW = .9 * MM, CLR = .3 * MM, STEP = 5, TURN = .7, COURT_PEN = .9, EPS = .8;
+const DIRS = [[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]];
+const prng = seed => () => { seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const ptSeg = (x, y, ax, ay, bx, by) => {
+  const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+  const t = l2 ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / l2)) : 0;
+  return Math.hypot(x - (ax + t * dx), y - (ay + t * dy));
+};
+const orient = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+const segSeg = (a, b, c, d) => {
+  const o1 = orient(a, b, c), o2 = orient(a, b, d), o3 = orient(c, d, a), o4 = orient(c, d, b);
+  if(o1 * o2 < 0 && o3 * o4 < 0) return 0;
+  return Math.min(ptSeg(a[0], a[1], c[0], c[1], d[0], d[1]), ptSeg(b[0], b[1], c[0], c[1], d[0], d[1]),
+    ptSeg(c[0], c[1], a[0], a[1], b[0], b[1]), ptSeg(d[0], d[1], a[0], a[1], b[0], b[1]));
+};
+const nearEq = (a, b) => Math.abs(a[0] - b[0]) < 1e-6 && Math.abs(a[1] - b[1]) < 1e-6;
+const polyLen = p => { let s = 0; for(let i = 1; i < p.length; i++) s += Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]); return s; };
+// نقطه‌های تکراری و میانی‌های هم‌راستا را حذف می‌کند
+const clean = pts => {
+  const o = [];
+  pts.forEach(p => { if(!o.length || !nearEq(o[o.length - 1], p)) o.push(p); });
+  for(let i = o.length - 2; i > 0; i--){
+    const a = o[i - 1], b = o[i], c = o[i + 1];
+    if(Math.abs((b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0])) < 1e-4 && (b[0] - a[0]) * (c[0] - b[0]) + (b[1] - a[1]) * (c[1] - b[1]) > 0) o.splice(i, 1);
+  }
+  return o;
+};
+const dogPoly = (a, b) => clean([a, dog(a, b), b]);
+const samePoly = (A, B) => { A = clean(A); B = clean(B); return A.length === B.length && A.every((p, i) => nearEq(p, B[i])); };
+// چندخطیِ هشت‌جهته → کمترین نقاط عبور که route() دقیقاً همان مسیر را بازسازی کند
+const toWps = P => {
+  const n = P.length - 1, w = [];
+  let i = 0;
+  while(i < n){
+    let j = n;
+    for(; j > i + 1; j--) if(samePoly(route([P[i], P[j]]).pts, P.slice(i, j + 1))) break;
+    if(j < n) w.push(P[j]);
+    i = j;
+  }
+  return w;
+};
+
+const heap = () => {
+  const F = [], S = [], G = [];
+  return {
+    get n(){ return F.length; },
+    push(f, s, g){
+      let i = F.length; F.push(f); S.push(s); G.push(g);
+      while(i > 0){ const p = (i - 1) >> 1; if(F[p] <= f) break; F[i] = F[p]; S[i] = S[p]; G[i] = G[p]; i = p; }
+      F[i] = f; S[i] = s; G[i] = g;
+    },
+    pop(){
+      const rs = S[0], rg = G[0], lf = F.pop(), ls = S.pop(), lg = G.pop(), n = F.length;
+      if(n){
+        let i = 0;
+        for(;;){
+          let c = 2 * i + 1; if(c >= n) break;
+          if(c + 1 < n && F[c + 1] < F[c]) c++;
+          if(F[c] >= lf) break;
+          F[i] = F[c]; S[i] = S[c]; G[i] = G[c]; i = c;
+        }
+        F[i] = lf; S[i] = ls; G[i] = lg;
+      }
+      return [rs, rg];
+    }
+  };
+};
+
+/* مسیریاب: pads = [{x,y,net,sq,cid}]، courts = [{cid,x0,y0,x1,y1}]، region = جعبهٔ مجازِ ترک (px) */
+function makeRouter(pads, courts, region){
+  const ox = Math.floor(region.x0 / STEP) * STEP, oy = Math.floor(region.y0 / STEP) * STEP;
+  const W = Math.ceil((region.x1 - ox) / STEP) + 1, H = Math.ceil((region.y1 - oy) / STEP) + 1, N = W * H;
+  const padOwn = new Int32Array(N), trOwn = new Int32Array(N), court = new Int16Array(N);
+  const gS = new Float64Array(N * 9), stamp = new Uint32Array(N * 9), par = new Int32Array(N * 9);
+  let gen = 0, traces = [];
+  const nets = new Map();
+  pads.forEach(p => { if(!nets.has(p.net)) nets.set(p.net, nets.size + 1); p.n = nets.get(p.net); p.R = (p.sq ? 1.1 : .9) * MM; });
+  const cidx = new Map(courts.map((c, i) => [c.cid, i + 1]));
+
+  const mark = (arr, n, R, ax, ay, bx, by) => {
+    const i0 = Math.max(0, Math.floor((Math.min(ax, bx) - R - ox) / STEP)), i1 = Math.min(W - 1, Math.ceil((Math.max(ax, bx) + R - ox) / STEP));
+    const j0 = Math.max(0, Math.floor((Math.min(ay, by) - R - oy) / STEP)), j1 = Math.min(H - 1, Math.ceil((Math.max(ay, by) + R - oy) / STEP));
+    for(let j = j0; j <= j1; j++) for(let i = i0; i <= i1; i++){
+      if(ptSeg(ox + i * STEP, oy + j * STEP, ax, ay, bx, by) > R) continue;
+      const k = j * W + i, v = arr[k]; arr[k] = (v === 0 || v === n) ? n : -1;
+    }
+  };
+  pads.forEach(p => mark(padOwn, p.n, p.R + TW / 2 + CLR + EPS, p.x, p.y, p.x, p.y));
+  courts.forEach((c, ci) => {
+    const i0 = Math.max(0, Math.ceil((c.x0 - ox) / STEP)), i1 = Math.min(W - 1, Math.floor((c.x1 - ox) / STEP));
+    const j0 = Math.max(0, Math.ceil((c.y0 - oy) / STEP)), j1 = Math.min(H - 1, Math.floor((c.y1 - oy) / STEP));
+    for(let j = j0; j <= j1; j++) for(let i = i0; i <= i1; i++) court[j * W + i] = ci + 1;
+  });
+  const pass = (k, n) => { const a = padOwn[k], b = trOwn[k]; return !((a && a !== n) || (b && b !== n)); };
+
+  // بررسی دقیق (نه روی شبکه): پاره‌خط‌های poly با پدها و ترک‌های شبکه‌های دیگر
+  const clearPoly = (poly, n) => {
+    const q = poly.length < 2 ? [poly[0], poly[0]] : poly;
+    for(let s = 0; s < q.length - 1; s++){
+      const a = q[s], b = q[s + 1];
+      for(const p of pads) if(p.n !== n && ptSeg(p.x, p.y, a[0], a[1], b[0], b[1]) < p.R + TW / 2 + CLR - .01 * MM) return false;
+      for(const t of traces) if(t.n !== n && segSeg(a, b, t.a, t.b) < TW + CLR - .01 * MM) return false;
+    }
+    return true;
+  };
+  // گره‌های شبکه که می‌شود از مرکز پد به آن‌ها رسید (پد روی شبکه نباشد، با یک خط راست + مورب)
+  const access = (p, goal) => {
+    const ci = Math.round((p.x - ox) / STEP), cj = Math.round((p.y - oy) / STEP), out = [];
+    for(let dj = -4; dj <= 4; dj++) for(let di = -4; di <= 4; di++){
+      const i = ci + di, j = cj + dj; if(i < 0 || j < 0 || i >= W || j >= H) continue;
+      const k = j * W + i; if(!pass(k, p.n)) continue;
+      const node = [ox + i * STEP, oy + j * STEP], c = [p.x, p.y];
+      const poly = goal ? dogPoly(node, c) : dogPoly(c, node), len = polyLen(poly) / STEP;
+      if(len <= 6) out.push({k, poly, cost:len});
+    }
+    out.sort((a, b) => a.cost - b.cost);
+    const ok = [];
+    for(const o of out){ if(clearPoly(o.poly, p.n)) ok.push(o); if(ok.length >= 8) break; }
+    return ok;
+  };
+
+  function search(n, seeds, goals, own, tx, ty){
+    gen++;
+    const hp = heap();
+    const hh = k => { const dx = Math.abs(ox + (k % W) * STEP - tx) / STEP, dy = Math.abs(oy + ((k / W) | 0) * STEP - ty) / STEP; const h = Math.max(dx, dy) + .4142 * Math.min(dx, dy) - 5; return h > 0 ? h : 0; };
+    seeds.forEach(s => {
+      const st = s.k * 9 + 8;
+      if(stamp[st] === gen && gS[st] <= s.cost) return;
+      stamp[st] = gen; gS[st] = s.cost; par[st] = -1; hp.push(s.cost + hh(s.k), st, s.cost);
+    });
+    let pops = 0;
+    while(hp.n){
+      const [st, g] = hp.pop();
+      if(g > gS[st]) continue;
+      const k = (st / 9) | 0, d = st - k * 9;
+      if(goals.has(k)){
+        const cells = [];
+        for(let s = st; s !== -1; s = par[s]) cells.push((s / 9) | 0);
+        return cells.reverse();
+      }
+      if(++pops > 700000) return null;
+      const ci = k % W, cj = (k / W) | 0;
+      for(let nd = 0; nd < 8; nd++){
+        let turn = 0;
+        if(d < 8){ turn = Math.abs(nd - d); if(turn > 4) turn = 8 - turn; if(turn > 2) continue; }
+        const i = ci + DIRS[nd][0], j = cj + DIRS[nd][1];
+        if(i < 0 || j < 0 || i >= W || j >= H) continue;
+        const nk = j * W + i, a = padOwn[nk], b = trOwn[nk];
+        if((a && a !== n) || (b && b !== n)) continue;
+        let cst = (nd & 1 ? 1.4142 : 1) + turn * TURN;
+        const cc = court[nk]; if(cc && !own.has(cc)) cst += COURT_PEN;
+        const ns = nk * 9 + nd, ng = g + cst;
+        if(stamp[ns] === gen && gS[ns] <= ng) continue;
+        stamp[ns] = gen; gS[ns] = ng; par[ns] = st; hp.push(ng + hh(nk), ns, ng);
+      }
+    }
+    return null;
+  }
+
+  function route1(e){
+    const n = e.a.n, ps = access(e.a, false), qs = access(e.b, true);
+    if(!ps.length || !qs.length) return null;
+    const goals = new Map(), seeds = new Map();
+    qs.forEach(g => { if(!goals.has(g.k)) goals.set(g.k, g); });
+    ps.forEach(s => { if(!seeds.has(s.k)) seeds.set(s.k, s); });
+    const own = new Set([cidx.get(e.a.cid), cidx.get(e.b.cid)]);
+    const cells = search(n, [...seeds.values()], goals, own, e.b.x, e.b.y);
+    if(!cells) return null;
+    const mid = cells.map(k => [ox + (k % W) * STEP, oy + ((k / W) | 0) * STEP]);
+    return clean(seeds.get(cells[0]).poly.concat(mid, goals.get(cells[cells.length - 1]).poly));
+  }
+  function addTrace(poly, n){
+    for(let i = 1; i < poly.length; i++){
+      mark(trOwn, n, TW + CLR + EPS, poly[i - 1][0], poly[i - 1][1], poly[i][0], poly[i][1]);
+      traces.push({n, a:poly[i - 1], b:poly[i]});
+    }
+  }
+  function routeAll(order){
+    trOwn.fill(0); traces = [];
+    const routes = {}, failed = []; let cost = 0;
+    order.forEach(e => {
+      const poly = route1(e);
+      if(!poly){ failed.push(e.id); return; }
+      routes[e.id] = poly; addTrace(poly, e.a.n);
+      cost += polyLen(poly) / MM + .5 * Math.max(0, poly.length - 2);
+    });
+    return {routes, failed, cost};
+  }
+  return {routeAll};
+}
+
+/* چیدمان: شبیه‌سازی تبرید. P[i] = {sx,sy,base,g:[۴ هندسه]}، nets = [[ [قطعه، پد], … ], …] */
+function anneal(P, nets, o){
+  const n = P.length, rnd = prng(o.seed), gap = o.gap * MM;
+  const X = [], Y = [], R = [];
+  P.forEach((p, i) => {
+    const sc = o.jitter ? .35 + rnd() * .5 : .5, jt = o.jitter ? 80 : 0;
+    X[i] = snap(p.sx * sc + (rnd() - .5) * jt); Y[i] = snap(p.sy * sc + (rnd() - .5) * jt); R[i] = p.base;
+  });
+  const ap = P.map(p => p.g[0].pads.map(() => [0, 0])), rc = P.map(() => [0, 0, 0, 0]);
+  const pn = P.map(p => p.g[0].pads.map(() => -2));
+  nets.forEach((l, ni) => l.forEach(q => { pn[q[0]][q[1]] = ni; }));
+  const near = P.map(() => []);
+  nets.forEach(l => l.forEach(a => l.forEach(b => { if(a[0] !== b[0] && !near[a[0]].includes(b[0])) near[a[0]].push(b[0]); })));
+  let overlap = false;
+
+  const cost = () => {
+    let c = 0, mnx = 1e9, mny = 1e9, mxx = -1e9, mxy = -1e9;
+    overlap = false;
+    for(let i = 0; i < n; i++){
+      const g = P[i].g[R[i]];
+      rc[i][0] = X[i] + g.x0; rc[i][1] = Y[i] + g.y0; rc[i][2] = X[i] + g.x1; rc[i][3] = Y[i] + g.y1;
+      g.pads.forEach((q, k) => { ap[i][k][0] = X[i] + q[0]; ap[i][k][1] = Y[i] + q[1]; });
+      mnx = Math.min(mnx, rc[i][0]); mny = Math.min(mny, rc[i][1]); mxx = Math.max(mxx, rc[i][2]); mxy = Math.max(mxy, rc[i][3]);
+      if(R[i] !== P[i].base) c += .4;
+    }
+    for(let i = 0; i < n; i++) for(let j = i + 1; j < n; j++){
+      const dx = Math.min(rc[i][2], rc[j][2]) - Math.max(rc[i][0], rc[j][0]) + gap, dy = Math.min(rc[i][3], rc[j][3]) - Math.max(rc[i][1], rc[j][1]) + gap;
+      if(dx > 0 && dy > 0){ c += 300 + 40 * Math.min(dx, dy) / MM; overlap = true; }
+    }
+    const segs = [];
+    nets.forEach((net, ni) => {                      // درخت پوشای کمینه (فاصلهٔ منهتن)
+      const m = net.length, inT = new Array(m).fill(false), dist = new Array(m).fill(Infinity), from = new Array(m).fill(-1);
+      dist[0] = 0;
+      for(let it = 0; it < m; it++){
+        let u = -1; for(let k = 0; k < m; k++) if(!inT[k] && (u < 0 || dist[k] < dist[u])) u = k;
+        inT[u] = true;
+        if(from[u] >= 0 && dist[u] < 1e5){
+          const a = ap[net[from[u]][0]][net[from[u]][1]], b = ap[net[u][0]][net[u][1]];
+          c += dist[u] / MM; segs.push([a, b, ni]);
+        }
+        const a = ap[net[u][0]][net[u][1]];
+        for(let k = 0; k < m; k++) if(!inT[k]){
+          const b = ap[net[k][0]][net[k][1]], d = Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + (net[u][0] === net[k][0] ? 1e5 : 0);
+          if(d < dist[k]){ dist[k] = d; from[k] = u; }
+        }
+      }
+    });
+    for(let a = 0; a < segs.length; a++){
+      const s = segs[a];
+      for(let b = a + 1; b < segs.length; b++){ const t = segs[b]; if(t[2] !== s[2] && segSeg(s[0], s[1], t[0], t[1]) === 0) c += 25; }
+      for(let i = 0; i < n; i++) for(let k = 0; k < pn[i].length; k++)
+        if(pn[i][k] !== s[2] && ptSeg(ap[i][k][0], ap[i][k][1], s[0][0], s[0][1], s[1][0], s[1][1]) < 1.9 * MM) c += 10;
+    }
+    return c + .3 * ((mxx - mnx) + (mxy - mny)) / MM;
+  };
+
+  let cur = cost(), best = {c:cur, X:X.slice(), Y:Y.slice(), R:R.slice()};
+  const T0 = 9, T1 = .12, iters = o.iters;
+  for(let it = 0; it < iters; it++){
+    const T = T0 * Math.pow(T1 / T0, it / iters), i = (rnd() * n) | 0, m = rnd();
+    const sv = {x:X[i], y:Y[i], r:R[i], j:-1};
+    if(m < .5){
+      const rg = 1 + Math.floor(10 * T / T0);
+      X[i] += (Math.floor(rnd() * (2 * rg + 1)) - rg) * 10; Y[i] += (Math.floor(rnd() * (2 * rg + 1)) - rg) * 10;
+    } else if(m < .7){
+      R[i] = (R[i] + 1 + Math.floor(rnd() * 3)) & 3;
+    } else if(m < .85 && n > 1){
+      let j = Math.floor(rnd() * (n - 1)); if(j >= i) j++;
+      sv.j = j; sv.jx = X[j]; sv.jy = Y[j];
+      [X[i], X[j]] = [X[j], X[i]]; [Y[i], Y[j]] = [Y[j], Y[i]];
+    } else if(near[i].length){
+      const j = near[i][Math.floor(rnd() * near[i].length)], gi = P[i].g[R[i]], gj = P[j].g[R[j]];
+      if(rnd() < .5) { X[i] = snap(X[j] + (rnd() < .5 ? -1 : 1) * ((gi.x1 - gi.x0 + gj.x1 - gj.x0) / 2 + gap + rnd() * 30)); Y[i] = snap(Y[j] + (rnd() - .5) * 60); }
+      else { Y[i] = snap(Y[j] + (rnd() < .5 ? -1 : 1) * ((gi.y1 - gi.y0 + gj.y1 - gj.y0) / 2 + gap + rnd() * 30)); X[i] = snap(X[j] + (rnd() - .5) * 60); }
+    }
+    const nc = cost(), d = nc - cur;
+    if(d <= 0 || rnd() < Math.exp(-d / T)){
+      cur = nc;
+      if(cur < best.c) best = {c:cur, X:X.slice(), Y:Y.slice(), R:R.slice()};
+    } else {
+      X[i] = sv.x; Y[i] = sv.y; R[i] = sv.r;
+      if(sv.j >= 0){ X[sv.j] = sv.jx; Y[sv.j] = sv.jy; }
+    }
+  }
+  for(let i = 0; i < n; i++){ X[i] = best.X[i]; Y[i] = best.Y[i]; R[i] = best.R[i]; }
+  const final = cost(), ok = !overlap;
+  let mx = 1e9, my = 1e9;                              // مبدأ را به گوشهٔ چپ‌بالا ببر
+  for(let i = 0; i < n; i++){ mx = Math.min(mx, rc[i][0]); my = Math.min(my, rc[i][1]); }
+  mx = snap(mx); my = snap(my);
+  return {X:X.map(v => v - mx), Y:Y.map(v => v - my), R:R.slice(), cost:final, ok};
+}
+
 function create(host, api){
   const KEY = api.key ? 'cpcb:' + api.key : '';
   let st = {fp:{}, pos:{}, routes:{}, rot:{}, del:{}, extra:{}};
@@ -172,7 +463,9 @@ function create(host, api){
     comps.forEach(c => { bx0 = Math.min(bx0, c.bb.x0); by0 = Math.min(by0, c.bb.y0); bx1 = Math.max(bx1, c.bb.x1); by1 = Math.max(by1, c.bb.y1); });
     if(!comps.length){ bx0 = by0 = 0; bx1 = by1 = 160; }
     const m = 3 * MM;
-    M = {comps, paths, segs, rats, autoIds, padNet, padBy, pads:[...padBy.values()], board:{x0:snap(bx0 - m), y0:snap(by0 - m), x1:snap(bx1 + m), y1:snap(by1 + m)}};
+    let ex0 = bx0 - m, ey0 = by0 - m, ex1 = bx1 + m, ey1 = by1 + m;
+    paths.forEach(p => p.pts.forEach(q => { ex0 = Math.min(ex0, q[0] - 1.5 * MM); ey0 = Math.min(ey0, q[1] - 1.5 * MM); ex1 = Math.max(ex1, q[0] + 1.5 * MM); ey1 = Math.max(ey1, q[1] + 1.5 * MM); }));
+    M = {comps, paths, segs, rats, autoIds, padNet, padBy, pads:[...padBy.values()], board:{x0:snap(ex0), y0:snap(ey0), x1:snap(ex1), y1:snap(ey1)}};
   }
 
   function draw(){
@@ -274,10 +567,124 @@ function create(host, api){
     }
   };
 
+
+  /* ---------- ترک‌کشی و چیدمان خودکار (بدون برخورد) ---------- */
+  // همهٔ اتصال‌های بدون ترکِ M را مسیریابی می‌کند؛ نتیجه را برنمی‌گرداند در st نمی‌نویسد.
+  function routeModel(tries, deadline){
+    const pads = M.pads.map(a => ({x:a.x, y:a.y, net:M.padNet.get(pid(a)), cid:a.c.id, sq:!a.i && (a.c.t !== 'BC' || !!a.c.f.use), key:pid(a)}));
+    const by = new Map(pads.map(p => [p.key, p]));
+    const edges = [...M.autoIds].map(id => { const h = id.split('|'); return {id, a:by.get(h[0]), b:by.get(h[1])}; }).filter(e => e.a && e.b);
+    if(!edges.length) return {routes:{}, failed:[], score:0};
+    edges.forEach(e => { e.d = Math.abs(e.a.x - e.b.x) + Math.abs(e.a.y - e.b.y); });
+    const courts = M.comps.map(c => ({cid:c.id, x0:c.bb.x0, y0:c.bb.y0, x1:c.bb.x1, y1:c.bb.y1}));
+    const bb = {x0:Math.min(...courts.map(c => c.x0)), y0:Math.min(...courts.map(c => c.y0)), x1:Math.max(...courts.map(c => c.x1)), y1:Math.max(...courts.map(c => c.y1))};
+    let best = null;
+    for(const ext of [2.4, 7]){                    // اول در همان برد؛ اگر جا نشد، دورِ برد را بازتر کن
+      const rt = makeRouter(pads, courts, {x0:bb.x0 - ext * MM, y0:bb.y0 - ext * MM, x1:bb.x1 + ext * MM, y1:bb.y1 + ext * MM});
+      const rnd = prng(7 + ext | 0);
+      let order = edges.slice().sort((p, q) => p.d - q.d), cur = null;
+      for(let t = 0; t < tries; t++){
+        const r = rt.routeAll(order);
+        r.score = r.failed.length * 1e5 + r.cost;
+        if(!cur || r.score < cur.score) cur = r;
+        if(!r.failed.length || performance.now() > deadline) break;
+        const f = new Set(r.failed);                // اتصال‌های جانمانده را جلو بینداز و دوباره امتحان کن
+        if(t >= 2) order = order.map(e => [rnd(), e]).sort((p, q) => p[0] - q[0]).map(p => p[1]);
+        order = order.filter(e => f.has(e.id)).concat(order.filter(e => !f.has(e.id)));
+      }
+      if(!best || cur.score < best.score) best = cur;
+      if(!best.failed.length || performance.now() > deadline) break;
+    }
+    const routes = {};
+    Object.keys(best.routes).forEach(id => { routes[id] = toWps(best.routes[id]); });
+    return {routes, failed:best.failed, score:best.score};
+  }
+  function commitRoutes(res){
+    st.routes = {}; st.del = {}; st.extra = {}; selT = null; routing = null;
+    Object.keys(res.routes).forEach(id => { if(res.routes[id].length) st.routes[id] = res.routes[id]; });
+    res.failed.forEach(id => { st.del[id] = true; });
+  }
+  const failMsg = n => n + ' اتصال جا نشد (خط‌چین مانده)؛ قطعه‌ها را کمی از هم دور کن یا دوباره امتحان کن.';
+
+  // ترک‌کشی خودکار روی چیدمان فعلی. اگر اتصالی جا نشد، قطعه‌های درگیر را می‌چرخاند.
+  function autoRoute(){
+    st.routes = {}; st.del = {}; st.extra = {}; selT = null; routing = null;
+    rebuild();
+    const deadline = performance.now() + 2500, gap = .8 * MM;
+    let res = routeModel(10, deadline), turned = 0;
+    const collides = cid => {
+      const a = M.comps.find(c => c.id === cid);
+      return M.comps.some(c => c !== a && c.bb.x0 < a.bb.x1 + gap && c.bb.x1 > a.bb.x0 - gap && c.bb.y0 < a.bb.y1 + gap && c.bb.y1 > a.bb.y0 - gap);
+    };
+    if(res.failed.length){
+      const ids = new Set();
+      res.failed.forEach(id => id.split('|').forEach(h => ids.add(+h.split(':')[0])));
+      for(let pass = 0; pass < 2 && res.failed.length && performance.now() < deadline; pass++){
+        for(const cid of ids){
+          const old = st.rot[cid] | 0; let keep = old;
+          for(let d = 1; d < 4 && res.failed.length && performance.now() < deadline; d++){
+            st.rot[cid] = (old + d) & 3; rebuild();
+            if(collides(cid)) continue;
+            const r = routeModel(5, deadline);
+            if(r.score < res.score - 1e-6){ res = r; keep = st.rot[cid]; }
+          }
+          st.rot[cid] = keep; if(keep !== old) turned++;
+          rebuild();
+          if(!res.failed.length) break;
+        }
+      }
+    }
+    commitRoutes(res); save(); rebuild();
+    return {failed:res.failed.length, turned};
+  }
+
+  // چیدمان خودکار: قطعه‌ها را جابه‌جا و در صورت نیاز می‌چرخاند، بعد ترک می‌کشد؛ بهترین نتیجه می‌ماند.
+  function autoLayout(){
+    rebuild();
+    const cs = M.comps;
+    if(!cs.length) return {failed:0};
+    const deadline = performance.now() + 2800;
+    const idxOf = new Map(cs.map((c, i) => [c.id, i]));
+    const geoOf = (c, R) => {
+      const xs = [], ys = [];
+      [[c.cr[0], c.cr[1]], [c.cr[2], c.cr[1]], [c.cr[0], c.cr[3]], [c.cr[2], c.cr[3]]].forEach(p => { const q = rot(p[0] * MM, p[1] * MM, R); xs.push(q[0]); ys.push(q[1]); });
+      return {pads:c.pads.map(q => rot(q.lx * MM, q.ly * MM, R)), x0:Math.min(...xs), x1:Math.max(...xs), y0:Math.min(...ys), y1:Math.max(...ys)};
+    };
+    const P = cs.map(c => ({id:c.id, base:(c.r - (st.rot[c.id] | 0)) & 3, sx:c.sx, sy:c.sy, g:[0, 1, 2, 3].map(R => geoOf(c, R))}));
+    const nm = new Map();
+    M.pads.forEach(a => { const k = M.padNet.get(pid(a)); if(!nm.has(k)) nm.set(k, []); nm.get(k).push([idxOf.get(a.c.id), a.i]); });
+    const nets = [...nm.values()].filter(l => l.length > 1 && new Set(l.map(q => q[0])).size > 1);
+    const apply = cand => {
+      st.pos = {}; st.rot = {}; st.routes = {}; st.del = {}; st.extra = {};
+      P.forEach((p, i) => { st.pos[p.id] = [cand.X[i], cand.Y[i]]; st.rot[p.id] = (cand.R[i] - p.base) & 3; });
+      rebuild();
+    };
+    let best = null;
+    outer: for(const gap of [2.4, 3.4, 4.8, 6.5]){
+      const cands = [];
+      for(let s = 0; s < 6 && performance.now() < deadline; s++){
+        const c = anneal(P, nets, {seed:Math.round(gap * 10) * 31 + s + 1, gap, jitter:s, iters:1400 + 350 * P.length});
+        if(c.ok) cands.push(c);
+      }
+      cands.sort((a, b) => a.cost - b.cost);
+      for(const cand of cands.slice(0, 3)){
+        apply(cand);
+        const res = routeModel(6, deadline);
+        if(!best || res.score < best.res.score) best = {cand, res};
+        if(performance.now() > deadline) break outer;
+      }
+      if(best && !best.res.failed.length) break;
+    }
+    selT = null; routing = null;
+    if(!best){ st.pos = {}; st.rot = {}; rebuild(); return autoRoute(); }   // جایی برای چیدن پیدا نشد: ردیفِ ساده
+    apply(best.cand); commitRoutes(best.res); save(); rebuild();
+    return {failed:best.res.failed.length};
+  }
+
   function build(){
     el = document.createElement('div');
     el.className = 'pcb'; injectCss();
-    el.innerHTML = '<aside class="pcb-side"><div class="pcb-h">تخصیص فوت‌پرینت <small>Assign Footprints</small></div><div class="pcb-tbl"></div><button class="pcb-auto" data-tool="select" title="انتخاب و جابه‌جایی (V)">' + IC.select + 'انتخاب (V)</button><button class="pcb-auto" data-tool="route" title="سیم‌کشی ترک (X)">' + IC.route + 'سیم‌کشی (X)</button><button class="pcb-auto" data-a="rotate" title="چرخش فوت‌پرینت انتخاب‌شده (R)">' + IC.rotate + 'چرخش (R)</button><button class="pcb-auto" data-a="del" title="حذف ترک انتخاب‌شده (Delete)">' + IC.del + 'حذف ترک (Delete)</button><button class="pcb-auto" data-a="layout">' + IC.layout + 'چیدمان خودکار</button><button class="pcb-auto" data-a="routes">' + IC.routes + 'ترک‌کشی خودکار</button><div class="pcb-hint" style="font-size:12px;line-height:1.7;opacity:.7;margin-top:8px">قطعه را انتخاب کن و R بزن تا بچرخد (Shift+R برعکس). ترک را بگیر و بکش تا مسیرش عوض شود؛ Delete = حذف ترک (اتصال خط‌چین می‌ماند). دوبار کلیک روی نقطه = حذف نقطه، روی ترک = مسیر خودکار. سیم‌کشی (X): روی یک پد بزن، نقطه بگذار و روی پدِ هم‌شبکه تمام کن؛ Esc = لغو.</div></aside>' +
+    el.innerHTML = '<aside class="pcb-side"><div class="pcb-h">تخصیص فوت‌پرینت <small>Assign Footprints</small></div><div class="pcb-tbl"></div><button class="pcb-auto" data-tool="select" title="انتخاب و جابه‌جایی (V)">' + IC.select + 'انتخاب (V)</button><button class="pcb-auto" data-tool="route" title="سیم‌کشی ترک (X)">' + IC.route + 'سیم‌کشی (X)</button><button class="pcb-auto" data-a="rotate" title="چرخش فوت‌پرینت انتخاب‌شده (R)">' + IC.rotate + 'چرخش (R)</button><button class="pcb-auto" data-a="del" title="حذف ترک انتخاب‌شده (Delete)">' + IC.del + 'حذف ترک (Delete)</button><button class="pcb-auto" data-a="layout">' + IC.layout + 'چیدمان خودکار</button><button class="pcb-auto" data-a="routes">' + IC.routes + 'ترک‌کشی خودکار</button><div class="pcb-hint" style="font-size:12px;line-height:1.7;opacity:.7;margin-top:8px">قطعه را انتخاب کن و R بزن تا بچرخد (Shift+R برعکس). ترک را بگیر و بکش تا مسیرش عوض شود؛ Delete = حذف ترک (اتصال خط‌چین می‌ماند). دوبار کلیک روی نقطه = حذف نقطه، روی ترک = مسیر خودکار. چیدمان و ترک‌کشی خودکار قطعه‌ها را جابه‌جا و در صورت نیاز می‌چرخاند و ترک‌ها را طوری می‌کشد که به پد و ترک شبکهٔ دیگر نخورند. سیم‌کشی (X): روی یک پد بزن، نقطه بگذار و روی پدِ هم‌شبکه تمام کن؛ Esc = لغو.</div></aside>' +
       '<div class="pcb-stage"><svg class="pcb-svg" xmlns="http://www.w3.org/2000/svg"></svg><div class="pcb-fab"><button data-z="1.25">+</button><button data-z=".8">−</button><button data-z="0">⤢</button></div><div class="pcb-stat"></div></div>';
     host.appendChild(el);
     document.addEventListener('keydown', onKey);
@@ -287,8 +694,8 @@ function create(host, api){
     el.querySelector('[data-a="rotate"]').addEventListener('click', () => rotateSel(1));
     el.querySelector('[data-a="del"]').addEventListener('click', () => { if(!deleteTrace()) say('اول یک ترک را انتخاب کن.'); });
     el.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
-    el.querySelector('[data-a="layout"]').addEventListener('click', () => { st.pos = {}; st.rot = {}; st.routes = {}; st.del = {}; st.extra = {}; selT = null; routing = null; save(); rebuild(); fit(); table(); draw(); });
-    el.querySelector('[data-a="routes"]').addEventListener('click', () => { st.routes = {}; st.del = {}; st.extra = {}; selT = null; routing = null; save(); rebuild(); draw(); });
+    el.querySelector('[data-a="layout"]').addEventListener('click', () => { const r = autoLayout(); fit(); table(); say(r.failed ? failMsg(r.failed) : 'چیدمان و ترک‌کشی بدون برخورد انجام شد'); });
+    el.querySelector('[data-a="routes"]').addEventListener('click', () => { const r = autoRoute(); table(); say(r.failed ? failMsg(r.failed) : (r.turned ? 'ترک‌کشی انجام شد؛ ' + r.turned + ' قطعه برای جا شدن چرخید' : 'ترک‌کشی بدون برخورد انجام شد')); });
     el.querySelector('.pcb-fab').addEventListener('click', e => {
       const b = e.target.closest('button'); if(!b) return;
       const z = +b.dataset.z;
@@ -378,7 +785,7 @@ function create(host, api){
   }
 
   return {
-    show(){ if(!el) build(); el.style.display = ''; rebuild(); save(); table(); requestAnimationFrame(() => { fit(); draw(); }); },
+    show(){ if(!el) build(); el.style.display = ''; const fresh = !Object.keys(st.pos).length; rebuild(); if(fresh && M.comps.length) autoLayout(); save(); table(); requestAnimationFrame(() => { fit(); draw(); }); },
     hide(){ if(el) el.style.display = 'none'; },
     destroy(){ document.removeEventListener('keydown', onKey); if(el){ if(el.ro) el.ro.disconnect(); el.remove(); el = null; } },
     get3D(){
