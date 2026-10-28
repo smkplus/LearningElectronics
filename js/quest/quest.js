@@ -773,7 +773,7 @@ const modalSim = document.getElementById('modalSim');
 const nextMissionBtn = document.getElementById('nextMissionBtn');
 let activeSim = null;
 
-const READ_ONLY_SIMS = { schematic_intro: mountSchematicIntroSim, footprint_intro: mountFootprintIntroSim };
+const READ_ONLY_SIMS = { schematic_intro: mountSchematicIntroSim, footprint_intro: mountFootprintIntroSim, esp32_intro: mountEsp32IntroSim };
 const READ_ONLY_MISSIONS = new Set(Object.keys(READ_ONLY_SIMS));
 
 const CONCEPT_SIMS = {
@@ -795,7 +795,7 @@ const CONCEPT_SIMS = {
   line_logic: mountLineLogicMission,
   line_follow: mountLineFollowSim,
   // ESP32 — quest-esp32.js
-  esp32_intro: mountEsp32IntroSim,
+  esp32_wifi_led: mountEsp32WifiSim,
   // STM32 — quest-sims-stm32.js + cube-block.js / hal-code-editor.js
   stm32_cube: mountStm32CubeSim,
   stm32_stlink: mountStlinkSim,
@@ -831,8 +831,9 @@ const HAL_INTRO_TEXT = {
 };
 
 const ESP32_INTRO_TEXT = {
-  esp32_intro: '📡 به بخش ESP32 خوش اومدی! این برد Wi-Fi و بلوتوث داخل خودش داره و با همون کد آردوینو برنامه می‌گیره. روی هر بخش برد بزن تا بفهمی چی کجاست؛ هر ۷ بخش رو که دیدی مأموریت تکمیل می‌شه.',
-  esp32_blink: '💡 کد آردوینو رو بلدی؟ پس ESP32 رو هم بلدی! LED داخل برد روی پایه‌ی ۲ نشسته؛ همون چشمک‌زن همیشگی رو بنویس. حواست باشه ولتاژ منطقش ۳٫۳ ولته، نه ۵ ولت.'
+  esp32_intro: '📡 به بخش ESP32 خوش اومدی! این برد Wi-Fi و بلوتوث داخل خودش داره و با همون کد آردوینو برنامه می‌گیره. روی هر بخش برد بزن تا بفهمی چی کجاست. این مأموریت فقط مطالعه‌ست؛ هر وقت خوندی «مطالعه کردم ✓» رو بزن.',
+  esp32_blink: '💡 کد آردوینو رو بلدی؟ پس ESP32 رو هم بلدی! LED داخل برد روی پایه‌ی ۲ نشسته؛ همون چشمک‌زن همیشگی رو بنویس. حواست باشه ولتاژ منطقش ۳٫۳ ولته، نه ۵ ولت.',
+  esp32_wifi_led: '🌐 حالا وقتشه چراغ رو بی‌سیم روشن کنی! چهار جای خالیِ کد رو انتخاب کن (اگه اشتباه باشه دلیلش رو می‌گم)، آپلود کن و بعد از «گوشیِ مجازی» دکمه‌ی روشن رو بزن. مأموریت با روشن‌شدن LED تکمیل می‌شه.'
 };
 
 const EDITOR_GUIDE = {

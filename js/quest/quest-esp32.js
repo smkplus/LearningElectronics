@@ -14,7 +14,7 @@ const QUESTS_ESP32 = [
       'اول بخش «ESP32 چیست؟» را بخوان و جدول مقایسه با Uno و Blue Pill را نگاه کن.',
       'روی هر بخشِ برد (ماژول، آنتن، USB، دکمه‌ی EN، دکمه‌ی BOOT، LED و ردیف پایه‌ها) بزن؛ توضیحش پایین برد می‌آید.',
       'می‌توانی به‌جای زدن روی خودِ برد، از دکمه‌های کوچکِ زیرِ توضیح هم استفاده کنی.',
-      'وقتی هر ۷ بخش را دیدی، مأموریت خودکار تکمیل می‌شود.'
+      'این مأموریت فقط مطالعه است؛ وقتی خواندی، «مطالعه کردم ✓» را بزن.'
     ]},
   { id:'esp32_blink', icon:'💡', title:'ESP32 — اولین چشمک‌زن', sub:'همان کد آردوینو، فقط روی GPIO2',
     xp:70,
@@ -26,6 +26,16 @@ const QUESTS_ESP32 = [
       'با `digitalWrite(ledPin, LOW);` خاموشش کن و دوباره `delay(500);` بگذار.',
       'دکمه‌ی اجرا را بزن؛ LED باید روشن و خاموش شود.',
       'اگر خواستی حالت بلوکی را هم امتحان کن؛ همین کار را با بلوک‌ها انجام می‌دهد.'
+    ]},
+  { id:'esp32_wifi_led', icon:'🌐', title:'ESP32 — روشن‌کردن چراغ با Wi-Fi', sub:'وب‌سرورِ کوچک روی برد؛ فرمان از گوشی',
+    xp:90,
+    quote:'«تا اینجا برد فقط دستورهای خودش را اجرا می‌کرد. حالا برد به Wi-Fi خانه وصل می‌شود، یک وب‌سرورِ کوچک روی خودش راه می‌اندازد و تو از گوشی چراغ را روشن و خاموش می‌کنی؛ همان چیزی که به آن IoT می‌گویند.»',
+    desc:'ESP32 می‌تواند مثل یک سایتِ کوچک رفتار کند: اول با WiFi.begin(ssid, password) به مودم وصل می‌شود و یک آدرس IP می‌گیرد (مثلاً 192.168.1.50). بعد با کتابخانه‌ی WebServer یک سرور روشن می‌کند و برای هر آدرس یک کار تعریف می‌کنیم: وقتی گوشی (که به همان Wi-Fi وصل است) آدرسِ /on را باز کند، برد LED را روشن می‌کند و وقتی /off را باز کند، خاموش.\n\nدو چیز را فراموش نکن: در loop() باید مدام server.handleClient() صدا زده شود وگرنه برد به درخواست‌ها گوش نمی‌دهد، و ESP32 فقط به Wi-Fi دو‌و‌نیم گیگاهرتزی وصل می‌شود.\n\nدر شبیه‌ساز زیر یک مودمِ مجازی داریم. چهار جای خالیِ کد را درست انتخاب کن، آپلود کن و بعد از «گوشیِ مجازی» چراغ را روشن کن.',
+    steps:[
+      'هر چهار جای خالی را از منوی کشویی انتخاب کن (اگر اشتباه باشد، دلیلش را می‌گوید).',
+      'دکمه‌ی «آپلود روی ESP32» را بزن و صبر کن تا برد به Wi-Fi وصل شود و IP را در Serial چاپ کند.',
+      'در گوشیِ مجازی دکمه‌ی «/on روشن» را بزن؛ LED روی GPIO2 باید روشن شود.',
+      'با «/off خاموش» چراغ را خاموش کن؛ با روشن‌شدنِ چراغ از گوشی مأموریت تکمیل می‌شود.'
     ]}
 ];
 
@@ -91,14 +101,14 @@ function esp32BoardSVG({ led = false, parts = false } = {}){
     </svg>`;
 }
 
-/* ----- شبیه‌ساز آشنایی با ESP32: دیدنِ هر ۷ بخش، مأموریت را کامل می‌کند ----- */
+/* ----- شبیه‌ساز آشنایی با ESP32: فقط مطالعه (در quest.js زیرِ READ_ONLY_SIMS ثبت است و با دکمه‌ی «مطالعه کردم ✓» تکمیل می‌شود) ----- */
 function mountEsp32IntroSim(container, { onSuccess, alreadyDone } = {}){
   const seen = new Set(alreadyDone ? ES_PARTS.map(p => p.id) : []);
   let finished = !!alreadyDone;
 
   container.innerHTML = `
     <div class="sim-wrap es-wrap">
-      <div class="sim-hw-note">هدف: روی هر بخشِ برد بزن و توضیحش را بخوان. وقتی هر ${ES_PARTS.length} بخش را دیدی، مأموریت خودکار تکمیل می‌شود.</div>
+      <div class="sim-hw-note">روی بخش‌های برد بزن و توضیحشان را بخوان. این مأموریت فقط مطالعه است؛ هر وقت خواندی «مطالعه کردم ✓» را بزن.</div>
       <details class="hs-det" open>
         <summary>ESP32 چیست و با آردوینو و STM32 چه فرقی دارد؟</summary>
         <div class="hs-p">ESP32 میکروکنترلری از شرکت Espressif است که Wi-Fi و بلوتوث را داخلِ خودِ چیپ دارد. برای همین بدونِ ماژولِ اضافه می‌تواند به اینترنت وصل شود، داده بفرستد یا با گوشی حرف بزند. با Arduino IDE و همان زبانِ C++ آردوینو برنامه‌ریزی می‌شود، پس هرچه از آردوینو یاد گرفته‌ای این‌جا هم کار می‌کند.</div>
@@ -158,4 +168,209 @@ function mountEsp32IntroSim(container, { onSuccess, alreadyDone } = {}){
 
   paint(null);
   return { stop(){} };
+}
+
+/* ----- شبیه‌ساز Wi-Fi: چهار جای خالیِ کدِ وب‌سرور ← آپلود ← روشن‌کردن LED از «گوشیِ مجازی» -----
+   خودکفاست (به arduino-sim.js نیاز ندارد). با روشن‌شدنِ LED از گوشی، onSuccess صدا زده می‌شود. */
+const EW_BLANKS = {
+  a: { right:'begin',        opts:['begin','connect','join'],
+       why:{ connect:'برای اتصال به مودم تابعی به اسم WiFi.connect وجود ندارد؛ اتصال با WiFi.begin(ssid, password) شروع می‌شود.',
+             join:'WiFi.join وجود ندارد؛ اتصال با WiFi.begin(ssid, password) شروع می‌شود.' } },
+  b: { right:'HIGH',         opts:['HIGH','LOW','ON'],
+       why:{ LOW:'روی ESP32 مقدارِ LOW یعنی LED خاموش؛ مسیرِ /on باید چراغ را روشن کند.',
+             ON:'ON در آردوینو تعریف نشده است؛ برای روشن‌کردن از HIGH استفاده کن.' } },
+  c: { right:'begin',        opts:['begin','listen','run'],
+       why:{ listen:'server.listen وجود ندارد؛ سرور را با server.begin() راه می‌اندازیم.',
+             run:'server.run وجود ندارد؛ سرور را با server.begin() راه می‌اندازیم.' } },
+  d: { right:'handleClient', opts:['handleClient','send','begin'],
+       why:{ send:'send فقط جواب می‌فرستد. برای گوش‌دادن به درخواست‌های گوشی، در loop باید مدام handleClient() صدا زده شود.',
+             begin:'begin را یک بار در setup می‌زنیم. در loop باید مدام handleClient() صدا زده شود تا درخواست‌ها پردازش شوند.' } }
+};
+
+function mountEsp32WifiSim(container, { onSuccess, alreadyDone } = {}){
+  const IP = '192.168.1.50';
+  const timers = [];
+  let running = !!alreadyDone, finished = !!alreadyDone, ledOn = false, uploading = false;
+  const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
+
+  const sel = (k) => `<select class="ew-sel" data-k="${k}" aria-label="جای خالیِ ${k}"><option value="">؟</option>${EW_BLANKS[k].opts.map(o => `<option value="${o}">${o}</option>`).join('')}</select>`;
+
+  container.innerHTML = `
+    <style>
+      .ew-code{direction:ltr;text-align:left;background:#0b0e14;color:#d6deeb;border:1px solid #2e3440;border-radius:10px;padding:12px;margin:10px 0;font:12.5px/1.75 ui-monospace,Menlo,Consolas,monospace;overflow-x:auto;white-space:pre}
+      .ew-code .c{color:#7f8aa3}
+      .ew-sel{font:inherit;background:#18202e;color:#ffd479;border:1px dashed #d4af37;border-radius:6px;padding:1px 4px;cursor:pointer}
+      .ew-sel.ok{border:1px solid #57d8a3;color:#57d8a3}
+      .ew-sel.bad{border:1px solid #ff6b6b;color:#ff9a9a}
+      .ew-sel:disabled{opacity:1;cursor:default}
+      .ew-msgs{display:grid;gap:6px;margin:6px 0;font-size:13px}
+      .ew-msg{background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.45);border-radius:8px;padding:6px 10px}
+      .ew-row{display:flex;gap:12px;flex-wrap:wrap;align-items:stretch;margin-top:10px}
+      .ew-col{flex:1 1 240px;min-width:0}
+      .ew-serial{direction:ltr;text-align:left;background:#05070b;color:#7ee787;border-radius:10px;border:1px solid #2e3440;padding:8px 10px;min-height:92px;font:12px/1.6 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap}
+      .ew-phone{border:2px solid #3a4250;border-radius:22px;padding:10px;background:#10141b;max-width:300px;margin:0 auto}
+      .ew-url{direction:ltr;text-align:left;background:#1b2230;color:#9aa6bd;border-radius:14px;padding:4px 10px;font:12px ui-monospace,Menlo,Consolas,monospace;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .ew-screen{direction:ltr;min-height:56px;background:#fff;color:#111;border-radius:10px;padding:10px;font:13px ui-monospace,Menlo,Consolas,monospace;margin-bottom:8px;display:flex;align-items:center;justify-content:center;text-align:center}
+      .ew-screen.off{background:#1b2230;color:#7f8aa3;font-family:inherit;font-size:12px}
+      .ew-btns{display:flex;gap:8px}
+      .ew-btn{flex:1;font:inherit;font-size:13px;padding:8px 6px;border-radius:10px;border:1px solid #3a4250;background:#1b2230;color:#e8e2d0;cursor:pointer}
+      .ew-btn:disabled{opacity:.45;cursor:not-allowed}
+      .ew-btn.go{background:#d4af37;color:#1a1405;border-color:#d4af37;font-weight:700}
+      .ew-prog{margin-top:8px;font-size:13px}
+    </style>
+    <div class="sim-wrap es-wrap">
+      <div class="sim-hw-note">هدف: چهار جای خالیِ کد را درست کن، آپلود کن و بعد از گوشیِ مجازی چراغ را روشن کن. (در شبیه‌ساز یک مودمِ مجازی داریم که نام و رمزش همان است که در کد آمده.)</div>
+      <details class="hs-det" open>
+        <summary>این چراغ چطور با Wi-Fi روشن می‌شود؟</summary>
+        <div class="hs-p">برد به مودم وصل می‌شود و یک آدرس IP می‌گیرد. گوشی هم که به همان مودم وصل است، آدرسی مثل <b dir="ltr">http://${IP}/on</b> را باز می‌کند. این درخواست به ESP32 می‌رسد؛ برد در تابعی که برای /on نوشته‌ای، LED را روشن می‌کند و یک جواب کوتاه برمی‌گرداند. پس سه بازیگر داریم: <b>گوشی ← مودم ← ESP32</b>.</div>
+      </details>
+      <pre class="ew-code" dir="ltr"><span class="c">// کتابخانه‌ها</span>
+#include &lt;WiFi.h&gt;
+#include &lt;WebServer.h&gt;
+
+const char* ssid     = "MyHome";
+const char* password = "12345678";
+const int ledPin = 2;
+WebServer server(80);
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(ledPin, OUTPUT);
+
+  WiFi.${sel('a')}(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) delay(500);
+  Serial.println(WiFi.localIP());
+
+  server.on("/on", []() {
+    digitalWrite(ledPin, ${sel('b')});
+    server.send(200, "text/plain", "LED ON");
+  });
+  server.on("/off", []() {
+    digitalWrite(ledPin, LOW);
+    server.send(200, "text/plain", "LED OFF");
+  });
+  server.${sel('c')}();
+}
+
+void loop() {
+  server.${sel('d')}();
+}</pre>
+      <div class="ew-msgs" aria-live="polite"></div>
+      <button type="button" class="ew-btn go ew-upload">⬆️ آپلود روی ESP32</button>
+      <div class="ew-row">
+        <div class="ew-col">
+          <div class="sim-board-wrap">${esp32BoardSVG({ led:true })}</div>
+          <div class="ew-serial" aria-live="polite"><span style="color:#7f8aa3">// خروجی Serial Monitor</span></div>
+        </div>
+        <div class="ew-col">
+          <div class="ew-phone">
+            <div class="ew-url ew-urlbar">http://${IP}/</div>
+            <div class="ew-screen off">اول کد را آپلود کن تا برد به Wi-Fi وصل شود.</div>
+            <div class="ew-btns">
+              <button type="button" class="ew-btn" data-path="/on" disabled>/on روشن</button>
+              <button type="button" class="ew-btn" data-path="/off" disabled>/off خاموش</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ew-prog" aria-live="polite"></div>
+    </div>`;
+
+  const selects = Array.from(container.querySelectorAll('.ew-sel'));
+  const msgs = container.querySelector('.ew-msgs');
+  const upBtn = container.querySelector('.ew-upload');
+  const serial = container.querySelector('.ew-serial');
+  const screen = container.querySelector('.ew-screen');
+  const urlbar = container.querySelector('.ew-urlbar');
+  const phoneBtns = Array.from(container.querySelectorAll('.ew-btn[data-path]'));
+  const prog = container.querySelector('.ew-prog');
+  const bulb = container.querySelector('#simLedBulb');
+  const rays = container.querySelectorAll('.sim-led-ray');
+
+  function setLed(on){
+    ledOn = on;
+    if(bulb){
+      bulb.style.fill = on ? '#5aa9ff' : '#1b2a44';
+      bulb.style.stroke = on ? '#cfe4ff' : '#3a4a6a';
+      bulb.style.filter = on ? 'url(#simLedGlow)' : 'none';
+    }
+    rays.forEach(r => { r.style.opacity = on ? '1' : '0'; r.style.stroke = '#9cc8ff'; });
+  }
+  setLed(false);
+
+  function logLine(t){ serial.textContent += '\n' + t; serial.scrollTop = serial.scrollHeight; }
+
+  function enablePhone(){
+    phoneBtns.forEach(b => { b.disabled = false; });
+    screen.classList.remove('off');
+    screen.textContent = 'صفحه آماده است؛ یکی از دکمه‌ها را بزن.';
+    screen.style.direction = 'rtl';
+  }
+
+  function solved(){
+    selects.forEach(s => { s.value = EW_BLANKS[s.dataset.k].right; s.classList.add('ok'); s.disabled = true; });
+  }
+
+  if(alreadyDone){
+    solved();
+    upBtn.disabled = true; upBtn.textContent = '✓ آپلود شد';
+    serial.textContent = '// خروجی Serial Monitor\nConnecting to MyHome....\nIP: ' + IP;
+    enablePhone();
+    prog.textContent = '✓ قبلاً چراغ را با Wi-Fi روشن کرده‌ای.';
+  }
+
+  selects.forEach(s => s.addEventListener('change', () => { s.classList.remove('bad'); msgs.innerHTML = ''; }));
+
+  upBtn.addEventListener('click', () => {
+    if(running || uploading) return;
+    msgs.innerHTML = '';
+    const wrong = [];
+    selects.forEach(s => {
+      const k = s.dataset.k, def = EW_BLANKS[k];
+      s.classList.remove('bad');
+      if(s.value === def.right) return;
+      s.classList.add('bad');
+      wrong.push(s.value
+        ? (def.why[s.value] || 'این گزینه درست نیست.')
+        : 'یکی از جای‌خالی‌ها هنوز انتخاب نشده است.');
+    });
+    if(wrong.length){
+      const uniq = Array.from(new Set(wrong));
+      msgs.innerHTML = uniq.map(w => `<div class="ew-msg">⚠️ ${w}</div>`).join('');
+      return;
+    }
+    uploading = true;
+    solved();
+    upBtn.disabled = true; upBtn.textContent = '⏳ در حال آپلود…';
+    serial.textContent = '// خروجی Serial Monitor';
+    later(() => logLine('Uploading… done. Rebooting.'), 500);
+    later(() => logLine('Connecting to MyHome'), 1100);
+    later(() => logLine('....'), 1700);
+    later(() => logLine('WiFi connected!'), 2300);
+    later(() => logLine('IP: ' + IP), 2700);
+    later(() => {
+      logLine('HTTP server started');
+      running = true; uploading = false;
+      upBtn.textContent = '✓ آپلود شد';
+      enablePhone();
+      prog.textContent = 'برد آنلاین شد. حالا از گوشی چراغ را روشن کن.';
+    }, 3200);
+  });
+
+  phoneBtns.forEach(b => b.addEventListener('click', () => {
+    if(!running) return;
+    const on = b.dataset.path === '/on';
+    urlbar.textContent = 'http://' + IP + b.dataset.path;
+    screen.style.direction = 'ltr';
+    screen.textContent = on ? 'LED ON' : 'LED OFF';
+    logLine('GET ' + b.dataset.path + ' → 200');
+    setLed(on);
+    if(on && !finished){
+      finished = true;
+      prog.textContent = '✓ آفرین! چراغ را از راه دور و با Wi-Fi روشن کردی.';
+      if(onSuccess) onSuccess();
+    }
+  }));
+
+  return { stop(){ timers.forEach(clearTimeout); } };
 }
