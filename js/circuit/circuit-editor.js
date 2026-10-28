@@ -938,6 +938,10 @@ function create(root, opts){
 
 const mainRoot = document.getElementById('circuitTab');
 const main = mainRoot ? create(mainRoot, {storageKey:MAIN_KEY}) : null;
+if(mainRoot){
+  mainRoot.insertAdjacentHTML('afterbegin', '<div class="cdz-bar"><b>طراحی آزاد مدار</b><span class="cdz-sub">همهٔ قطعه‌ها در دسترس است · طرح شما خودکار ذخیره می‌شود</span><button type="button" class="cv-btn" data-new>طرح جدید (صفحهٔ خالی)</button></div>');
+  mainRoot.querySelector('[data-new]').addEventListener('click', () => { const c = mainRoot.querySelector('[data-act="clear"]'); if(c) c.click(); });
+}
 window.CircuitEditor = {
   create,
   onShow(){ if(main) main.onShow(); },
