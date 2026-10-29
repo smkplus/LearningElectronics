@@ -884,3 +884,19 @@ body.sim-fullscreen-lock #knightSection{ z-index:1200 !important; }
 .es-chip.seen{ color:var(--trace-bright,#6ee6b8); border-color:rgba(110,230,184,.5); }
 .es-chip.on{ color:var(--gold,#d4af37); border-color:var(--gold,#d4af37); background:rgba(212,175,55,.14); }
 .es-prog{ margin-top:8px; font-size:12px; color:var(--muted,#8b95a5); }
+
+/* ===== مأموریت Wi-Fi ESP32: مودم و گوشیِ مجازی ===== */
+.sim-wifi{ display:grid; gap:10px; margin:12px 0; }
+.sim-wifi-row{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; }
+.sim-wifi-chip{ font-size:12.5px; font-weight:800; padding:4px 12px; border-radius:999px; color:var(--muted,#8b95a5); border:1px solid var(--panel-border,#2a3346); }
+.sim-wifi-chip[data-mode="connecting"]{ color:#ffd479; border-color:var(--gold,#d4af37); }
+.sim-wifi-chip[data-mode="online"]{ color:var(--trace-bright,#6ee6b8); border-color:rgba(110,230,184,.6); background:rgba(110,230,184,.1); }
+.sim-phone{ width:100%; max-width:300px; margin:0 auto; padding:10px; border:2px solid #3a4250; border-radius:22px; background:#10141b; }
+.sim-phone-url{ direction:ltr; text-align:left; margin-bottom:8px; padding:4px 10px; border-radius:14px; background:#1b2230; color:#9aa6bd; font:12px ui-monospace,Menlo,Consolas,monospace; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sim-phone-screen{ min-height:56px; margin-bottom:8px; padding:10px; border-radius:10px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:13px; line-height:1.8; background:#1b2230; color:#8b95a5; }
+.sim-phone-screen[data-kind="wait"]{ color:#ffd479; }
+.sim-phone-screen[data-kind="ok"]{ background:#fff; color:#111; font-family:ui-monospace,Menlo,Consolas,monospace; }
+.sim-phone-screen[data-kind="error"]{ background:rgba(255,107,107,.12); color:#ff9a9a; border:1px solid rgba(255,107,107,.45); }
+.sim-phone-btns{ display:flex; gap:8px; }
+.sim-phone-btn{ flex:1; padding:8px 6px; font:inherit; font-size:13px; font-weight:700; cursor:pointer; border-radius:10px; border:1px solid #3a4250; background:#1b2230; color:#e8e2d0; }
+.sim-phone-btn:hover{ border-color:var(--gold,#d4af37); color:var(--gold,#d4af37); }

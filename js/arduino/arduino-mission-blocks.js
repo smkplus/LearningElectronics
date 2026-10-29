@@ -43,6 +43,10 @@
        متن و سریال:  text, ard_serial_begin, ard_serial_print
        سروو موتور:   ard_servo_declare, ard_servo_attach, ard_servo_write,
                     ard_servo_read, ard_servo_detach
+       Wi-Fi و وب‌سرور (ESP32):
+                    ard_server_declare, ard_wifi_begin, ard_wifi_wait,
+                    ard_wifi_ip, ard_server_on, ard_server_begin,
+                    ard_server_handle, ard_server_send
        کدِ خام:      ard_raw_code
        توابعِ من:    '__PROCEDURES__'  ← این یکی نامِ یک بلوک نیست؛ یک
                     رشته‌ی خاص است که اگر در لیستِ یک مأموریت باشد، دسته‌ی
@@ -72,5 +76,9 @@ window.ARDUINO_MISSION_BLOCKS = {
   pot: ['ard_pot_led','ard_pin_mode', 'ard_analog_read', 'ard_analog_write', 'ard_math_map', 'math_arithmetic','ard_var_declare','variables_get'],
 
   // مأموریتِ «سروو موتور».
-  servo: ['ard_servo_declare', 'ard_servo_attach', 'ard_servo_write', 'ard_servo_read', 'ard_servo_detach','ard_var_declare','variables_get']
+  servo: ['ard_servo_declare', 'ard_servo_attach', 'ard_servo_write', 'ard_servo_read', 'ard_servo_detach','ard_var_declare','variables_get'],
+
+  // مأموریتِ ESP32 «روشن‌کردن چراغ با Wi-Fi»: اتصال به مودم، وب‌سرور و توابعِ آدرس‌ها.
+  esp32wifi: ['ard_serial_begin', 'ard_serial_print', 'ard_pin_mode', 'ard_digital_write', 'ard_var_declare', 'variables_get',
+    'ard_server_declare', 'ard_wifi_begin', 'ard_wifi_wait', 'ard_wifi_ip', 'ard_server_on', 'ard_server_begin', 'ard_server_handle', 'ard_server_send', '__PROCEDURES__']
 };

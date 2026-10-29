@@ -249,6 +249,8 @@ const ArduinoBlocks = (() => {
     logic: '#3BC1C1',    // منطق
     text: '#B073F2',     // متن/سریال
     servo: '#F25CA6',    // سروو موتور
+    wifi: '#1FA89A',     // Wi-Fi و وب‌سرور (ESP32)
+    wifi: '#1FA89A',     // Wi-Fi و وب‌سرور (ESP32)
     func: '#EA4C6B',     // توابعِ من
     raw: '#D9822B'       // کدِ خام (چیزی که هنوز بلوکی برایش نیست)
   };
@@ -314,6 +316,9 @@ const ArduinoBlocks = (() => {
     /* سروو */
     ard_servo_attach: { PIN: pinDef(9) },
     ard_servo_write: { ANGLE: numDef(90) },
+    /* Wi-Fi و وب‌سرور (ESP32) */
+    ard_wifi_begin: { SSID: txtDef('MyHome'), PASS: txtDef('12345678') },
+    ard_server_send: { TEXT: txtDef('LED ON') },
     /* STM32 / HAL */
     hal_delay: { MS: numDef(500) },
     hal_set_compare: { VAL: numDef(500) }
@@ -777,6 +782,91 @@ const ArduinoBlocks = (() => {
         nextStatement: null,
         colour: COLOR.servo,
         tooltip: 'کنترلِ سروو را آزاد می‌کند (detach).'
+      }
+    ]);
+
+    /* ---------- Wi-Fi و وب‌سرور (ESP32) ---------- */
+    Blockly.defineBlocksWithJsonArray([
+      {
+        type: 'ard_server_declare',
+        message0: '🌐 یک وب‌سرور بساز (نامش server) روی پورتِ %1',
+        args0: [{ type: 'field_number', name: 'PORT', value: 80, min: 1, max: 65535, precision: 1 }],
+        previousStatement: null,
+        nextStatement: null,
+        colour: COLOR.wifi,
+        tooltip: 'یک وب‌سرورِ کوچک روی برد تعریف می‌کند (WebServer server(80);). این را داخلِ بلوکِ «سراسری» بگذار؛ پورتِ ۸۰ همان پورتِ معمولیِ وب است.'
+      },
+      {
+        type: 'ard_wifi_begin',
+        message0: '📶 به Wi-Fi با نامِ %1 و رمزِ %2 وصل شو',
+        args0: [
+          { type: 'input_value', name: 'SSID' },
+          { type: 'input_value', name: 'PASS' }
+        ],
+        inputsInline: true,
+        previousStatement: null,
+        nextStatement: null,
+        colour: COLOR.wifi,
+        tooltip: 'برد را به مودم وصل می‌کند (WiFi.begin). اتصال چند لحظه طول می‌کشد؛ بعدش از بلوکِ «صبر کن تا وصل شود» استفاده کن.'
+      },
+      {
+        type: 'ard_wifi_wait',
+        message0: '⏳ تا وصل‌شدنِ Wi-Fi صبر کن (هر %1 میلی‌ثانیه دوباره بررسی کن)',
+        args0: [{ type: 'field_number', name: 'MS', value: 500, min: 1, max: 5000, precision: 1 }],
+        inputsInline: true,
+        previousStatement: null,
+        nextStatement: null,
+        colour: COLOR.wifi,
+        tooltip: 'تا وقتی برد به Wi-Fi وصل نشده، هر چند میلی‌ثانیه یک‌بار دوباره می‌پرسد — معادلِ while (WiFi.status() != WL_CONNECTED) delay(500);'
+      },
+      {
+        type: 'ard_wifi_ip',
+        message0: '🔢 آدرسِ IPِ برد',
+        output: 'String',
+        colour: COLOR.wifi,
+        tooltip: 'آدرسی که مودم به برد داده (WiFi.localIP()). آن را در مانیتورِ سریال چاپ کن تا بدانی گوشی باید به کجا وصل شود.'
+      },
+      {
+        type: 'ard_server_on',
+        message0: '🌐 وقتی مرورگر آدرسِ %1 را باز کرد، تابعِ %2 را اجرا کن',
+        args0: [
+          { type: 'field_input', name: 'PATH', text: '/on' },
+          { type: 'field_input', name: 'FUNC', text: 'handleOn' }
+        ],
+        inputsInline: true,
+        previousStatement: null,
+        nextStatement: null,
+        colour: COLOR.wifi,
+        tooltip: 'یک آدرس را به یک تابع وصل می‌کند (server.on). نامِ تابع را دقیقاً مثلِ نامِ تابعی بنویس که در «توابعِ من» ساخته‌ای.'
+      },
+      {
+        type: 'ard_server_begin',
+        message0: '▶️ وب‌سرور را راه بینداز',
+        previousStatement: null,
+        nextStatement: null,
+        colour: COLOR.wifi,
+        tooltip: 'وب‌سرور را روشن می‌کند (server.begin()) — بعد از ثبتِ آدرس‌ها و یک‌بار در «هنگامِ شروع».'
+      },
+      {
+        type: 'ard_server_handle',
+        message0: '👂 به درخواست‌های مرورگر گوش بده',
+        previousStatement: null,
+        nextStatement: null,
+        colour: COLOR.wifi,
+        tooltip: 'اگر مرورگر یا گوشی درخواستی فرستاده باشد، تابعِ مربوط به آن اجرا می‌شود (server.handleClient()). این را داخلِ «همیشه تکرار کن» بگذار، وگرنه برد به درخواست‌ها گوش نمی‌دهد.'
+      },
+      {
+        type: 'ard_server_send',
+        message0: '📨 به مرورگر جواب بده: کدِ %1 ، متنِ %2',
+        args0: [
+          { type: 'field_dropdown', name: 'CODE', options: [['200 (موفق)', '200'], ['404 (پیدا نشد)', '404']] },
+          { type: 'input_value', name: 'TEXT' }
+        ],
+        inputsInline: true,
+        previousStatement: null,
+        nextStatement: null,
+        colour: COLOR.wifi,
+        tooltip: 'جوابی را که مرورگر/گوشی منتظرش است می‌فرستد (server.send). هر تابعِ آدرس باید در آخر یک جواب بدهد.'
       }
     ]);
 
@@ -1426,6 +1516,16 @@ const ArduinoBlocks = (() => {
     F['ard_servo_read'] = (b) => [fieldVarName(b, 'NAME') + '.read()', Order.ATOMIC];
     F['ard_servo_detach'] = (b) => fieldVarName(b, 'NAME') + '.detach();\n';
 
+    /* --- Wi-Fi و وب‌سرور (ESP32) --- */
+    F['ard_server_declare'] = (b) => 'WebServer server(' + (Number(b.getFieldValue('PORT')) || 80) + ');\n';
+    F['ard_wifi_begin'] = (b) => 'WiFi.begin(' + val(b, 'SSID', escapeStr('')) + ', ' + val(b, 'PASS', escapeStr('')) + ');\n';
+    F['ard_wifi_wait'] = (b) => 'while (WiFi.status() != WL_CONNECTED) {\n  delay(' + (Number(b.getFieldValue('MS')) || 500) + ');\n}\n';
+    F['ard_wifi_ip'] = (b) => ['WiFi.localIP()', Order.ATOMIC];
+    F['ard_server_on'] = (b) => 'server.on(' + escapeStr(b.getFieldValue('PATH')) + ', ' + gen.safeFunc(String(b.getFieldValue('FUNC'))) + ');\n';
+    F['ard_server_begin'] = (b) => 'server.begin();\n';
+    F['ard_server_handle'] = (b) => 'server.handleClient();\n';
+    F['ard_server_send'] = (b) => 'server.send(' + b.getFieldValue('CODE') + ', "text/plain", ' + val(b, 'TEXT', escapeStr('')) + ');\n';
+
     /* --- توابعِ من --- */
     function procParams(b) {
       if (typeof b.getVars === 'function') return b.getVars();
@@ -1479,7 +1579,9 @@ const ArduinoBlocks = (() => {
     blink: ['ard_pin_mode', 'ard_digital_write'],
     button: ['ard_pin_mode', 'ard_digital_write', 'ard_digital_read', 'ard_if_pin', 'controls_if', 'logic_compare', 'ard_pin_state'],
     pot: ['ard_pin_mode', 'ard_pot_led', 'ard_analog_read', 'ard_analog_write', 'ard_math_map', 'math_arithmetic'],
-    servo: ['ard_servo_declare', 'ard_servo_attach', 'ard_servo_write', 'ard_servo_sweep', 'ard_servo_read', 'ard_servo_detach', 'controls_for', 'ard_wait', 'variables_get']
+    servo: ['ard_servo_declare', 'ard_servo_attach', 'ard_servo_write', 'ard_servo_sweep', 'ard_servo_read', 'ard_servo_detach', 'controls_for', 'ard_wait', 'variables_get'],
+    esp32wifi: ['ard_serial_begin', 'ard_serial_print', 'ard_pin_mode', 'ard_digital_write', 'ard_var_declare', 'variables_get',
+      'ard_server_declare', 'ard_wifi_begin', 'ard_wifi_wait', 'ard_wifi_ip', 'ard_server_on', 'ard_server_begin', 'ard_server_handle', 'ard_server_send', '__PROCEDURES__']
   };
 
   // هر بار (نه فقط یک‌بار موقعِ لودشدنِ اسکریپت) خوانده می‌شود، تا اگر
@@ -1528,6 +1630,10 @@ const ArduinoBlocks = (() => {
       cat('منطق', COLOR.logic, [blk('logic_compare'), blk('logic_operation'), blk('logic_negate'), blk('logic_boolean')]),
       cat('متن و سریال', COLOR.text, [blk('ard_serial_begin'), blk('ard_serial_print')]),
       cat('سروو موتور', COLOR.servo, [blk('ard_servo_declare'), blk('ard_servo_attach'), blk('ard_servo_write'), blk('ard_servo_sweep'), blk('ard_servo_read'), blk('ard_servo_detach')]),
+      cat('Wi-Fi و وب‌سرور', COLOR.wifi, [
+        blk('ard_server_declare'), blk('ard_wifi_begin'), blk('ard_wifi_wait'), blk('ard_wifi_ip'),
+        blk('ard_server_on'), blk('ard_server_begin'), blk('ard_server_handle'), blk('ard_server_send')
+      ]),
       cat('کدِ خام', COLOR.raw, [blk('ard_raw_code')]),
       { kind: 'category', name: 'توابعِ من', colour: COLOR.func, custom: 'PROCEDURE' }
     ];
@@ -1719,7 +1825,7 @@ const ArduinoBlocks = (() => {
     const top = workspace.getTopBlocks(true);
     let setupBlock = null, loopBlock = null, globalBlock = null;
     const declBlocks = [], strayBlocks = [];
-    const DECL_HEADS = new Set(['ard_var_declare', 'ard_array_declare', 'ard_servo_declare', 'procedures_defnoreturn', 'procedures_defreturn', 'ard_comment', 'ard_raw_code']);
+    const DECL_HEADS = new Set(['ard_var_declare', 'ard_array_declare', 'ard_servo_declare', 'ard_server_declare', 'procedures_defnoreturn', 'procedures_defreturn', 'ard_comment', 'ard_raw_code']);
     for (const b of top) {
       if (b.type === 'ard_setup' && !setupBlock) setupBlock = b;
       else if (b.type === 'ard_loop' && !loopBlock) loopBlock = b;
@@ -1730,10 +1836,13 @@ const ArduinoBlocks = (() => {
     const usesServo = workspace.getAllBlocks(false).some((b) => b.type && b.type.indexOf('ard_servo') === 0);
     let out = '';
     if (usesServo) out += '#include <Servo.h>\n\n';
+    const usesWifi = workspace.getAllBlocks(false).some((b) => b.type && (b.type.indexOf('ard_wifi') === 0 || b.type.indexOf('ard_server') === 0));
+    if (usesWifi) out += '#include <WiFi.h>\n#include <WebServer.h>\n\n';
     // متغیرها/آرایه‌ها/سرووها/یادداشت‌ها معمولاً حالا داخلِ بلوکِ «سراسری»
     // هستند؛ اما اگر یک بومِ کارِ قدیمی هنوز چندتایی از این‌ها را جداگانه
     // و بی‌والد روی بوم داشته باشد (declBlocks)، آن‌ها را هم بعدش می‌آوریم.
-    let declCode = globalBlock ? gen.statementToCode(globalBlock, 'DO') : '';
+    // تعریف‌های سراسری باید بدونِ تورفتگی بیایند (statementToCode یک سطح تورفتگی اضافه می‌کند)
+    let declCode = globalBlock ? gen.statementToCode(globalBlock, 'DO').replace(/^ {2}/gm, '') : '';
     for (const b of declBlocks) {
       const c = gen.blockToCode(b);
       declCode += Array.isArray(c) ? c[0] : c;
@@ -1989,6 +2098,9 @@ const ArduinoBlocks = (() => {
 
     function callExpr(node) {
       const c = node.callee;
+      if (c.type === 'Member' && c.object.type === 'Ident' && c.object.name === 'WiFi' && c.property === 'localIP' && !node.arguments.length) {
+        return { type: 'ard_wifi_ip', id: nid() };
+      }
       if (c.type === 'Ident') {
         const name = c.name, a = node.arguments;
         if (name === 'HAL_GPIO_ReadPin') return { type: 'hal_read', id: nid(), fields: { PIN: halPinFromArgs(a) } };
@@ -2051,6 +2163,27 @@ const ArduinoBlocks = (() => {
         }
         throw new UnsupportedError('این متدِ Serial هنوز پشتیبانی نمی‌شود.');
       }
+      if (objName === 'WiFi' && c.property === 'begin') {
+        if (a.length !== 2) throw new UnsupportedError('WiFi.begin در حالتِ بلوکی باید هم نام و هم رمزِ Wi-Fi را بگیرد.');
+        return { type: 'ard_wifi_begin', id: nid(), inputs: { SSID: { block: expr(a[0]) }, PASS: { block: expr(a[1]) } } };
+      }
+      if (objName === 'server') {
+        if (c.property === 'begin' && !a.length) return { type: 'ard_server_begin', id: nid() };
+        if (c.property === 'handleClient' && !a.length) return { type: 'ard_server_handle', id: nid() };
+        if (c.property === 'on') {
+          if (a.length !== 2 || a[0].type !== 'Str' || a[1].type !== 'Ident') {
+            throw new UnsupportedError('server.on باید یک آدرسِ متنی و نامِ یک تابع بگیرد، مثل server.on("/on", handleOn).');
+          }
+          return { type: 'ard_server_on', id: nid(), fields: { PATH: a[0].value, FUNC: a[1].name } };
+        }
+        if (c.property === 'send') {
+          const code = a[0] && a[0].type === 'Num' ? String(a[0].value) : '';
+          if (a.length !== 3 || (code !== '200' && code !== '404') || a[1].type !== 'Str' || a[1].value !== 'text/plain') {
+            throw new UnsupportedError('server.send در حالتِ بلوکی باید مثلِ server.send(200, "text/plain", "...") نوشته شود.');
+          }
+          return { type: 'ard_server_send', id: nid(), fields: { CODE: code }, inputs: { TEXT: { block: expr(a[2]) } } };
+        }
+      }
       if (objName && servoNames.has(objName)) {
         const nameId = ensureVar(objName);
         if (c.property === 'attach') return { type: 'ard_servo_attach', id: nid(), fields: { NAME: nameId }, inputs: { PIN: { block: pinExpr(a[0]) } } };
@@ -2076,6 +2209,24 @@ const ArduinoBlocks = (() => {
         return null;
       };
       return tryMatch(node.left, node.right) || tryMatch(node.right, node.left);
+    }
+
+    // «while (WiFi.status() != WL_CONNECTED) delay(N);» → مقدارِ N (یا null اگر حلقه از این الگو نبود)
+    function wifiWaitDelay(node) {
+      const t = node.test;
+      const isStatus = (x) => x.type === 'Call' && x.callee.type === 'Member' && x.callee.object.type === 'Ident' &&
+        x.callee.object.name === 'WiFi' && x.callee.property === 'status' && !x.arguments.length;
+      const isConnected = (x) => x.type === 'Ident' && x.name === 'WL_CONNECTED';
+      const waiting = t && t.type === 'Binary' && t.operator === '!=' &&
+        ((isStatus(t.left) && isConnected(t.right)) || (isStatus(t.right) && isConnected(t.left)));
+      if (!waiting) return null;
+      let body = node.body;
+      if (body.type === 'Block' && body.body.length === 1) body = body.body[0];
+      if (body.type !== 'ExprStmt' || body.expression.type !== 'Call') return null;
+      const call = body.expression;
+      if (call.callee.type !== 'Ident' || call.callee.name !== 'delay' || call.arguments.length !== 1) return null;
+      const ms = call.arguments[0];
+      return ms.type === 'Num' && ms.value >= 1 && ms.value <= 5000 ? ms.value : null;
     }
 
     function stmtRaw(node) {
@@ -2121,8 +2272,11 @@ const ArduinoBlocks = (() => {
           }
           return { type: 'controls_if', id: nid(), extraState: { elseIfCount: branches.length - 1, hasElse: !!elseBody }, inputs };
         }
-        case 'While':
+        case 'While': {
+          const waitMs = wifiWaitDelay(node);
+          if (waitMs !== null) return { type: 'ard_wifi_wait', id: nid(), fields: { MS: waitMs } };
           return { type: 'controls_whileUntil', id: nid(), fields: { MODE: 'WHILE' }, inputs: { BOOL: { block: expr(node.test) }, DO: { block: stmt(node.body) } } };
+        }
         case 'For': return forStmt(node);
         case 'Break': return { type: 'controls_flow_statements', id: nid(), fields: { FLOW: 'BREAK' } };
         case 'Continue': return { type: 'controls_flow_statements', id: nid(), fields: { FLOW: 'CONTINUE' } };
@@ -2145,6 +2299,13 @@ const ArduinoBlocks = (() => {
     }
 
     function declStmt(d) {
+      if (d.varType === 'WebServer') {
+        const port = d.ctorArgs && d.ctorArgs.length === 1 ? d.ctorArgs[0] : null;
+        if (d.name !== 'server' || !port || port.type !== 'Num') {
+          throw new UnsupportedError('وب‌سرور در حالتِ بلوکی باید دقیقاً مثلِ WebServer server(80); نوشته شود.');
+        }
+        return { type: 'ard_server_declare', id: nid(), fields: { PORT: port.value } };
+      }
       if (d.varType === 'Servo') {
         servoNames.add(d.name);
         return { type: 'ard_servo_declare', id: nid(), fields: { NAME: ensureVar(d.name) } };

@@ -767,6 +767,7 @@ const SIM_MISSIONS = {
   pot:    { task: 'pot',    pin: 9, potPin: 'A0' },
   servo:  { task: 'servo',  pin: 9 },
   esp32_blink: { task: 'esp32blink', pin: 2 },
+  esp32_wifi_led: { task: 'esp32wifi', pin: 2 },
   stm32_blink: { task: 'stm32blink', pin: 'PC13' }
 };
 const modalSim = document.getElementById('modalSim');
@@ -794,8 +795,6 @@ const CONCEPT_SIMS = {
   line_sensor: mountLineSensorMission,
   line_logic: mountLineLogicMission,
   line_follow: mountLineFollowSim,
-  // ESP32 — quest-esp32.js
-  esp32_wifi_led: mountEsp32WifiSim,
   // STM32 — quest-sims-stm32.js + cube-block.js / hal-code-editor.js
   stm32_cube: mountStm32CubeSim,
   stm32_stlink: mountStlinkSim,
@@ -833,7 +832,7 @@ const HAL_INTRO_TEXT = {
 const ESP32_INTRO_TEXT = {
   esp32_intro: '📡 به بخش ESP32 خوش اومدی! این برد Wi-Fi و بلوتوث داخل خودش داره و با همون کد آردوینو برنامه می‌گیره. روی هر بخش برد بزن تا بفهمی چی کجاست. این مأموریت فقط مطالعه‌ست؛ هر وقت خوندی «مطالعه کردم ✓» رو بزن.',
   esp32_blink: '💡 کد آردوینو رو بلدی؟ پس ESP32 رو هم بلدی! LED داخل برد روی پایه‌ی ۲ نشسته؛ همون چشمک‌زن همیشگی رو بنویس. حواست باشه ولتاژ منطقش ۳٫۳ ولته، نه ۵ ولت.',
-  esp32_wifi_led: '🌐 حالا وقتشه چراغ رو بی‌سیم روشن کنی! چهار جای خالیِ کد رو انتخاب کن (اگه اشتباه باشه دلیلش رو می‌گم)، آپلود کن و بعد از «گوشیِ مجازی» دکمه‌ی روشن رو بزن. مأموریت با روشن‌شدن LED تکمیل می‌شه.'
+  esp32_wifi_led: '🌐 حالا وقتشه چراغ رو بی‌سیم روشن کنی! کدِ این مأموریت از قبل کامله؛ بخونش، «اجرا کن» رو بزن و از «گوشیِ مجازی» /on رو بزن. حالت بلوکی هم همین کد رو با بلوک نشون می‌ده.'
 };
 
 const EDITOR_GUIDE = {
@@ -843,6 +842,7 @@ const EDITOR_GUIDE = {
   button: (c) => `در {{setup()}} پین ${c.buttonPin} را {{INPUT_PULLUP}} و پین ${c.pin} را {{OUTPUT}} کن. در {{loop()}} اگر {{digitalRead(${c.buttonPin}) == LOW}} بود (دکمه فشرده است) پین ${c.pin} را {{HIGH}} کن، وگرنه {{LOW}}. بعد اجرا کن و دکمه را فشار بده.`,
   pot:    (c) => `در {{loop()}} مقدار ولوم را با {{analogRead(${c.potPin})}} بخوان، با {{map(v, 0, 1023, 0, 255)}} به بازه‌ی PWM ببر و با {{analogWrite(${c.pin}, ...)}} به LED بده. اجرا کن و ولوم را بچرخان.`,
   esp32_blink: (c) => `پین ${c.pin} در کد اولیه با {{pinMode(ledPin, OUTPUT)}} خروجی شده. در {{loop()}} این چهار خط را پشت‌سرهم بنویس: {{digitalWrite(ledPin, HIGH)}} ← {{delay(500)}} ← {{digitalWrite(ledPin, LOW)}} ← {{delay(500)}}. روی ESP32 مقدار HIGH یعنی LED روشن. بعد اجرا کن.`,
+  esp32_wifi_led: () => 'کدِ کامل از قبل نوشته شده. اول بخوانش: {{WiFi.begin("MyHome", "12345678")}} وصل می‌شود، {{server.on("/on", handleOn)}} هر آدرس را به یک تابع می‌دهد و {{server.handleClient()}} در {{loop()}} به درخواست‌ها گوش می‌دهد. «اجرا کن» را بزن، صبر کن برد آنلاین شود و از «گوشیِ مجازی» /on را بزن.',
   stm32_blink: () => 'داخل {{main()}} بعد از راه‌اندازی‌ها، در حلقه‌ی {{while (1)}} این دو خط را بنویس: {{HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13)}} و بعد {{HAL_Delay(500)}}. روی Blue Pill مقدار صفر یعنی LED روشن. بعد «اجرا کن» را بزن.',
   servo:  (c) => `اول {{#include <Servo.h>}} و یک شیء {{Servo}} بساز، بعد در {{setup()}} با {{attach(${c.pin})}} وصلش کن. با یک حلقه‌ی {{for}} زاویه را از ۰ تا ۱۸۰ ببر و در هر مرحله {{servo.write(angle)}} و {{delay(15)}} بگذار. بعد اجرا کن.`
 };

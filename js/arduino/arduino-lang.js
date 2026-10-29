@@ -176,7 +176,7 @@
   // Library object types that can be declared bare, e.g. "Servo myServo;" — kept in
   // sync with Interpreter.builtinObjectTypes. Only names in this list are treated as
   // valid "custom types"; anything else is rejected instead of silently accepted.
-  const OBJECT_TYPE_KEYWORDS = new Set(['Servo']);
+  const OBJECT_TYPE_KEYWORDS = new Set(['Servo', 'WebServer']);
 
   function parse(tokens) {
     let pos = 0;
@@ -297,6 +297,7 @@
         expectOp('}');
         return { type: 'ArrayLit', elements };
       }
+      if (atOp('[')) throw err('تابعِ بی‌نام (lambda) در شبیه‌ساز پشتیبانی نمی‌شود؛ یک تابع معمولی مثل void handleOn() بنویس و فقط اسمش را به server.on بده');
       throw err('عبارت نامعتبر یا ناتمام');
     }
 
@@ -308,9 +309,16 @@
         const name = advance().value;
         let arraySize = null;
         if (atOp('[')) { advance(); if (!atOp(']')) arraySize = parseExpr(); expectOp(']'); }
+        // «WebServer server(80);» — شیءِ کتابخانه‌ای با آرگومانِ سازنده
+        let ctorArgs = null;
+        if (atOp('(') && OBJECT_TYPE_KEYWORDS.has(varType)) {
+          advance(); ctorArgs = [];
+          if (!atOp(')')) { do { ctorArgs.push(parseAssignment()); } while (atOp(',') && advance()); }
+          expectOp(')');
+        }
         let init = null;
         if (atOp('=')) { advance(); init = parseAssignment(); }
-        decls.push({ name, arraySize, init, varType });
+        decls.push({ name, arraySize, init, varType, ctorArgs });
       } while (atOp(',') && advance());
       expectOp(';');
       return { type: 'VarDecl', decls };
@@ -441,10 +449,10 @@
       }
       try {
         const save = pos;
-        parseTypeSpec();
+        const gType = parseTypeSpec();
         if (peek().type !== 'id') throw err('نام تابع یا متغیر سراسری منتظر بود');
         const name = advance().value;
-        if (atOp('(')) {
+        if (atOp('(') && !OBJECT_TYPE_KEYWORDS.has(gType)) {
           advance();
           const params = [];
           if (!atOp(')')) {
@@ -556,6 +564,24 @@
         }
       });
 
+      // Wi-Fi و وب‌سرورِ ESP32: خودِ رفتار (اتصال، آدرس IP، صفِ درخواست‌های گوشی) را io تأمین می‌کند
+      const WL = {
+        WL_NO_SHIELD: 255, WL_IDLE_STATUS: 0, WL_NO_SSID_AVAIL: 1, WL_SCAN_COMPLETED: 2,
+        WL_CONNECTED: 3, WL_CONNECT_FAILED: 4, WL_CONNECTION_LOST: 5, WL_DISCONNECTED: 6,
+        WIFI_STA: 1, WIFI_AP: 2
+      };
+      Object.keys(WL).forEach((k) => g.declare(k, WL[k]));
+      g.declare('WiFi', {
+        mode: () => true,
+        begin: (ssid, pass) => {
+          if (self.io.wifiBegin) self.io.wifiBegin(String(ssid), pass === undefined ? '' : String(pass));
+          return WL.WL_DISCONNECTED;
+        },
+        status: () => (self.io.wifiStatus ? self.io.wifiStatus() : WL.WL_NO_SHIELD),
+        localIP: () => (self.io.wifiIP ? self.io.wifiIP() : '0.0.0.0'),
+        disconnect: () => { if (self.io.wifiDisconnect) self.io.wifiDisconnect(); return true; }
+      });
+
       this.natives = {
         pinMode: ([pin, mode]) => { self.io.pinMode(pin, mode); },
         digitalWrite: ([pin, val]) => { self.io.digitalWrite(pin, val ? 1 : 0); },
@@ -600,7 +626,42 @@
       // انواع شیءِ کتابخانه‌ای که با اعلان ساده (بدون مقداردهی اولیه) ساخته
       // می‌شوند، مثل "Servo myServo;" — شبیه رفتار کتابخانه‌ی واقعی آردوینو.
       this.builtinObjectTypes = {
-        Servo: () => self.createServoObject()
+        Servo: () => self.createServoObject(),
+        WebServer: (port) => self.createWebServerObject(port)
+      };
+    }
+
+    // «WebServer server(80);» — مسیرها با server.on("/x", تابع) ثبت می‌شوند و فقط وقتی
+    // server.handleClient() صدا زده شود، درخواستِ منتظرِ گوشی به تابعِ همان مسیر می‌رسد.
+    createWebServerObject(port) {
+      const self = this;
+      const routes = Object.create(null);
+      let begun = false, sent = false;
+      return {
+        on(path, handler) {
+          if (!handler || !handler.__fn) throw new RuntimeErr('server.on() به‌عنوان آرگومانِ دوم نامِ یک تابع می‌خواهد، مثل server.on("/on", handleOn).');
+          routes[String(path)] = handler.__fn;
+          if (self.io.webOn) self.io.webOn(String(path));
+        },
+        begin() { begun = true; if (self.io.webBegin) self.io.webBegin(port); },
+        send(code, type, body) {
+          sent = true;
+          if (self.io.webSend) self.io.webSend(Number(code) || 200, body === undefined ? '' : String(body));
+        },
+        * handleClient() {
+          if (!begun || !self.io.webStartRequest) return;
+          const req = self.io.webStartRequest();
+          if (!req) return;
+          sent = false;
+          const fn = routes[req.path];
+          if (fn) {
+            yield* self.callFunction(fn, []);
+          } else {
+            sent = true;
+            if (self.io.webSend) self.io.webSend(404, 'Not Found');
+          }
+          if (self.io.webEndRequest) self.io.webEndRequest(req, sent);
+        }
       };
     }
 
@@ -650,6 +711,7 @@
       while (true) {
         yield* this.callFunction(loopFn, []);
         yield { type: 'loopEnd' };
+        this.sliceSteps = 0;   // پایانِ هر دورِ loop به شبیه‌ساز کنترل می‌دهد؛ مرورگر قفل نمی‌شود
       }
     }
 
@@ -679,7 +741,9 @@
           const size = Math.max(0, Math.floor(yield* this.evalExpr(d.arraySize, scope)) || 0);
           val = new Array(size).fill(0);
         } else if (d.varType && this.builtinObjectTypes[d.varType]) {
-          val = this.builtinObjectTypes[d.varType]();
+          const ctorArgs = [];
+          for (const a of (d.ctorArgs || [])) ctorArgs.push(yield* this.evalExpr(a, scope));
+          val = this.builtinObjectTypes[d.varType](...ctorArgs);
         }
         scope.declare(d.name, val);
       }
@@ -840,7 +904,10 @@
         if (typeof method !== 'function') throw new RuntimeErr(`متد ناشناخته: ${node.callee.property}()`);
         const args = [];
         for (const a of node.arguments) args.push(yield* this.evalExpr(a, scope));
-        return method.apply(obj, args);
+        const result = method.apply(obj, args);
+        // متدِ مولّد (مثل server.handleClient که تابعِ کاربر را صدا می‌زند) باید در همین زنجیره اجرا شود
+        if (result && typeof result.next === 'function' && typeof result[Symbol.iterator] === 'function') return yield* result;
+        return result;
       }
       throw new RuntimeErr('فراخوانی نامعتبر');
     }
@@ -853,7 +920,12 @@
         case 'Ident':
           if (node.name === 'true') return true;
           if (node.name === 'false') return false;
-          return scope.get(node.name);
+          try { return scope.get(node.name); }
+          catch (e) {
+            // نامِ یک تابعِ کاربر بدونِ پرانتز = ارجاع به همان تابع (مثل server.on("/on", handleOn))
+            if (e instanceof RuntimeErr && this.ast.functions[node.name]) return { __fn: this.ast.functions[node.name] };
+            throw e;
+          }
         case 'ArrayLit': {
           const arr = [];
           for (const el of node.elements) arr.push(yield* this.evalExpr(el, scope));
@@ -948,7 +1020,7 @@
       switch (node.type) {
         case 'Ident':
           if (node.name === 'true' || node.name === 'false') return;
-          if (!scope.has(node.name)) {
+          if (!scope.has(node.name) && !functionNames.has(node.name)) {
             if (!reportedNames.has(node.name)) {
               reportedNames.add(node.name);
               report(errAt(node.line, `شناسهٔ «${node.name}» تعریف نشده است`));
@@ -995,6 +1067,7 @@
           for (const d of node.decls) {
             if (d.init) checkExpr(d.init, scope);
             if (d.arraySize) checkExpr(d.arraySize, scope);
+            if (d.ctorArgs) d.ctorArgs.forEach(a => checkExpr(a, scope));
             scope.declare(d.name);
           }
           return;
@@ -1024,6 +1097,7 @@
       for (const d of g.decls) {
         if (d.init) checkExpr(d.init, globalScope);
         if (d.arraySize) checkExpr(d.arraySize, globalScope);
+        if (d.ctorArgs) d.ctorArgs.forEach(a => checkExpr(a, globalScope));
         globalScope.declare(d.name);
       }
     }

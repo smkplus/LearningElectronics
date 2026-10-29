@@ -24,7 +24,7 @@ const ArduinoSim = (() => {
   // آدرسِ iframe ادیتورِ بلوکی. هر وقت blockly-editor.html (یا فایل‌هایی که
   // خودش لود می‌کند) عوض شد، عددِ v را بالا ببر تا مرورگرِ کاربرانِ قبلی نسخه‌ی
   // کش‌شده را استفاده نکند.
-  const BLOCKLY_EDITOR_URL = 'blockly-editor.html?v=3';
+  const BLOCKLY_EDITOR_URL = 'blockly-editor.html?v=6';
   const MODE_STORAGE_KEY = 'shovalie-madar-arduino-mode-v1';
   const MODE_CHANGE_EVENT = 'shovalie-madar-arduino-mode-change';
   const RUN_SPEED = 2.2;
@@ -48,13 +48,14 @@ const ArduinoSim = (() => {
   const HL_CLASSES = new Set([
     'Serial', 'Serial1', 'Serial2', 'Serial3', 'Keyboard', 'Mouse',
     'Wire', 'SPI', 'EEPROM', 'TFT_eSPI', 'TFT_eSprite', 'File', 'HardwareSerial', 'String', 'tft',
-    'Servo'
+    'Servo', 'WiFi', 'WebServer'
   ]);
 
   const HL_CONSTANTS = new Set([
     'HIGH', 'LOW', 'INPUT', 'OUTPUT', 'INPUT_PULLUP', 'true', 'false',
     'LED_BUILTIN', 'DEC', 'BIN', 'HEX', 'OCT', 'NULL', 'TFT_BLACK', 'TFT_WHITE',
     'A0', 'A1', 'A2', 'A3', 'A4', 'A5',
+    'WL_CONNECTED', 'WL_DISCONNECTED', 'WL_NO_SSID_AVAIL', 'WL_CONNECT_FAILED', 'WIFI_STA',
     'GPIOA', 'GPIOB', 'GPIOC', 'GPIO_PIN_SET', 'GPIO_PIN_RESET',
     ...Array.from({ length: 16 }, (_, i) => 'GPIO_PIN_' + i)
   ]);
@@ -69,7 +70,8 @@ const ArduinoSim = (() => {
     'init', 'setRotation', 'fillScreen', 'setTextSize', 'setCursor', 'Log', 'log',
     'createSprite', 'pushSprite', 'setSwapBytes',
     'HAL_Init', 'SystemClock_Config', 'MX_GPIO_Init',
-    'HAL_GPIO_WritePin', 'HAL_GPIO_TogglePin', 'HAL_GPIO_ReadPin', 'HAL_Delay'
+    'HAL_GPIO_WritePin', 'HAL_GPIO_TogglePin', 'HAL_GPIO_ReadPin', 'HAL_Delay',
+    'handleClient', 'localIP', 'status', 'send'
   ]);
 
   // فهرست واحدِ کلمات کلیدی/توابع/ثابت‌های شناخته‌شده — همان‌هایی که رنگی می‌شوند —
@@ -878,6 +880,64 @@ void loop() {
       }
     },
 
+    esp32wifi: {
+      board: () => esp32BoardSVG({ led: true }),
+      blocksTask: 'esp32wifi',
+      hasPhone: true,
+      baud: 115200,
+      maxRunMs: 120000,
+      hint: 'کد کامل است؛ «اجرا کن» را بزن و وقتی برد آنلاین شد، از گوشیِ مجازی /on را بزن.',
+      successText: '🎉 آفرین! چراغ را از راه دور و با Wi-Fi روشن کردی — مأموریت تکمیل شد.',
+      successLog: '✓ درخواستِ /on از گوشی به ESP32 رسید و LED روشن شد.',
+      starter: pins => `#include <WiFi.h>
+#include <WebServer.h>
+
+WebServer server(80);
+int ledPin = ${pins.led};
+
+void handleOn() {
+  digitalWrite(ledPin, HIGH);
+  server.send(200, "text/plain", "LED ON");
+}
+
+void handleOff() {
+  digitalWrite(ledPin, LOW);
+  server.send(200, "text/plain", "LED OFF");
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(ledPin, OUTPUT);
+  WiFi.begin("MyHome", "12345678");
+  while (WiFi.status() != WL_CONNECTED) delay(500);
+  Serial.println(WiFi.localIP());
+  server.on("/on", handleOn);
+  server.on("/off", handleOff);
+  server.begin();
+}
+
+void loop() {
+  server.handleClient();
+}
+`,
+      check(state) {
+        const w = state.wifi;
+        if (!w.began) return { ok: false, reason: 'هنوز با WiFi.begin("MyHome", "12345678") به مودم وصل نشده‌ای.' };
+        if (!w.connected) {
+          return { ok: false, reason: (w.ssidOk && w.passOk)
+            ? 'برد هنوز به Wi-Fi وصل نشده — بعد از WiFi.begin باید صبر کنی تا WiFi.status() برابر WL_CONNECTED شود.'
+            : 'برد به Wi-Fi وصل نشد — نام و رمز را با مودمِ مجازی (MyHome و 12345678) یکی کن.' };
+        }
+        if (!w.serverBegun) return { ok: false, reason: 'وب‌سرور هنوز راه نیفتاده — بعد از ثبتِ مسیرها server.begin() را صدا بزن.' };
+        if (w.routes.indexOf('/on') < 0) return { ok: false, reason: 'برای مسیرِ /on هنوز server.on("/on", ...) ننوشته‌ای.' };
+        if (!w.requests.some(r => r.path === '/on')) return { ok: false, reason: 'برد آنلاین است؛ حالا از گوشیِ مجازی دکمه‌ی /on را بزن.' };
+        if (!w.requests.some(r => r.path === '/on' && r.sent && r.code === 200 && r.led === 1)) {
+          return { ok: false, reason: 'مسیرِ /on باید LED را با digitalWrite(ledPin, HIGH) روشن کند و با server.send(200, ...) جواب بدهد.' };
+        }
+        return { ok: true };
+      }
+    },
+
     button: {
       board: pins => ledButtonSVG(pins.led, pins.button),
       hasButton: true,
@@ -1126,6 +1186,21 @@ void loop() {
           <input type="range" class="sim-pot-range" min="0" max="1023" value="512" step="1" data-act="pot" aria-label="ولوم"/>
           <span class="sim-hw-note">دسته‌ی ولوم را بکش — چپ = تاریک، راست = کاملاً روشن.</span>
         </div>` : ''}
+        ${task.hasPhone ? `
+        <div class="sim-wifi">
+          <div class="sim-wifi-row">
+            <span class="sim-wifi-chip" data-role="wifi-chip">📶 ESP32: آفلاین</span>
+            <span class="sim-hw-note">مودمِ مجازی: <bdi dir="ltr">MyHome</bdi> — رمز: <bdi dir="ltr">12345678</bdi></span>
+          </div>
+          <div class="sim-phone">
+            <div class="sim-phone-url" dir="ltr" data-role="phone-url">http://—</div>
+            <div class="sim-phone-screen" dir="ltr" data-role="phone-screen">اول برنامه را اجرا کن تا برد به Wi-Fi وصل شود.</div>
+            <div class="sim-phone-btns">
+              <button type="button" class="sim-phone-btn" data-path="/on">/on</button>
+              <button type="button" class="sim-phone-btn" data-path="/off">/off</button>
+            </div>
+          </div>
+        </div>` : ''}
         <div class="sim-editor-block">
           <div class="sim-editor-head">
             <span class="sim-editor-title">${isStm ? 'کد STM32' : 'کد آردوینو'} <span dir="ltr" style="unicode-bidi: isolate;">(${isStm ? 'C / HAL' : 'Arduino C++'})</span></span>
@@ -1232,7 +1307,13 @@ void loop() {
         servoPin: undefined,
         servoSeen: false,
         lowAngleSeen: false,
-        highAngleSeen: false
+        highAngleSeen: false,
+        // مودمِ مجازیِ مأموریتِ Wi-Fi: وضعیتِ اتصال، سرور، مسیرها و درخواست‌هایی که گوشی فرستاده
+        wifi: {
+          began: false, ssid: '', ssidOk: false, passOk: false,
+          statusCalls: 0, startMs: 0, connected: false, ip: '',
+          serverBegun: false, routes: [], requests: [], current: null, failHint: false
+        }
       };
     }
 
@@ -1726,6 +1807,57 @@ function setSerialScreenText(text) {
       el.potHit.addEventListener('pointercancel', potUp);
     }
 
+    /* ------------------- Wi-Fi: مودمِ مجازی و گوشیِ مجازی (فقط مأموریتِ esp32wifi) ------------------- */
+    const NET = { ssid: 'MyHome', pass: '12345678', ip: '192.168.1.50' };
+    const phoneQueue = [];
+    const phoneUi = task.hasPhone ? {
+      chip: container.querySelector('[data-role="wifi-chip"]'),
+      url: container.querySelector('[data-role="phone-url"]'),
+      screen: container.querySelector('[data-role="phone-screen"]')
+    } : null;
+
+    function setWifiChip(mode) {
+      if (!phoneUi) return;
+      phoneUi.chip.setAttribute('data-mode', mode);
+      phoneUi.chip.textContent = mode === 'online' ? `📶 آنلاین — IP: ${NET.ip}`
+        : mode === 'connecting' ? `📶 در حال اتصال به ${NET.ssid}…` : '📶 ESP32: آفلاین';
+    }
+    function setPhone(url, text, kind) {
+      if (!phoneUi) return;
+      phoneUi.url.textContent = url;
+      phoneUi.screen.textContent = text;
+      phoneUi.screen.setAttribute('data-kind', kind || 'idle');
+    }
+    function resetWifiUi() {
+      phoneQueue.length = 0;
+      setWifiChip('offline');
+      setPhone('http://—', 'اول برنامه را اجرا کن تا برد به Wi-Fi وصل شود.', 'idle');
+    }
+    function phoneSend(path) {
+      const w = state.wifi;
+      const url = 'http://' + NET.ip + path;
+      if (!running || !w.connected) {
+        setPhone(url, '⚠️ اتصال برقرار نشد — برد آنلاین نیست. اول برنامه را اجرا کن و صبر کن به Wi-Fi وصل شود.', 'error');
+        return;
+      }
+      if (!w.serverBegun) {
+        setPhone(url, '⚠️ ERR_CONNECTION_REFUSED — وب‌سرور راه نیفتاده؛ server.begin() را صدا بزن.', 'error');
+        return;
+      }
+      const req = { path, picked: false };
+      phoneQueue.push(req);
+      setPhone(url, '⏳ منتظر پاسخِ برد…', 'wait');
+      setTimeout(() => {
+        if (req.picked || !phoneQueue.includes(req)) return;
+        phoneQueue.splice(phoneQueue.indexOf(req), 1);
+        setPhone(url, '⏱️ پاسخی نیامد (timeout).', 'error');
+        logLine('✗ برد به درخواستِ گوشی گوش نداد — در loop() باید مدام server.handleClient() صدا زده شود.', 'sim-error');
+      }, 2500);
+    }
+    if (phoneUi) {
+      container.querySelectorAll('.sim-phone-btn').forEach((b) => b.addEventListener('click', () => phoneSend(b.dataset.path)));
+    }
+
     function makeIO() {
       const io = {
         _ms: 0,
@@ -1742,6 +1874,7 @@ function setSerialScreenText(text) {
           const numVal = (val === 1 || val === 'HIGH' || val === true) ? 1 : 0;
           io.pins[p] = numVal;
           state.events.push({ pin: p, val: numVal, ms: io._ms });
+          if (state.wifi.current && p === pins.led) state.wifi.current.led = numVal;   // LED را همین درخواستِ گوشی عوض کرد
           if (halIO) { halIO.write(p, numVal); return; }
           if (p === pins.led) {
             setLed(task.activeLow ? 1 - numVal : numVal);
@@ -1801,6 +1934,66 @@ function setSerialScreenText(text) {
           if (a >= 165) state.highAngleSeen = true;
         },
         millis() { return Math.round(io._ms); },
+        wifiBegin(ssid, pass) {
+          const w = state.wifi;
+          w.began = true; w.ssid = ssid; w.connected = false; w.ip = '';
+          w.ssidOk = ssid === NET.ssid; w.passOk = pass === NET.pass;
+          w.statusCalls = 0; w.startMs = io._ms; w.failHint = false;
+          setWifiChip('connecting');
+        },
+        wifiStatus() {
+          const w = state.wifi;
+          if (!w.began) return 0;                                  // WL_IDLE_STATUS
+          w.statusCalls++;
+          if (w.connected) return 3;                               // WL_CONNECTED
+          // اتصال کمی طول می‌کشد: چند بار پرسیدن یا حدود ۱٫۵ ثانیه (زمانِ مجازی)
+          if (w.statusCalls < 6 && io._ms - w.startMs < 1500) return 6;   // WL_DISCONNECTED
+          if (!w.ssidOk || !w.passOk) {
+            if (!w.failHint) {
+              w.failHint = true;
+              logLine(!w.ssidOk
+                ? `✗ شبکه‌ی «${w.ssid}» پیدا نشد — نامِ مودمِ مجازی ${NET.ssid} است.`
+                : '✗ رمزِ Wi-Fi اشتباه است — رمزِ مودمِ مجازی 12345678 است.', 'sim-error');
+              setWifiChip('offline');
+            }
+            return !w.ssidOk ? 1 : 4;                              // WL_NO_SSID_AVAIL / WL_CONNECT_FAILED
+          }
+          w.connected = true; w.ip = NET.ip;
+          setWifiChip('online');
+          return 3;
+        },
+        wifiIP() { return state.wifi.connected ? NET.ip : '0.0.0.0'; },
+        wifiDisconnect() { state.wifi.connected = false; setWifiChip('offline'); },
+        webBegin() { state.wifi.serverBegun = true; },
+        webOn(path) { if (state.wifi.routes.indexOf(path) < 0) state.wifi.routes.push(path); },
+        // هر بار که برنامه server.handleClient() را صدا می‌زند، یک درخواستِ منتظرِ گوشی (اگر باشد) تحویل می‌گیرد
+        webStartRequest() {
+          const w = state.wifi;
+          if (!w.connected || !phoneQueue.length) return null;
+          const req = phoneQueue.shift();
+          req.picked = true; req.sent = false; req.code = 0; req.body = ''; req.led = undefined;
+          w.current = req;
+          return req;
+        },
+        webSend(code, body) {
+          const req = state.wifi.current;
+          if (!req) return;
+          req.sent = true; req.code = code; req.body = body;
+          setPhone('http://' + NET.ip + req.path, code === 200 ? (body || '(پاسخِ خالی)') : `${code} — ${body}`, code === 200 ? 'ok' : 'error');
+        },
+        webEndRequest(req, sent) {
+          const w = state.wifi;
+          w.current = null;
+          w.requests.push({ path: req.path, sent, code: req.code, body: req.body, led: req.led });
+          if (!sent) {
+            setPhone('http://' + NET.ip + req.path, '⏱️ برد جواب نداد (timeout).', 'error');
+            logLine('✗ تابعِ مسیرِ ' + req.path + ' جوابی نفرستاد — در آخرش server.send(200, "text/plain", "...") را صدا بزن.', 'sim-error');
+          } else if (req.code === 404) {
+            logLine('ℹ️ برای مسیرِ ' + req.path + ' هنوز server.on(...) ننوشته‌ای (۴۰۴).', 'sim-error');
+          } else if (req.path === '/on' && req.led !== 1) {
+            logLine('ℹ️ مسیرِ /on جواب داد ولی LED را روشن نکرد — در تابعِ آن digitalWrite(ledPin, HIGH) بنویس.', 'sim-error');
+          }
+        },
         serialBegin(baud) {
           state.serialBaud = Number(baud) || undefined;
         },
@@ -1887,6 +2080,7 @@ function setSerialScreenText(text) {
       if (blockMode) syncBlocksToText();
       const myToken = ++runToken;
       state = freshState();
+      resetWifiUi();
       clearConsole();
       setSerialScreenText('');
       setLed(0);
@@ -1995,6 +2189,7 @@ function setSerialScreenText(text) {
       stopRequested = true;
       runToken++;
       setRunning(false);
+      resetWifiUi();
       if (halHw) halHw.reset();
       setStatus('اجرا متوقف شد.', 'idle');
     }
@@ -2014,6 +2209,7 @@ function setSerialScreenText(text) {
       clearConsole();
       setSerialScreenText('');
       state = freshState();
+      resetWifiUi();
       if (el.potRange) {
         potValue = 512;
         el.potRange.value = '512';
