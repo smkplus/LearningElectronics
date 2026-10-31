@@ -77,6 +77,99 @@ const EXPORT_CSS = '.b{fill:none;stroke:#e79a54;stroke-width:2;stroke-linecap:ro
   '.r{fill:#d4af37;font:600 12px monospace}.v{fill:#e8e2d0;font:12px monospace}';
 const GLOWS = {'#ffd95a':'L','#ff5b5b':'R','#ffd23f':'Y','#3ddc84':'G'};
 
+const BETA = 100, GB = 1/20, GSAT = 1/10, VBE = 0.7, VSAT = 0.2, GS = 1e3, GMIN = 1e-9;
+
+function dcSolve(els, ref, mem){
+  const idx = new Map();
+  let n = 0;
+  const ix = k => k === ref ? -1 : (idx.has(k) ? idx.get(k) : (idx.set(k, n), n++));
+  els.forEach(e => {
+    if(e.k === 'Q'){ e.ib = ix(e.b); e.ic = ix(e.c); e.ie = ix(e.e); }
+    else if(e.k === 'V'){ e.ia = ix(e.p); e.ik = ix(e.n); }
+    else { e.ia = ix(e.a); e.ik = ix(e.b); }
+  });
+  const volt = new Array(n).fill(0);
+  const V = i => i < 0 ? 0 : volt[i];
+  const gG = (A, a, b, g) => { if(a >= 0) A[a][a] += g; if(b >= 0) A[b][b] += g; if(a >= 0 && b >= 0){ A[a][b] -= g; A[b][a] -= g; } };
+  const gOff = (A, z, a, b, g, vf) => { gG(A, a, b, g); if(a >= 0) z[a] += g * vf; if(b >= 0) z[b] -= g * vf; };
+  const qNodes = e => e.pnp ? {a:e.ie, k:e.ib, m1:e.ie, m2:e.ic} : {a:e.ib, k:e.ie, m1:e.ic, m2:e.ie};
+
+  function solve(){
+    const A = Array.from({length:n}, () => new Array(n).fill(0)), z = new Array(n).fill(0);
+    for(let i = 0; i < n; i++) A[i][i] += GMIN;
+    els.forEach(e => {
+      if(e.k === 'R') gG(A, e.ia, e.ik, e.g);
+      else if(e.k === 'V'){ gG(A, e.ia, e.ik, GS); if(e.ia >= 0) z[e.ia] += GS * e.v; if(e.ik >= 0) z[e.ik] -= GS * e.v; }
+      else if(e.k === 'D'){ if(mem.get(e.id)) gOff(A, z, e.ia, e.ik, e.g, e.vf); }
+      else if(e.k === 'Q'){
+        const s = mem.get(e.id) || 0;
+        if(!s) return;
+        const q = qNodes(e), k = BETA * GB, i0 = -k * VBE;
+        gOff(A, z, q.a, q.k, GB, VBE);
+        if(s === 1){
+          if(q.m1 >= 0){ if(q.a >= 0) A[q.m1][q.a] += k; if(q.k >= 0) A[q.m1][q.k] -= k; z[q.m1] -= i0; }
+          if(q.m2 >= 0){ if(q.a >= 0) A[q.m2][q.a] -= k; if(q.k >= 0) A[q.m2][q.k] += k; z[q.m2] += i0; }
+        } else gOff(A, z, q.m1, q.m2, GSAT, VSAT);
+      }
+    });
+    for(let c = 0; c < n; c++){
+      let p = c;
+      for(let r = c + 1; r < n; r++) if(Math.abs(A[r][c]) > Math.abs(A[p][c])) p = r;
+      [A[c], A[p]] = [A[p], A[c]]; [z[c], z[p]] = [z[p], z[c]];
+      for(let r = c + 1; r < n; r++){
+        const f = A[r][c] / A[c][c];
+        if(!f) continue;
+        for(let k = c; k < n; k++) A[r][k] -= f * A[c][k];
+        z[r] -= f * z[c];
+      }
+    }
+    for(let r = n - 1; r >= 0; r--){
+      let s = z[r];
+      for(let k = r + 1; k < n; k++) s -= A[r][k] * volt[k];
+      volt[r] = s / A[r][r];
+    }
+  }
+
+  function settle(){
+    for(let it = 0; it < 120; it++){
+      solve();
+      let changed = false;
+      for(const e of els){
+        if(e.k === 'D'){
+          const on = mem.get(e.id) || 0, vd = V(e.ia) - V(e.ik);
+          if(!on && vd > e.vf){ mem.set(e.id, 1); changed = true; break; }
+          if(on && vd < e.vf){ mem.set(e.id, 0); changed = true; break; }
+        }
+      }
+      if(changed) continue;
+      for(const e of els){
+        if(e.k !== 'Q') continue;
+        const s = mem.get(e.id) || 0, q = qNodes(e);
+        const ib = GB * (V(q.a) - V(q.k) - VBE), vce = V(q.m1) - V(q.m2);
+        let ns = s;
+        if(s === 0){ if(ib > 0) ns = 1; }
+        else if(ib < 0) ns = 0;
+        else if(s === 1){ if(vce < VSAT) ns = 2; }
+        else if(GSAT * (vce - VSAT) > BETA * ib) ns = 1;
+        if(ns !== s){ mem.set(e.id, ns); changed = true; break; }
+      }
+      if(!changed) break;
+    }
+    solve();
+  }
+  settle();
+
+  const cur = {};
+  let maxSrc = 0;
+  els.forEach(e => {
+    if(e.k === 'R') cur[e.id] = e.g * (V(e.ia) - V(e.ik));
+    else if(e.k === 'D') cur[e.id] = mem.get(e.id) ? e.g * (V(e.ia) - V(e.ik) - e.vf) : 0;
+    else if(e.k === 'V'){ cur[e.id] = GS * (e.v - (V(e.ia) - V(e.ik))); maxSrc = Math.max(maxSrc, Math.abs(cur[e.id])); }
+    else if(e.k === 'Q') cur[e.id] = mem.get(e.id) || 0;
+  });
+  return {cur, maxSrc};
+}
+
 function create(root, opts){
   opts = opts || {};
   const uid = 'cv' + (++uidSeq);
@@ -91,7 +184,7 @@ function create(root, opts){
   let cursor = {x:0, y:0};
   let wireStart = null, drag = null, spaceDown = false, pinch = null, fitted = false, focusIn = false, succeeded = !!opts.alreadyDone;
   let undoStack = [], redoStack = [], lastTaskSig = '', saveTimer = null, stopped = false;
-  const pointers = new Map();
+  const pointers = new Map(), bjtMem = new Map();
   const cleanup = [];
   const on = (t, ev, fn, o) => { t.addEventListener(ev, fn, o); cleanup.push(() => t.removeEventListener(ev, fn, o)); };
 
@@ -361,7 +454,7 @@ function create(root, opts){
     const sources = [];
     S.comps.forEach(c => {
       const d = DEFS[c.t];
-      if(c.t === 'BC') sources.push({comp:c, pos:node(c,2), neg:node(c,3)});   // کانکتور باتری منبع است (سیم قرمز +، مشکی −)
+      if(c.t === 'BC') sources.push({comp:c, pos:node(c,2), neg:node(c,3), v:parseFloat(c.val) || 9});   // کانکتور باتری منبع است (سیم قرمز +، مشکی −)
       else if(d.link) d.link.forEach(l => addE(node(c,l[0]), node(c,l[1]), c, 'wire', true));
       else if(d.edge === 'led' || d.edge === 'diode') addE(node(c,0), node(c,1), c, d.edge, false);
       else if(d.edge === 'load' || d.edge === 'wire'){
@@ -369,12 +462,39 @@ function create(root, opts){
         addE(node(c,0), node(c,1), c, d.edge === 'load' ? 'load' : 'wire', true);
       }
     });
-    if(gnd.length) Object.keys(vcc).forEach(v => sources.push({comp:null, pos:find(vcc[v]), neg:find(key(P.get(gnd[0].id)[0].x, P.get(gnd[0].id)[0].y))}));
+    if(gnd.length) Object.keys(vcc).forEach(v => sources.push({comp:null, v:parseFloat(v) || 5, pos:find(vcc[v]), neg:find(key(P.get(gnd[0].id)[0].x, P.get(gnd[0].id)[0].y))}));
     const rank = {on:1, burnt:2, short:3};
     const status = new Map();
     const mark = (c,s) => { if(!c) return; if(!status.get(c.id) || rank[s] > rank[status.get(c.id)]) status.set(c.id, s); };
     let shorted = false;
-    sources.forEach(src => {
+    function solveBJT(){
+      const ohm = s => { const m = /^([\d.]+)\s*([kKM]?)/.exec(String(s)); return (m && parseFloat(m[1]) * ({k:1e3, K:1e3, M:1e6}[m[2]] || 1)) || 1000; };
+      const els = [];
+      S.comps.forEach(c => {
+        const d = DEFS[c.t];
+        if(c.t === 'NPN' || c.t === 'PNP') els.push({k:'Q', id:c.id, comp:c, pnp:c.t === 'PNP', b:node(c,0), c:node(c,1), e:node(c,2)});
+        else if(d.edge === 'led') els.push({k:'D', id:c.id, comp:c, led:true, a:node(c,0), b:node(c,1), vf:{LED:1.9, LEDY:2, LEDG:2.1}[c.t] || 2, g:1/20});
+        else if(d.edge === 'diode') els.push({k:'D', id:c.id, comp:c, a:node(c,0), b:node(c,1), vf:0.65, g:1/5});
+        else if(d.edge === 'load' || d.edge === 'wire'){
+          if(d.sw && !c.on) return;
+          els.push({k:'R', id:c.id, comp:c, a:node(c,0), b:node(c,1), g:d.sw ? 1e3 : 1 / (c.t === 'R' ? ohm(c.val) : 20)});
+        }
+      });
+      sources.forEach((s,i) => els.push({k:'V', id:'V' + i, comp:s.comp, p:s.pos, n:s.neg, v:s.v}));
+      const ref = gnd.length ? find(key(P.get(gnd[0].id)[0].x, P.get(gnd[0].id)[0].y)) : sources[0].neg;
+      const r = dcSolve(els, ref, bjtMem);
+      els.forEach(e => {
+        const i = r.cur[e.id];
+        if(e.k === 'R'){ if(Math.abs(i) > 1) mark(e.comp, 'short'); else if(Math.abs(i) > 1e-4) mark(e.comp, 'on'); }
+        else if(e.k === 'D'){ if(e.led && i > 0.035) mark(e.comp, 'burnt'); else if(i > (e.led ? 1e-3 : 1e-4)) mark(e.comp, 'on'); }
+        else if(e.k === 'Q'){ if(i) mark(e.comp, 'on'); }
+        else if(e.k === 'V'){ if(Math.abs(i) > 1) mark(e.comp, 'short'); else if(Math.abs(i) > 1e-4) mark(e.comp, 'on'); }
+      });
+      return r.maxSrc > 1;
+    }
+    const useSolver = S.comps.some(c => c.t === 'NPN' || c.t === 'PNP');
+    if(useSolver && sources.length) shorted = solveBJT();
+    if(!useSolver) sources.forEach(src => {
       if(src.pos === src.neg){ shorted = true; mark(src.comp,'short'); return; }
       let count = 0;
       const seen = new Set([src.pos]), stack = [];
