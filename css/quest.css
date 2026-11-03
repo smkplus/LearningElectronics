@@ -977,3 +977,11 @@ body.sim-fullscreen-lock #knightSection{ z-index:1200 !important; }
 .ct-eq b{ color:var(--trace-bright); }
 .ct-scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius:8px; }
 .ct-wide{ min-width:720px; }
+.ct-devs{ display:flex; flex-direction:column; gap:6px; }
+.ct-dev{ display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; padding:7px 10px; border-radius:8px; background:#0f1420; border:1px solid #1f6f50; font-size:12px; cursor:pointer; }
+.ct-dev b{ min-width:52px; color:var(--trace-bright); font-family:'JetBrains Mono',monospace; }
+.ct-dev span{ flex:1 1 120px; color:#cfc8b6; }
+.ct-dev code{ direction:ltr; font-family:'JetBrains Mono',monospace; font-size:12.5px; color:#57d8a3; background:#0a0d13; padding:2px 8px; border-radius:6px; }
+.ct-dev i{ font-style:normal; font-weight:800; color:#57d8a3; min-width:18px; text-align:center; }
+.ct-dev.bad{ background:#241517; border-color:#c1554a; }
+.ct-dev.bad b, .ct-dev.bad code, .ct-dev.bad i{ color:#ff9c92; }

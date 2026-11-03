@@ -20,12 +20,17 @@ const CT_TALK = {
   hclk:  'HCLK کلاکِ باسِ اصلی (AHB) است: همان ۷۲ مگاهرتز. هر دو باسِ APB1 و APB2 از همین‌جا کلاک می‌گیرند.',
   apb1:  'APB1 یک چرخ‌دنده‌ی تقسیم‌کننده است: عددِ داخلش را از ورودی تقسیم می‌کند. ۷۲ ÷ ۲ = ۳۶. قطعاتِ حساسِ این باس (UART2، I2C) بیش از ۳۶ مگاهرتز تحمل ندارند.',
   apb2:  'APB2 هم یک چرخ‌دنده‌ی تقسیم‌کننده است ولی تا ۷۲ مگاهرتز تحمل دارد؛ پس معمولاً ÷۱ می‌ماند. تایمر TIM1 روی همین باس نشسته است.',
-  pclk1: 'PCLK1 کلاکِ باسِ APB1 است: ۷۲ ÷ ۲ = ۳۶. همان عددِ ۳۶ که در متن‌ها هست؛ کلاکِ تایمر نیست!',
-  pclk2: 'PCLK2 کلاکِ باسِ APB2 است؛ با ÷۱ همان ۷۲ مگاهرتز می‌ماند.',
+  pclk1: 'PCLK1 کلاکِ باسِ APB1 است: ۷۲ ÷ ۲ = ۳۶. همان عددِ ۳۶ که در متن‌ها هست؛ کلاکِ تایمر نیست! قطعاتی مثل I2C، UART2، CAN و SPI2 از همین کلاک می‌گیرند.',
+  pclk2: 'PCLK2 کلاکِ باسِ APB2 است؛ با ÷۱ همان ۷۲ مگاهرتز می‌ماند. UART1، SPI1 و ADC از همین کلاک می‌گیرند.',
   tmul:  'ضریبِ تایمر یک چرخ‌دنده‌ی ضرب‌کننده است. اگر تقسیم‌کننده‌ی APB برابر ۱ نباشد، کلاکِ تایمر ×۲ می‌شود (۳۶ × ۲ = ۷۲)؛ با ÷۱ هیچ ضربی نیست (×۱).',
   t1:    'این کلاکِ تایمرهای APB1 (TIM2/3/4) است و جوابِ این مسیر. با ÷۲ دوباره ×۲ می‌شود و ۷۲ می‌گیرد.',
   t2:    'TIM1 روی APB2 است. با ÷۱ هم‌اندازه است و ۷۲ می‌چرخد؛ با ÷۲ هم دوباره ×۲ می‌شود و ۷۲. برای PWMِ موتور کلاکش ۷۲ مگاهرتز است.',
   psc:   'Prescaler یک چرخ‌دنده‌ی تقسیم‌کننده است: کلاکِ تایمر را بر (PSC+۱) تقسیم می‌کند تا عقربه‌ی شمارنده آهسته‌تر بشمرد. در CubeMX عدد PSC = ۸ یعنی تقسیم بر ۹؛ همیشه یکی بیشتر.',
+  busq:  'خط‌چینِ خاکستری موجِ ایده‌آلِ کلاکِ باسِ APB1 است و خطِ رنگی آن چیزی که سیمِ واقعیِ داخلِ چیپ می‌سازد: سیم مثل یک خازنِ کوچک است و هر نیم‌دوره باید پر یا خالی شود. اگر کلاک آن‌قدر تند باشد که فرصتِ پر شدن نباشد، موج به خطِ HIGH (۷۵٪) نمی‌رسد و گیرنده بیت را اشتباه می‌خواند. (مدلِ ساده‌شده برای فهمیدنِ ماجرا)',
+  res:   'هر خطِ عمودی یک «تیک» تایمر است و تایمر با شمردنِ تیک‌ها زمان را اندازه می‌گیرد و PWM می‌سازد. تیک‌ها هرچه ریزتر، دقت بیشتر. اگر کلاکِ تایمر نصف شود، تیک‌ها دو برابر درشت می‌شوند و دقت (Resolution) نصف می‌شود.',
+  uart:  'UART2 روی APB1 است و برای فرستادنِ متن (مثلاً به کامپیوتر) به کار می‌رود. با کلاکِ بیش از حد، بیت‌ها خراب می‌شوند و به‌جای متنِ درست، علامت‌های بی‌معنی می‌رسد.',
+  i2c:   'I2C هم روی APB1 است و برای حرف زدن با سنسورها و نمایشگرها به کار می‌رود. با کلاکِ بیش از حد، سنسور «ACK» نمی‌دهد و ارتباط قطع می‌شود.',
+  can:   'CAN شبکه‌ی ارتباطیِ خودرو و صنعت است و روی APB1 نشسته. بیتِ خراب یعنی فریمِ خطادار (CRC Error) و دورریخته شدنِ پیام.',
   tick:  'این سرعتِ شمارشِ عقربه‌ی تایمر است: کلاکِ تایمر ÷ (PSC+۱). با هر ضربه عقربه یک خانه جلو می‌رود.',
   arr:   'Period (یا ARR) تعدادِ خانه‌های صفحه است: ARR+۱ خانه. عقربه از ۰ می‌رود تا ARR و دوباره به ۰ برمی‌گردد. یک دورِ کامل = یک دوره‌ی PWM.',
   pulse: 'Pulse (یا CCR) اندازه‌ی کمانِ سبز است. تا وقتی عقربه روی کمانِ سبز است پین روشن (HIGH) می‌ماند و بعدش خاموش. کمانِ بزرگ‌تر یعنی موتور بیشتر برق می‌گیرد و تندتر می‌چرخد.',
@@ -63,6 +68,7 @@ function ctFlow(svg, trunk, branches = [], wide = false){
   const teethOf = it => it.t === 'n' ? TS : Math.round(Math.max(11, Math.min(34, 15 * Math.pow(it.sym === '×' ? it.n : 1 / it.n, -.35))));
   [...trunk, ...branches.flat()].forEach(it => { it.T = teethOf(it); });
   const rOf = it => radOf(it.T);
+  const useOf = it => (it.bad && it.badUses) || it.uses || [];
   const cache = {};
   const gearOf = T => cache[T] || (cache[T] = ctTeeth(T, radOf(T)));
   const nb = branches.length;
@@ -86,7 +92,7 @@ function ctFlow(svg, trunk, branches = [], wide = false){
   });
   const ext = nodes.map(({ it, cx, cy }) => {
     const ro = gearOf(it.T).ro, isN = it.t === 'n';
-    return { top: cy - ro - (isN ? 2 : 28), bot: cy + ro + (isN ? (it.final ? 18 : 2) : 28), right: cx + ro };
+    return { top: cy - ro - (isN ? 2 : 28), bot: cy + ro + (isN ? (it.final ? 18 : 2) + useOf(it).length * 10 + (useOf(it).length ? 2 : 0) : 28), right: cx + ro };
   });
   const oy = 6 - Math.min(...ext.map(e => e.top));
   nodes.forEach(n => { n.cy += oy; });
@@ -113,7 +119,8 @@ function ctFlow(svg, trunk, branches = [], wide = false){
         + `<text y="-10" font-size="8.5" font-weight="700" style="fill:#e8e2d0">${it.name}</text>`
         + `<text y="5" font-size="${num.length > 5 ? 13 : 15}" font-weight="700" style="fill:${col}">${num}</text>`
         + `<text y="16" font-size="8.5" style="fill:#8b93a3">${unit}</text></g>`
-        + (it.final ? tx(cx, cy + g.ro + 11, '✔ جواب', 9.5, col, 'font-weight="700"') : '') + '</g>';
+        + (it.final ? tx(cx, cy + g.ro + 11, '✔ جواب', 9.5, col, 'font-weight="700"') : '')
+        + useOf(it).map((u, j) => tx(cx, cy + g.ro + (it.final ? 22 : 11) + j * 10, u, 9, '', `style="font-size:9px;fill:${it.bad ? '#ff6b6b' : '#9aa3b5'};${/^[\x00-\x7F·✖ ]+$/.test(u) ? 'direction:ltr;unicode-bidi:bidi-override' : 'direction:rtl;unicode-bidi:embed'}"`)).join('') + '</g>';
     } else {
       const eq = `${ctNum(it.inM)} ${it.sym} ${ctFa(it.n)} = ${ctNum(it.outM)}`;
       out += `<g data-talk="${it.key}" text-anchor="middle">` + at
@@ -231,6 +238,24 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
         </div>
       </div>
 
+      <div class="ct-stage-t">🔬 بخش ۱ب — چرا کلاکِ باس را نصف کردند؟ (دلیلِ طراحی)</div>
+      <div class="ct-explain"><b>طراحانِ STM32 با یک تضاد روبه‌رو بودند:</b><br>
+        ۱) <b>باسِ APB1 تحملِ سرعتِ زیاد را ندارد.</b> قطعاتی مثل I2C و UART و CAN بیش از ۳۶ مگاهرتز نمی‌توانند کار کنند؛ مصرفِ انرژی بالا می‌رود و سیگنالِ دیجیتال خطا پیدا می‌کند.<br>
+        ۲) <b>تایمر به سرعتِ بالا نیاز دارد.</b> تایمرها قلبِ ساختنِ PWM و اندازه‌گیریِ زمان‌اند؛ اگر کلاکشان نصف شود، دقتشان (Resolution) هم نصف می‌شود.<br>
+        <b>راه‌حل:</b> یک سوئیچِ خودکار در سخت‌افزار گذاشتند: «اگر تقسیم‌کننده‌ی APB برابر ۱ بود، کلاکِ تایمر همان کلاکِ باس است؛ اگر بزرگ‌تر از ۱ بود (مثلاً ۲)، کلاکِ تایمر را دو برابر کن.»</div>
+      <div class="ct-sc">
+        <div class="ct-sc-h"><b data-talk="busq">🧪 آزمایش ۱: اگر باسِ APB1 را تندتر از ۳۶ بچرخانیم</b></div>
+        <div class="ct-sc-h"><label class="ct-ctl">APB1 ${sel('a1', CT_DIV_OPTS, '÷')}</label><label class="ct-ctl">PLL ${sel('pll', CT_PLL_OPTS, '×')}</label></div>
+        <canvas class="ct-cv" id="ctBus"></canvas>
+        <div class="ct-rel" id="ctBusR"></div>
+        <div class="ct-devs" id="ctDevs"></div>
+      </div>
+      <div class="ct-sc">
+        <div class="ct-sc-h"><b data-talk="res">🎯 آزمایش ۲: اگر کلاکِ تایمر هم با باس نصف می‌شد</b></div>
+        <svg class="ct-svg" id="ctRes" viewBox="0 0 320 160"></svg>
+        <div class="ct-rel" id="ctResR"></div>
+      </div>
+
       <div class="ct-stage-t">⏲️ بخش ۲ — تایمر یعنی چی؟</div>
       <div class="ct-explain"><b>تایمر یک عقربه روی یک صفحه‌ی گرد است.</b> هر ضربه‌ی کلاک، عقربه یک خانه جلو می‌رود؛ به آخرین خانه که رسید دوباره به ۰ برمی‌گردد. همین! خودِ سخت‌افزار می‌شمارد و CPU آزاد می‌ماند. دو تنظیم دارد: <b>Prescaler</b> (ضربه‌ها چقدر کُند شوند) و <b>Period</b> (صفحه چند خانه دارد).</div>
       <div class="hs-p" data-v="src"></div>
@@ -281,12 +306,12 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     const c = clocks(), m = pwm(), steps = m.steps, tick = m.tick / 1e6, fa = ctNum;
     const b1 = c.p1 > 36, b2 = c.p2 > 72;
     const hse = ctNode('hse', 'HSE', CT_HSE, 'hse');
-    const sys = ctNode('sys', 'SYSCLK', c.sys, 'sys');
+    const sys = ctNode('sys', 'SYSCLK', c.sys, 'sys', { uses: ['هسته‌ی CPU'] });
     const hclk = ctNode('hclk', 'HCLK', c.sys, 'sys');
-    const p1 = ctNode('pclk1', 'PCLK1', c.p1, 'pclk', { bad: b1 });
-    const p2 = ctNode('pclk2', 'PCLK2', c.p2, 'pclk', { bad: b2 });
-    const t1 = ctNode('t1', 'TIM2/3/4', c.t1, 'tim', { bad: c.t1 > 72 });
-    const t2 = ctNode('t2', 'TIM1', c.t2, 'tim', { bad: c.t2 > 72 });
+    const p1 = ctNode('pclk1', 'PCLK1', c.p1, 'pclk', { bad: b1, uses: ['I2C · UART2 · CAN'], badUses: ['✖ I2C · UART2 · CAN', 'ارتباط خراب می‌شود'] });
+    const p2 = ctNode('pclk2', 'PCLK2', c.p2, 'pclk', { bad: b2, uses: ['UART1 · SPI1 · ADC'], badUses: ['✖ UART1 · SPI1 · ADC', 'ارتباط خراب می‌شود'] });
+    const t1 = ctNode('t1', 'TIM2/3/4', c.t1, 'tim', { bad: c.t1 > 72, uses: ['PWM و زمان‌سنجی'] });
+    const t2 = ctNode('t2', 'TIM1', c.t2, 'tim', { bad: c.t2 > 72, uses: ['PWM موتور'] });
     const cnt = ctNode('tick', 'شمارنده', tick, 'psc');
     const pll = ctOp('pll', 'PLL', '×', st.pll, CT_HSE, c.sys, 'sys', { edit: 'pll' });
     const ahb = ctOp('ahb', 'AHB', '÷', 1, c.sys, c.sys, 'sys');
@@ -405,7 +430,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   }
 
   function refresh(){
-    qa('.ct-sel').forEach(s => { s.value = st[s.dataset.k]; }); buildScenes(); const fin = checkDone(); paintTimer(); say1(); sayTimer();
+    qa('.ct-sel').forEach(s => { s.value = st[s.dataset.k]; }); buildScenes(); const fin = checkDone(); paintTimer(); paintLab(); say1(); sayTimer();
     if(fin) say('2', 'success', CT_FINISH);
   }
 
@@ -550,12 +575,81 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     g.fillStyle = hi ? '#57d8a3' : '#6b7280'; dot(xc, hi ? yH : yL);
   }
 
+  const BUS_TAU = 8, BUS_HI = .75;
+  const busQ = f => {
+    const e = Math.exp(-500 / f / BUS_TAU), hi = .5 + (1 - e) / (1 + e) / 2;
+    return { hi, ok: hi >= BUS_HI };
+  };
+
+  function paintLab(){
+    const c = clocks(), f = c.p1, qv = busQ(f), ok = qv.ok, pc = ctNum(qv.hi * 100);
+    q('#ctBusR').innerHTML = (ok
+      ? `<div>باسِ APB1 با <b>${ctHz(f * 1e6)}</b> می‌چرخد؛ موجِ واقعی (سبز) به ${ctFa(pc)}٪ ولتاژ می‌رسد و از خطِ HIGH (۷۵٪) بالاتر است ⇒ همه‌ی قطعاتِ APB1 درست کار می‌کنند.</div>`
+      : `<div>⚠️ باسِ APB1 با <b>${ctHz(f * 1e6)}</b> می‌چرخد؛ سیمِ داخلی فرصتِ پر شدن ندارد و موج فقط به ${ctFa(pc)}٪ ولتاژ می‌رسد، کمتر از خطِ HIGH (۷۵٪) ⇒ گیرنده بیت‌ها را اشتباه می‌خواند. برای همین باید APB1 را روی ÷۲ بگذاری.</div>`)
+      + '<div style="color:#8b93a3;font-size:11.5px">مدلِ ساده‌شده برای فهمیدنِ ماجراست؛ عددهای واقعیِ دیتاشیت فرق دارند، ولی سقفِ ۳۶ مگاهرتزِ APB1 واقعی است.</div>';
+    const junk = '#?@%&§¿▒', bad = (s, n) => [...s].map((ch, i) => junk[(i * 3 + n) % junk.length]).join('');
+    const dev = (key, name, desc, good, fail) => `<div class="ct-dev${ok ? '' : ' bad'}" data-talk="${key}"><b>${name}</b><span>${desc}</span><code dir="ltr">${ok ? good : fail}</code><i>${ok ? '✔' : '✖'}</i></div>`;
+    q('#ctDevs').innerHTML = dev('uart', 'UART2', 'ارسالِ متن به کامپیوتر', 'Hello', bad('Hello', Math.round(f)))
+      + dev('i2c', 'I2C', 'خواندنِ سنسور', 'ACK · 24°C', 'NACK · ---')
+      + dev('can', 'CAN', 'شبکه‌ی خودرو', 'Frame OK', 'CRC Error');
+
+    const rows = [['با قانونِ ×۲ (واقعیِ STM32)', c.t1, '#57d8a3'], ['بدون قانون (تایمر مستقیم از باس)', c.p1, '#ff6b6b']], PX = 1.5, X0 = 10;
+    let out = '';
+    rows.forEach(([lab, hz, col], r) => {
+      const T = 1000 / hz, y = 44 + r * 84, n = Math.floor(100 / T);
+      let tk = '';
+      for(let k = 0; X0 + k * T * PX <= 310; k++){
+        const x = (X0 + k * T * PX).toFixed(1);
+        tk += `<line x1="${x}" y1="${y - 10}" x2="${x}" y2="${y}" stroke="${k <= n ? col : '#4a5163'}" stroke-width="1.5"/>`;
+      }
+      out += `<text x="160" y="${y - 20}" style="font-size:11px;font-weight:700;fill:${col}">${lab} — ${ctHz(hz * 1e6)}</text>`
+        + tk + `<line x1="${X0}" y1="${y}" x2="310" y2="${y}" stroke="#4a5163"/>`
+        + `<rect x="${X0}" y="${y + 5}" width="${100 * PX}" height="8" rx="3" fill="#d4af37" opacity=".85"/>`
+        + `<text x="${X0 + 50 * PX}" y="${y + 24}" style="font-size:10px">پالسِ ۱۰۰ ns ⇒ ${ctFa(n)} تیک ≈ ${ctNum(n * T)} ns</text>`;
+    });
+    q('#ctRes').innerHTML = out;
+    const ratio = c.t1 / c.p1;
+    q('#ctResR').innerHTML = ratio === 1
+      ? `<div>الان تقسیم‌کننده‌ی APB1 برابر ۱ است، پس کلاکِ تایمر همان کلاکِ باس است (${ctHz(c.t1 * 1e6)}) و دو ردیف یکی‌اند. APB1 را روی ÷۲ بگذار تا قانونِ ×۲ را ببینی.</div>`
+      : `<div>تایمر با قانونِ ×۲ هر <b>${ctTime(1 / (c.t1 * 1e6))}</b> یک تیک می‌زند؛ بدونِ آن فقط ${ctHz(c.p1 * 1e6)} داشت و هر ${ctTime(1 / (c.p1 * 1e6))} یک تیک می‌زد: <b>دقت ${ctFa(ratio)} برابر بدتر</b>. همین دقت تعیین می‌کند PWM چند پله داشته باشد.</div>`;
+  }
+
+  function drawBus(){
+    const cb = q('#ctBus'), w = cb.clientWidth, h = 170;
+    if(!w) return;
+    const dpr = window.devicePixelRatio || 1, gx = cb.getContext('2d');
+    if(cb.width !== Math.round(w * dpr) || cb.height !== Math.round(h * dpr)){ cb.width = Math.round(w * dpr); cb.height = Math.round(h * dpr); }
+    gx.setTransform(dpr, 0, 0, dpr, 0, 0); gx.clearRect(0, 0, w, h);
+    const f = clocks().p1, T = 1000 / f, ok = busQ(f).ok, x0 = 46, x1 = w - 10, top = 22, bot = 142;
+    const X = u => x0 + u / (4 * T) * (x1 - x0), Y = v => bot - v * (bot - top);
+    const tgt = t => (t % T) < T / 2 ? 1 : 0, off = ((tp * .25) % 1) * T, tw = 6 * T + off;
+    const col = ok ? '#57d8a3' : '#ff6b6b';
+    gx.font = '11px JetBrains Mono, monospace'; gx.textAlign = 'left';
+    gx.fillStyle = '#6b7280'; gx.fillText('VDD', 6, top + 4); gx.fillText('0 V', 6, bot + 4);
+    [[BUS_HI, 'HIGH 75%'], [1 - BUS_HI, 'LOW 25%']].forEach(([v, lab]) => {
+      gx.setLineDash([4, 4]); gx.lineWidth = 1; gx.strokeStyle = '#d4af37'; gx.beginPath(); gx.moveTo(x0, Y(v)); gx.lineTo(x1, Y(v)); gx.stroke(); gx.setLineDash([]);
+      gx.fillStyle = '#d4af37'; gx.fillText(lab, x0 + 4, Y(v) - 4);
+    });
+    gx.lineWidth = 1.5; gx.strokeStyle = '#6b7280'; gx.setLineDash([5, 4]); gx.beginPath();
+    for(let t = tw; t <= tw + 4 * T + 1e-9; t += T / 2){ const u = t - tw, v = tgt(t + 1e-6); gx.lineTo(X(u), Y(v)); gx.lineTo(X(Math.min(u + T / 2, 4 * T)), Y(v)); }
+    gx.stroke(); gx.setLineDash([]);
+    const dt = T / 60, k = 1 - Math.exp(-dt / BUS_TAU);
+    let v = .5; gx.lineWidth = 2.6; gx.strokeStyle = col; gx.beginPath();
+    for(let t = 0; t <= tw + 4 * T; t += dt){
+      v += (tgt(t) - v) * k;
+      if(t >= tw){ const px = X(t - tw), py = Y(v); t - tw < dt ? gx.moveTo(px, py) : gx.lineTo(px, py); }
+    }
+    gx.stroke();
+    gx.fillStyle = col; gx.textAlign = 'right'; gx.fillText(`${f.toFixed(0)} MHz ${ok ? 'OK' : 'ERROR'}`, w - 10, 14);
+  }
+
   function frame(ts){
     raf = requestAnimationFrame(frame);
     const dt = last ? Math.min(.05, (ts - last) / 1000) : 0;
     last = ts;
     spin(dt);
     drawWave();
+    drawBus();
   }
 
   reset();
