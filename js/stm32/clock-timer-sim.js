@@ -9,6 +9,7 @@ const CT_W = .6;
 const CT_BATT = 3.7;
 const CT_PLL_OPTS = [2, 3, 4, 5, 6, 7, 8, 9];
 const CT_DIV_OPTS = [1, 2, 4];
+const CT_SHORT = { hse: 'HSE', sys: 'SYSCLK', pclk1: 'PCLK1', pclk2: 'PCLK2', t1: 'TIM2/3/4', t2: 'TIM1', psc: 'PSC' };
 const CT_INIT = { pll: 2, a1: 1, a2: 1, psc: 0, arr: 15, pulse: 8 };
 const CT_FINISH = '🏆 تمام شد! کلاکِ چیپ ۷۲ مگاهرتز است، کلاکِ تایمر هم با قانونِ ×۲ دوباره ۷۲ می‌شود، و تایمر با Prescaler و Period و Pulse یک PWM ساخت که سرعتِ موتور را تنظیم می‌کند.';
 
@@ -42,24 +43,57 @@ function ctGear(g, p, i){
     d += `${k ? 'L' : 'M'}${pt(ri, -.3)}L${pt(ro, -.14)}L${pt(ro, .14)}L${pt(ri, .3)}`;
   }
   const holes = g.rp > 34 ? [0, 1, 2, 3].map(k => { const a = k * 1.5708 + .785; return `<circle class="hole" cx="${(g.rp * .6 * Math.cos(a)).toFixed(1)}" cy="${(g.rp * .6 * Math.sin(a)).toFixed(1)}" r="${(g.rp * .12).toFixed(1)}"/>`; }).join('') : '';
-  const rt = Math.min(g.rp * .46, 20), fs = Math.max(9, Math.min(16, g.rp * .32));
-  return `<g transform="translate(${g.cx.toFixed(1)} ${g.cy.toFixed(1)})" data-talk="${g.key}"><g class="ct-g ${g.cls}${g.bad ? ' bad' : ''}"><path d="${d}Z"/>${holes}<line class="spoke" x1="0" y1="0" x2="${(g.rp * .82).toFixed(1)}" y2="0"/></g><circle class="ct-gh" r="${rt.toFixed(1)}"/><text class="ct-gtx" y="${(fs * .35).toFixed(1)}" font-size="${fs.toFixed(1)}">${ctFa(g.T)}</text></g>`;
+  // روی چرخ‌دنده‌های بزرگ اسمش نوشته می‌شود؛ عددِ دنده فقط در برچسبِ زیرِ چرخ‌دنده می‌آید
+  const big = g.rp >= 40, nm = g.sh || '';
+  const rt = big ? Math.min(g.rp * .5, 26) : Math.max(4, g.rp * .35);
+  const fs = Math.max(8.5, Math.min(12, 1.8 * rt / (.62 * Math.max(nm.length, 1))));
+  const txt = big ? `<text class="ct-gtx" y="${(fs * .35).toFixed(1)}" font-size="${fs.toFixed(1)}">${nm}</text>` : '';
+  return `<g transform="translate(${g.cx.toFixed(1)} ${g.cy.toFixed(1)})" data-talk="${g.key}"><g class="ct-g ${g.cls}${g.bad ? ' bad' : ''}"><path d="${d}Z"/>${holes}<line class="spoke" x1="0" y1="0" x2="${(g.rp * .82).toFixed(1)}" y2="0"/></g><circle class="ct-gh" r="${rt.toFixed(1)}"/>${txt}</g>`;
 }
 
-function ctScene(svg, specs, marks){
+function ctScene(svg, specs, marks, W = 300){
   const sumT = specs.reduce((s, g) => s + g.T, 0);
-  const p = Math.min(14, 300 * 6.2832 / (2 * sumT));
-  specs.forEach(g => { g.rp = g.T * p / 6.2832; });
+  const p = Math.min(14, W * 6.2832 / (2 * sumT));
+  specs.forEach(g => { g.rp = g.T * p / 6.2832; g.sh = CT_SHORT[g.key] || ''; });
   const maxRp = Math.max(...specs.map(g => g.rp));
-  let x = (320 - specs.reduce((s, g) => s + 2 * g.rp, 0)) / 2;
+  let x = (W + 20 - specs.reduce((s, g) => s + 2 * g.rp, 0)) / 2;
   const cy = 38 + maxRp;
   specs.forEach(g => { g.cx = x + g.rp; g.cy = cy; x += 2 * g.rp; });
+  const VW = W + 20;
+  // پخش‌کردنِ برچسب‌ها تا روی هم نیفتند (چرخ‌دنده‌های کوچکِ کنارِ هم نقطه‌ی تماسِ نزدیک دارند)
+  const spread = (xs, gap, lo, hi) => {
+    const o = xs.slice();
+    for(let it = 0; it < 80; it++){
+      let moved = false;
+      for(let i = 1; i < o.length; i++){
+        const d = o[i] - o[i - 1];
+        if(d < gap - .5){ const s = (gap - d) / 2; o[i - 1] -= s; o[i] += s; moved = true; }
+      }
+      for(let i = 0; i < o.length; i++) o[i] = Math.max(lo, Math.min(hi, o[i]));
+      if(!moved) break;
+    }
+    return o;
+  };
+  // بالا: برچسبِ ضریب‌ها (×۹، ÷۲ ...) با خطی به نقطه‌ی تماسِ دو چرخ‌دنده
+  const mxs = marks.map((t, i) => specs[i].cx + specs[i].rp);
+  const pxs = spread(mxs, 46, 24, VW - 24);
   const mk = marks.map((t, i) => {
-    const mx = (specs[i].cx + specs[i].rp).toFixed(1);
-    return `<line class="ct-mkl" x1="${mx}" y1="26" x2="${mx}" y2="${cy}"/><rect class="ct-pill" x="${mx - 24}" y="3" width="48" height="23" rx="11.5"/><text class="ct-mk" x="${mx}" y="19">${t}</text>`;
+    const mx = mxs[i].toFixed(1), px = pxs[i].toFixed(1);
+    return `<line class="ct-mkl" x1="${px}" y1="26" x2="${mx}" y2="${cy}"/><rect class="ct-pill" x="${(pxs[i] - 22).toFixed(1)}" y="3" width="44" height="23" rx="11.5"/><text class="ct-mk" x="${px}" y="19">${t}</text>`;
   }).join('');
-  svg.setAttribute('viewBox', `0 0 320 ${Math.round(cy + maxRp + 8)}`);
-  svg.innerHTML = mk + specs.map((g, i) => ctGear(g, p, i)).join('');
+  // پایین: اسم، مگاهرتز و تعداد دنده‌ی هر چرخ‌دنده زیرِ خودش
+  const lt = cy + maxRp + 14;
+  const lxs = spread(specs.map(g => g.cx), 76, 38, VW - 38);
+  const lb = specs.map((g, i) => {
+    const lx = lxs[i].toFixed(1), col = g.bad ? '#ff6b6b' : '#57d8a3';
+    return `<line class="ct-mkl" x1="${g.cx.toFixed(1)}" y1="${(cy + g.rp).toFixed(1)}" x2="${lx}" y2="${(lt - 2).toFixed(1)}"/>`
+      + `<g data-talk="${g.key}" text-anchor="middle">`
+      + `<text x="${lx}" y="${(lt + 11).toFixed(1)}" font-size="11.5" font-weight="700" fill="#e8e2d0">${g.sh}</text>`
+      + `<text x="${lx}" y="${(lt + 27).toFixed(1)}" font-size="12.5" font-weight="700" fill="${col}">${g.bad ? '⚠ ' : ''}${ctHz(g.mhz * 1e6)}</text>`
+      + `<text x="${lx}" y="${(lt + 41).toFixed(1)}" font-size="10" fill="#8b93a3">${ctFa(g.T)} دنده</text></g>`;
+  }).join('');
+  svg.setAttribute('viewBox', `0 0 ${VW} ${Math.round(lt + 48)}`);
+  svg.innerHTML = mk + lb + specs.map((g, i) => ctGear(g, p, i)).join('');
   const els = svg.querySelectorAll('.ct-g');
   specs.forEach((g, i) => { g.el = els[i]; });
   return { gears: specs };
@@ -138,6 +172,14 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
 
       <div class="ct-stage-t">⚙️ بخش ۱ — کلاکِ چیپ با چرخ‌دنده</div>
       <div class="hs-p">عددِ داخل هر چرخ‌دنده تعدادِ دنده‌هایش است. چرخ‌دنده‌ی کوچک‌تر تندتر می‌چرخد؛ نسبتِ دنده‌ها همان ضریب است. منوها را عوض کن و ببین چرخ‌دنده‌ها چه می‌شوند.</div>
+      <div class="ct-sc">
+        <div class="ct-sc-h"><b>🧩 همه‌ی چرخ‌دنده‌ها کنار هم</b></div>
+        <div class="ct-sc-h"><label class="ct-ctl">PLL ${sel('pll', CT_PLL_OPTS, '×')}</label><label class="ct-ctl">APB1 ${sel('a1', CT_DIV_OPTS, '÷')}</label><label class="ct-ctl">PSC ${sel('psc', Array.from({ length: 12 }, (_, i) => i), '=')}</label></div>
+        <div class="hs-p ct-cap">هر چرخ‌دنده با بعدی درگیر است و سرعتش = سرعتِ قبلی × (دنده‌های قبلی ÷ دنده‌های خودش). منوها را عوض کن و ببین کل قطار چه می‌شود. برای دیدنِ همه‌ی چرخ‌دنده‌ها صفحه را به چپ و راست بکش.</div>
+        <div class="ct-scroll"><svg class="ct-svg ct-wide" id="ctGA" viewBox="0 0 720 300"></svg></div>
+        <div class="ct-leg" id="ctGAL"></div>
+        <div class="ct-rel" id="ctGAR"></div>
+      </div>
       ${block('ctG1', head('pll', '① PLL: ۸ مگاهرتز را تقویت کن', 'ضریب ' + sel('pll', CT_PLL_OPTS, '×')))}
       ${block('ctG2', head('apb1', '② باسِ APB1 و تایمرهای TIM2/3/4', 'تقسیم ' + sel('a1', CT_DIV_OPTS, '÷')))}
       ${block('ctG3', head('apb2', '③ باسِ APB2 و تایمرِ TIM1', 'تقسیم ' + sel('a2', CT_DIV_OPTS, '÷')))}
@@ -182,7 +224,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   const st = { ...CT_INIT };
   const done = { pll: false, apb: false, quiz: false, pwm: false };
   let succeeded = !!alreadyDone, raf = 0, last = 0, tp = 0, revT = 3.2, scenes = [], dials = [];
-  const th = [0, 0, 0, 0];
+  const th = [0, 0, 0, 0, 0];
 
   const say = (n, state, text) => { const el = q('#ctSt' + n); el.dataset.state = state; el.textContent = text; };
   const knight = k => { if(typeof showKnightLine === 'function') showKnightLine(CT_TALK[k], 'happy', 'knight'); };
@@ -236,6 +278,17 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     legend('#ctG4', s4);
     q('#ctG4R').innerHTML = `<div>${ctFa(6 * (st.psc + 1))} دنده ÷ ${ctFa(6)} دنده = ÷${ctFa(st.psc + 1)} ⇒ ${ctHz(m.tclk)} ÷ ${ctFa(st.psc + 1)} = ${ctHz(m.tick)}</div>`
       + `<div>یعنی عقربه‌ی شمارنده هر <b>${ctTime(1 / m.tick)}</b> یک خانه جلو می‌رود (${ctFa(Math.round(m.tick))} خانه در ثانیه).</div>`;
+    const aa = st.a1, tT = aa === 1 ? 8 : 4 * aa;
+    const sa = [
+      { T: 8 * st.pll, cls: 'hse', key: 'hse', name: 'HSE (کریستال)', mhz: CT_HSE },
+      { T: 8, cls: 'sys', key: 'sys', name: 'SYSCLK (چیپ)', mhz: c.sys },
+      { T: 8 * aa, cls: 'pclk', key: 'pclk1', name: 'PCLK1 (باس)', mhz: c.p1, bad: c.p1 > 36, lim: 'سقف ۳۶' },
+      { T: tT, cls: 'tim', key: 't1', name: 'کلاکِ تایمر', mhz: c.t1 },
+      { T: tT * (st.psc + 1), cls: 'psc', key: 'psc', name: 'بعد از Prescaler', mhz: c.t1 / (st.psc + 1) }
+    ];
+    scenes.push({ s: ctScene(q('#ctGA'), sa, ['×' + ctFa(st.pll), '÷' + ctFa(aa), aa === 1 ? '×۱' : '×۲', '÷' + ctFa(st.psc + 1)], 700), w: CT_W });
+    legend('#ctGA', sa);
+    q('#ctGAR').innerHTML = `<div>${ctHz(CT_HSE * 1e6)} ⇐ ×${ctFa(st.pll)} ⇐ ${ctHz(c.sys * 1e6)} ⇐ ÷${ctFa(aa)} ⇐ ${ctHz(c.p1 * 1e6)} ⇐ ${aa === 1 ? '×۱' : '×۲'} ⇐ ${ctHz(c.t1 * 1e6)} ⇐ ÷${ctFa(st.psc + 1)} ⇐ ${ctHz(c.t1 / (st.psc + 1) * 1e6)}</div><div>(مسیرِ APB1 و تایمرهای TIM2/3/4؛ برای TIM1 همین است با APB2.)</div>`;
     revT = steps <= 64 ? Math.min(5, Math.max(2.4, steps * .2)) : 4;
     dials = [
       ctDial(q('#ctD1'), { steps, pulse: st.pulse, pwm: false }),
@@ -329,7 +382,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   }
 
   function refresh(){
-    buildScenes(); const fin = checkDone(); paintTimer(); say1(); sayTimer();
+    qa('.ct-sel').forEach(s => { s.value = st[s.dataset.k]; }); buildScenes(); const fin = checkDone(); paintTimer(); say1(); sayTimer();
     if(fin) say('2', 'success', CT_FINISH);
   }
 

@@ -975,3 +975,5 @@ body.sim-fullscreen-lock #knightSection{ z-index:1200 !important; }
 .ct-fl2{ font-size:12px; color:var(--muted); }
 .ct-eq{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-family:'JetBrains Mono','Vazirmatn',monospace; font-size:14px; color:#e8e2d0; padding:7px 10px; background:#0f1420; border-radius:8px; }
 .ct-eq b{ color:var(--trace-bright); }
+.ct-scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius:8px; }
+.ct-wide{ min-width:720px; }
