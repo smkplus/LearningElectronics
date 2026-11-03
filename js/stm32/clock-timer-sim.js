@@ -13,7 +13,7 @@ const CT_INIT = { pll: 2, a1: 1, a2: 1, psc: 0, arr: 15, pulse: 8 };
 const CT_FINISH = '🏆 تمام شد! کلاکِ چیپ ۷۲ مگاهرتز است، کلاکِ تایمر هم با قانونِ ×۲ دوباره ۷۲ می‌شود، و تایمر با Prescaler و Period و Pulse یک PWM ساخت که سرعتِ موتور را تنظیم می‌کند.';
 
 const CT_TALK = {
-  hse:   'کارتِ کریستال: آرام و ثابت با ۸ مگاهرتز می‌چرخد. همه‌ی ضربان‌های چیپ از همین‌جا شروع می‌شوند.',
+  hse:   'چرخ‌دنده‌ی کریستال: آرام و ثابت با ۸ مگاهرتز می‌چرخد. همه‌ی ضربان‌های چیپ از همین‌جا شروع می‌شوند.',
   pll:   'PLL یک چرخ‌دنده‌ی ضرب‌کننده است: عددِ داخلش را در ورودی ضرب می‌کند. ۸ × ۹ = ۷۲ مگاهرتز. مثل یک چرخ‌دنده‌ی ۷۲ دنده‌ای که یک چرخ‌دنده‌ی ۸ دنده‌ای را می‌چرخاند.',
   sys:   'SYSCLK کلاکِ خودِ چیپ است و خروجیِ PLL. هسته‌ی CPU با همین می‌چرخد. با PLL ×۹ می‌شود ۷۲ مگاهرتز.',
   ahb:   'AHB یک چرخ‌دنده‌ی تقسیم‌کننده است که معمولاً ÷۱ می‌ماند، پس HCLK هم ۷۲ مگاهرتز است. از اینجا مسیر دو شاخه می‌شود: APB1 و APB2.',
@@ -39,6 +39,8 @@ const ctTime = s => s >= 1e-3 ? `${ctNum(s * 1e3)} میلی‌ثانیه` : s >=
 const CT_COL = { hse: '#e79a54', sys: '#57d8a3', pclk: '#5db0ff', tim: '#d4af37', psc: '#b48cf0' };
 const ctNode = (key, name, mhz, cls, o = {}) => ({ t: 'n', key, name, mhz, cls, ...o });
 const ctOp = (key, name, sym, n, inM, outM, cls, o = {}) => ({ t: 'o', key, name, sym, n, inM, outM, cls, ...o });
+// زاویه‌ی چرخ‌دنده‌ی B وقتی با A درگیر است؛ phi = جهتِ خطِ مرکزِ A به B (برای درگیریِ دندانه‌ها در شیارها)
+const ctMeshAt = (ta, tb, th, phi) => -(ta / tb) * (th - phi) + phi + Math.PI + Math.PI / tb;
 
 function ctTeeth(T, rp){
   const step = 6.2832 / T, p = 6.2832 * rp / T, ro = rp + p * .32, ri = rp - p * .4;
@@ -50,66 +52,84 @@ function ctTeeth(T, rp){
   return { d: d + 'Z', ro, ri };
 }
 
-/* نمودارِ جریان: کارتِ مقدار ← چرخ‌دنده‌ی عملگر (ضریبش داخلش نوشته شده) ← کارتِ مقدار ...
-   trunk = مسیرِ اصلی، branches = شاخه‌هایی که از انتهای trunk جدا می‌شوند (مثل APB1 و APB2) */
+/* نمودارِ چرخ‌دنده‌ی درگیر: چرخ‌دنده‌ی بزرگ = یک کلاک و مقدارش، چرخ‌دنده‌ی کوچک = عملِ ضرب/تقسیم (ضریبش داخلش).
+   همه با گامِ یکسان ساخته شده‌اند و مماس‌اند، پس دنده‌هایشان واقعاً در هم می‌روند.
+   trunk = مسیرِ اصلی، branches = شاخه‌هایی که از آخرین چرخ‌دنده‌ی trunk جدا می‌شوند (APB1 بالا و APB2 پایین) */
 function ctFlow(svg, trunk, branches = [], wide = false){
-  const D = wide ? { NW: 80, NH: 62, GR: 26, T: 14, GAP: 12, hub: 15.5, fs: 14 } : { NW: 68, NH: 52, GR: 22, T: 12, GAP: 8, hub: 13, fs: 12 };
-  const gt = ctTeeth(D.T, D.GR), OW = Math.ceil(gt.ro * 2);
-  const LANE = 120, PAD = 12, cy0 = 54, id = svg.id;
-  const place = (items, x, cy) => items.map(it => { const p = { it, x, cy, w: it.t === 'n' ? D.NW : OW }; x += p.w + D.GAP; return p; });
-  const right = ps => ps[ps.length - 1].x + ps[ps.length - 1].w;
-  const nb = branches.length, cys = branches.map((b, i) => cy0 + i * LANE);
-  const cyT = nb ? (cys[0] + cys[nb - 1]) / 2 : cy0;
-  const tp = place(trunk, PAD, cyT), bx = right(tp) + D.GAP + 22;
-  const bps = branches.map((b, i) => place(b, bx, cys[i]));
-  const lanes = [tp, ...bps];
-  const H = Math.round((nb ? cys[nb - 1] : cy0) + 50), VW = Math.round(Math.max(...lanes.map(right)) + PAD);
+  /* چرخ‌دنده‌های کلاک همیشه هم‌اندازه‌اند؛ فقط چرخ‌دنده‌ی ضریب بزرگ و کوچک می‌شود:
+     ×عددِ بزرگ‌تر = چرخ‌دنده‌ی کوچک‌تر (تندتر)، ÷عددِ بزرگ‌تر = چرخ‌دنده‌ی بزرگ‌تر (سخت‌تر و کُندتر). */
+  const P = 11, TS = 22, HS = 29, PAD = 8, id = svg.id;
+  const radOf = T => T * P / 6.2832;
+  const teethOf = it => it.t === 'n' ? TS : Math.round(Math.max(11, Math.min(34, 15 * Math.pow(it.sym === '×' ? it.n : 1 / it.n, -.35))));
+  [...trunk, ...branches.flat()].forEach(it => { it.T = teethOf(it); });
+  const rOf = it => radOf(it.T);
+  const cache = {};
+  const gearOf = T => cache[T] || (cache[T] = ctTeeth(T, radOf(T)));
+  const nb = branches.length;
+  let lane = 50;
+
+  const nodes = [];
+  let x = PAD + rOf(trunk[0]);
+  trunk.forEach((it, i) => {
+    if(i) x += rOf(trunk[i - 1]) + rOf(it);
+    nodes.push({ it, cx: x, cy: 0, par: i - 1, phi: 0 });
+  });
+  const hi = nodes.length - 1, hub = nodes[hi];
+  branches.forEach(b => { lane = Math.min(lane, rOf(hub.it) + rOf(b[0]) - 6); });
+  branches.forEach((b, bi) => {
+    const dy = (bi ? 1 : -1) * lane, d = rOf(hub.it) + rOf(b[0]);
+    let bx = hub.cx + Math.sqrt(d * d - dy * dy);
+    b.forEach((it, i) => {
+      if(i) bx += rOf(b[i - 1]) + rOf(it);
+      nodes.push({ it, cx: bx, cy: dy, par: i ? nodes.length - 1 : hi, phi: i ? 0 : Math.atan2(dy, bx - hub.cx), side: i ? '' : (bi ? 'down' : 'up') });
+    });
+  });
+  const ext = nodes.map(({ it, cx, cy }) => {
+    const ro = gearOf(it.T).ro, isN = it.t === 'n';
+    return { top: cy - ro - (isN ? 2 : 28), bot: cy + ro + (isN ? (it.final ? 18 : 2) : 28), right: cx + ro };
+  });
+  const oy = 6 - Math.min(...ext.map(e => e.top));
+  nodes.forEach(n => { n.cy += oy; });
+  const VW = Math.ceil(Math.max(...ext.map(e => e.right)) + PAD);
+  const H = Math.ceil(Math.max(...ext.map(e => e.bot)) + oy + 4);
 
   const f1 = n => n.toFixed(1);
-  const tx = (x, y, s, fs, fill, extra = '') => `<text x="${f1(x)}" y="${f1(y)}" font-size="${fs}" fill="${fill}" ${extra}>${s}</text>`;
-  const arrow = (x1, y1, x2, y2) => {
-    const xm = (x1 + x2) / 2;
-    return `<path d="M${f1(x1)} ${f1(y1)}${y1 === y2 ? `H${f1(x2)}` : `H${f1(xm)}V${f1(y2)}H${f1(x2)}`}" fill="none" stroke="#8b93a3" stroke-width="1.6" marker-end="url(#${id}A)"/>`;
-  };
-  const holes = [0, 1, 2, 3].map(k => {
-    const a = k * 1.5708 + .785, r = (D.hub + gt.ri) / 2;
-    return `<circle class="hole" cx="${f1(r * Math.cos(a))}" cy="${f1(r * Math.sin(a))}" r="${f1((gt.ri - D.hub) * .28)}"/>`;
+  const tx = (px, py, str, fs, fill, extra = '') => `<text x="${f1(px)}" y="${f1(py)}" font-size="${fs}" fill="${fill}" ${extra}>${str}</text>`;
+  const holes = (n, r, hr) => Array.from({ length: n }, (_, k) => {
+    const a = k * 6.2832 / n + .3;
+    return `<circle class="hole" cx="${f1(r * Math.cos(a))}" cy="${f1(r * Math.sin(a))}" r="${hr}"/>`;
   }).join('');
+  const LTR = 'style="direction:ltr;unicode-bidi:bidi-override"';
 
-  let out = `<defs><marker id="${id}A" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8b93a3"/></marker></defs>`;
-  lanes.forEach(ps => ps.forEach((p, i) => { if(i) out += arrow(ps[i - 1].x + ps[i - 1].w, p.cy, p.x, p.cy); }));
-  bps.forEach(ps => { out += arrow(right(tp), cyT, ps[0].x, ps[0].cy); });
-
-  const gears = [];
-  lanes.forEach(ps => ps.forEach(({ it, x, cy, w }) => {
-    const mx = x + w / 2;
+  let out = '';
+  nodes.forEach(({ it, cx, cy, side }) => {
+    const g = gearOf(it.T), HO = Math.min(15, g.ri * .72);
+    const at = `<g transform="translate(${f1(cx)} ${f1(cy)})">`;
     if(it.t === 'n'){
-      const y = cy - D.NH / 2, col = it.bad ? '#ff6b6b' : CT_COL[it.cls];
-      const [num, unit] = ctHz(it.mhz * 1e6).split(' ');
-      out += `<g data-talk="${it.key}" text-anchor="middle">`
-        + (it.final ? tx(mx, y - 5, '✔ جواب', 9.5, col, 'font-weight="700"') : '')
-        + `<rect x="${f1(x)}" y="${f1(y)}" width="${D.NW}" height="${D.NH}" rx="9" fill="${it.final ? '#232b3a' : '#1b212c'}" stroke="${col}" stroke-width="${it.final || it.bad ? 2.5 : 1.5}"/>`
-        + tx(mx, y + 13, it.name, wide ? 10.5 : 10, '#e8e2d0', 'font-weight="700"')
-        + (wide && it.sub ? tx(mx, y + 24.5, it.sub, 8.5, '#8b93a3') : '')
-        + tx(mx, y + (wide ? 43 : 33), (it.bad ? '⚠ ' : '') + num, num.length > 5 || it.bad ? 13 : 16, col, 'font-weight="700"')
-        + tx(mx, y + (wide ? 56 : 45), unit, 9, '#8b93a3') + '</g>';
+      const col = it.bad ? '#ff6b6b' : CT_COL[it.cls], [num, unit] = ctHz(it.mhz * 1e6).split(' ');
+      out += `<g data-talk="${it.key}" text-anchor="middle">` + at
+        + `<g class="ct-g ${it.cls}${it.bad ? ' bad' : ''}"><path d="${g.d}"/>${holes(6, (HS + g.ri) / 2, 1.7)}</g>`
+        + `<circle class="ct-gh" r="${HS}"${it.final ? ` style="stroke:${col};stroke-width:3"` : ''}/>`
+        + `<text y="-10" font-size="8.5" font-weight="700" style="fill:#e8e2d0">${it.name}</text>`
+        + `<text y="5" font-size="${num.length > 5 ? 13 : 15}" font-weight="700" style="fill:${col}">${num}</text>`
+        + `<text y="16" font-size="8.5" style="fill:#8b93a3">${unit}</text></g>`
+        + (it.final ? tx(cx, cy + g.ro + 11, '✔ جواب', 9.5, col, 'font-weight="700"') : '') + '</g>';
     } else {
       const eq = `${ctNum(it.inM)} ${it.sym} ${ctFa(it.n)} = ${ctNum(it.outM)}`;
-      gears.push(it);
-      out += `<g data-talk="${it.key}" text-anchor="middle">`
-        + `<g transform="translate(${f1(mx)} ${f1(cy)})"><g class="ct-g ${it.cls}${it.bad ? ' bad' : ''}"><path d="${gt.d}"/>${holes}<line class="spoke" x1="0" y1="0" x2="${f1(gt.ri * .95)}" y2="0"/></g>`
-        + `<circle class="ct-gh" r="${D.hub}"/><text class="ct-gtx" y="${f1(D.fs * .35)}" font-size="${D.fs}" style="direction:ltr;unicode-bidi:bidi-override">${it.sym}${ctFa(it.n)}</text></g>`
-        + tx(mx, cy - gt.ro - 6, it.name, wide ? 10.5 : 10, '#e8e2d0', 'font-weight="700"')
-        + tx(mx, cy + gt.ro + 14, eq, wide ? 10.5 : 9.5, it.bad ? '#ff6b6b' : '#e8e2d0', 'style="direction:ltr;unicode-bidi:bidi-override"') + '</g>';
+      out += `<g data-talk="${it.key}" text-anchor="middle">` + at
+        + `<g class="ct-g ${it.cls}${it.bad ? ' bad' : ''}"><path d="${g.d}"/>${holes(5, (HO + g.ri) / 2, 1.6)}</g>`
+        + `<circle class="ct-gh" r="${HO}"/><text class="ct-gtx" y="${f1(HO * .3)}" font-size="${Math.round(Math.min(13, HO * 1.05))}" ${LTR}>${it.sym}${ctFa(it.n)}</text></g>`
+        + tx(cx, side === 'up' ? cy - g.ro - 17 : side === 'down' ? cy + g.ro + 24 : cy - g.ro - 5, it.name, 10, '#e8e2d0', 'font-weight="700"')
+        + tx(cx, side === 'up' ? cy - g.ro - 5 : cy + g.ro + 12, eq, 9.5, it.bad ? '#ff6b6b' : '#e8e2d0', LTR) + '</g>';
     }
-  }));
+  });
 
   svg.setAttribute('viewBox', `0 0 ${VW} ${H}`);
   if(wide) Object.assign(svg.style, { width: VW + 'px', height: H + 'px', minWidth: VW + 'px', maxWidth: 'none' });
   else Object.assign(svg.style, { maxWidth: Math.round(VW * 1.3) + 'px', display: 'block', margin: '0 auto' });
   svg.innerHTML = out;
   const els = svg.querySelectorAll('.ct-g');
-  return { gears: gears.map((o, i) => ({ el: els[i], k: id + i, w: (o.sym === '×' ? 1 : -1) * Math.min(4.5, CT_W * o.outM / CT_HSE) })) };
+  return { id, geo: nodes.map(n => ({ cx: n.cx, cy: n.cy, r: rOf(n.it) })), gears: nodes.map((n, i) => ({ el: els[i], T: n.it.T, par: n.par, phi: n.phi, ang: 0 })) };
 }
 
 function ctDial(svg, { steps, pulse, pwm }){
@@ -161,7 +181,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
       <details class="hs-det">
         <summary>🔧 قانونِ چرخ‌دنده (همه‌ی ضریب‌ها همین است)</summary>
         <div class="hs-p">دو چرخ‌دنده‌ی درگیر با هم: <b>نسبتِ دنده‌ها = نسبتِ سرعت</b>. چرخ‌دنده‌ی کوچک‌تر تندتر می‌چرخد و بزرگ‌تر کُندتر.</div>
-        <div class="hs-p">مثال: چرخ‌دنده‌ی ۷۲ دنده‌ای که یک دور بزند، چرخ‌دنده‌ی ۸ دنده‌ای را ۹ دور می‌چرخاند (×۹). چرخ‌دنده‌ی دو برابر بزرگ‌تر سرعت را نصف می‌کند (÷۲). هر ضریبی که در این صفحه می‌بینی فقط یک جفت چرخ‌دنده است. در شکل‌ها به‌جای کشیدنِ هر دو چرخ‌دنده، ضریبِ آن جفت را داخلِ یک چرخ‌دنده نوشته‌ایم: ×۹ یعنی «ورودی را ۹ برابر کن» و ÷۲ یعنی «نصفش کن».</div>
+        <div class="hs-p">مثال: چرخ‌دنده‌ی ۷۲ دنده‌ای که یک دور بزند، چرخ‌دنده‌ی ۸ دنده‌ای را ۹ دور می‌چرخاند (×۹). چرخ‌دنده‌ی دو برابر بزرگ‌تر سرعت را نصف می‌کند (÷۲). هر ضریبی که در این صفحه می‌بینی فقط یک جفت چرخ‌دنده است. در شکل‌ها چرخ‌دنده‌ی بزرگ مقدارِ کلاک را نشان می‌دهد و چرخ‌دنده‌ی کوچکِ بینشان ضریبِ آن مرحله را: ×۹ یعنی «ورودی را ۹ برابر کن» و ÷۲ یعنی «نصفش کن».</div>
       </details>
       <details class="hs-det">
         <summary>🧮 جدولِ ضریب‌ها</summary>
@@ -184,11 +204,11 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
       </div>
 
       <div class="ct-stage-t">⚙️ بخش ۱ — کلاکِ چیپ با چرخ‌دنده</div>
-      <div class="hs-p">هر کارت یک کلاک را با مقدارش نشان می‌دهد و هر چرخ‌دنده یک عملِ ضرب (×) یا تقسیم (÷) است؛ عددِ داخلش ضریب است و زیرش خودِ حساب نوشته شده. هرچه کلاکِ خروجی بیشتر باشد چرخ‌دنده تندتر می‌چرخد. منوها را عوض کن و ببین عددها چه می‌شوند.</div>
+      <div class="hs-p">هر چرخ‌دنده‌ی بزرگ یک کلاک را با مقدارش نشان می‌دهد و چرخ‌دنده‌ی کوچکِ بینِ دو کلاک عملِ ضرب (×) یا تقسیم (÷) را انجام می‌دهد؛ عددِ داخلِ چرخ‌دنده‌ی کوچک ضریب است و زیرش خودِ حساب نوشته شده. چرخ‌دنده‌ها به هم درگیرند و با هم می‌چرخند. منوها را عوض کن و ببین عددها چه می‌شوند.</div>
       <div class="ct-sc">
         <div class="ct-sc-h"><b>🧩 مسیرِ کاملِ کلاک: از کریستال تا تایمر</b></div>
-        <div class="ct-sc-h"><label class="ct-ctl">PLL ${sel('pll', CT_PLL_OPTS, '×')}</label><label class="ct-ctl">APB1 ${sel('a1', CT_DIV_OPTS, '÷')}</label><label class="ct-ctl">APB2 ${sel('a2', CT_DIV_OPTS, '÷')}</label><label class="ct-ctl">PSC ${sel('psc', Array.from({ length: 12 }, (_, i) => i), '=')}</label></div>
-        <div class="hs-p ct-cap">از چپ به راست بخوان: هر کارت یک کلاک و مقدارش است و هر چرخ‌دنده ضرب یا تقسیمش را انجام می‌دهد؛ عددِ داخلِ چرخ‌دنده همان ضریب است. بعد از HCLK مسیر دو شاخه می‌شود: APB1 (بالا) و APB2 (پایین). کارت‌های «✔ جواب» نتیجه‌اند. برای دیدنِ همه‌ی مسیر صفحه را به چپ و راست بکش.</div>
+        <div class="ct-sc-h"><label class="ct-ctl">PSC ${sel('psc', Array.from({ length: 12 }, (_, i) => i), '=')}</label><label class="ct-ctl">APB2 ${sel('a2', CT_DIV_OPTS, '÷')}</label><label class="ct-ctl">APB1 ${sel('a1', CT_DIV_OPTS, '÷')}</label><label class="ct-ctl">PLL ${sel('pll', CT_PLL_OPTS, '×')}</label></div>
+        <div class="hs-p ct-cap">از چپ به راست بخوان: هر چرخ‌دنده‌ی بزرگ یک کلاک و مقدارش است و چرخ‌دنده‌ی کوچکِ بینِ دو کلاک ضرب یا تقسیمش را انجام می‌دهد؛ عددِ داخلِ چرخ‌دنده‌ی کوچک همان ضریب است. بعد از HCLK مسیر دو شاخه می‌شود: APB1 (بالا) و APB2 (پایین). چرخ‌دنده‌های «✔ جواب» نتیجه‌اند. چرخ‌دنده‌ی ضریب هرچه کوچک‌تر باشد (×) تندتر می‌چرخد و هرچه بزرگ‌تر باشد (÷) سخت‌تر و کُندتر؛ با تغییرِ ضریب‌ها سرعتِ کلِ چرخ‌دنده‌ها هم عوض می‌شود. برای دیدنِ همه‌ی مسیر صفحه را به چپ و راست بکش.</div>
         <div class="ct-scroll" dir="ltr"><svg class="ct-svg ct-wide" id="ctGA" viewBox="0 0 720 300"></svg></div>
         <div class="ct-rel" id="ctGAR"></div>
       </div>
@@ -254,14 +274,14 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   function buildScenes(){
     const c = clocks(), m = pwm(), steps = m.steps, tick = m.tick / 1e6, fa = ctNum;
     const b1 = c.p1 > 36, b2 = c.p2 > 72;
-    const hse = ctNode('hse', 'HSE', CT_HSE, 'hse', { sub: 'کریستال خارجی' });
-    const sys = ctNode('sys', 'SYSCLK', c.sys, 'sys', { sub: 'کلاک سیستم' });
-    const hclk = ctNode('hclk', 'HCLK', c.sys, 'sys', { sub: 'کلاک باس AHB' });
-    const p1 = ctNode('pclk1', 'PCLK1', c.p1, 'pclk', { sub: 'حداکثر ۳۶', bad: b1 });
-    const p2 = ctNode('pclk2', 'PCLK2', c.p2, 'pclk', { sub: 'حداکثر ۷۲', bad: b2 });
-    const t1 = ctNode('t1', 'TIM2/3/4', c.t1, 'tim', { sub: 'تایمرهای APB1', bad: c.t1 > 72 });
-    const t2 = ctNode('t2', 'TIM1', c.t2, 'tim', { sub: 'تایمر APB2', bad: c.t2 > 72 });
-    const cnt = ctNode('tick', 'شمارنده', tick, 'psc', { sub: 'بعد از Prescaler' });
+    const hse = ctNode('hse', 'HSE', CT_HSE, 'hse');
+    const sys = ctNode('sys', 'SYSCLK', c.sys, 'sys');
+    const hclk = ctNode('hclk', 'HCLK', c.sys, 'sys');
+    const p1 = ctNode('pclk1', 'PCLK1', c.p1, 'pclk', { bad: b1 });
+    const p2 = ctNode('pclk2', 'PCLK2', c.p2, 'pclk', { bad: b2 });
+    const t1 = ctNode('t1', 'TIM2/3/4', c.t1, 'tim', { bad: c.t1 > 72 });
+    const t2 = ctNode('t2', 'TIM1', c.t2, 'tim', { bad: c.t2 > 72 });
+    const cnt = ctNode('tick', 'شمارنده', tick, 'psc');
     const pll = ctOp('pll', 'PLL', '×', st.pll, CT_HSE, c.sys, 'sys');
     const ahb = ctOp('ahb', 'AHB', '÷', 1, c.sys, c.sys, 'sys');
     const apb1 = ctOp('apb1', 'APB1', '÷', st.a1, c.sys, c.p1, 'pclk', { bad: b1 });
@@ -277,6 +297,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
       ctFlow(q('#ctG4'), [t2, psc, fin(cnt)]),
       ctFlow(q('#ctGA'), [hse, pll, sys, ahb, hclk], [[apb1, p1, mul1, fin(t1)], [apb2, p2, mul2, fin(t2), psc, fin(cnt)]], true)
     ];
+    [c.sys, c.p1, c.p2, tick, (c.p1 + c.p2 + tick) / 3].forEach((v, i) => { scenes[i].mhz = v; });
     q('#ctG1R').innerHTML = `<div>چرخ‌دنده‌ی PLL ورودی را ${ctFa(st.pll)} برابر می‌کند: ${fa(CT_HSE)} × ${ctFa(st.pll)} = <b>${ctHz(c.sys * 1e6)}</b></div>`;
     const laneTxt = (a, apb, pc, tm, tn) => `<div>چرخ‌دنده‌ی ${apb} تقسیم می‌کند: ${fa(c.sys)} ÷ ${ctFa(a)} = ${ctHz(pc * 1e6)}</div>`
       + `<div>${a === 1 ? 'چون تقسیم‌کننده ۱ است، ضریبِ تایمر ×۱ می‌ماند' : 'چون تقسیم‌کننده ۱ نیست، چرخ‌دنده‌ی «ضریبِ تایمر» آن را ×۲ می‌کند'}: ${fa(pc)} × ${a === 1 ? '۱' : '۲'} = <b>${ctHz(tm * 1e6)}</b> (${tn})</div>`;
@@ -300,10 +321,14 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
 
   function spin(dt){
     tp += dt;
-    scenes.forEach(sc => sc.gears.forEach(gr => {
-      angs[gr.k] = ((angs[gr.k] || 0) + gr.w * dt) % 6.2832;
-      gr.el.setAttribute('transform', `rotate(${(angs[gr.k] * 57.2958).toFixed(1)})`);
-    }));
+    scenes.forEach(sc => {
+      angs[sc.id] = (angs[sc.id] || 0) + CT_W * 2 * Math.sqrt(sc.mhz / CT_HSE) * dt;
+      sc.gears.forEach(gr => {
+        const pr = sc.gears[gr.par];
+        gr.ang = pr ? ctMeshAt(pr.T, gr.T, pr.ang, gr.phi) : angs[sc.id];
+        gr.el.setAttribute('transform', `rotate(${(gr.ang * 57.2958).toFixed(1)})`);
+      });
+    });
     const steps = st.arr + 1, fr = (tp / revT) % 1, cnt = Math.min(steps - 1, Math.floor(fr * steps));
     const ang = (steps <= 64 ? (cnt + .5) / steps : fr) * 360;
     dials.forEach(d => {
@@ -339,7 +364,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
 
   function say1(){
     const c = clocks(), std = c.sys === 72 && st.a1 === 2 && st.a2 === 1;
-    if(c.p1 > 36) return say('1', 'error', `⚠️ PCLK1 شد ${ctHz(c.p1 * 1e6)} ولی باسِ APB1 فقط تا ۳۶ مگاهرتز تحمل دارد (کارتِ قرمز). برای همین باید تقسیم‌کننده‌ی APB1 را روی ÷۲ بگذاری تا چرخ‌دنده‌ی APB1 عدد را نصف کند.`);
+    if(c.p1 > 36) return say('1', 'error', `⚠️ PCLK1 شد ${ctHz(c.p1 * 1e6)} ولی باسِ APB1 فقط تا ۳۶ مگاهرتز تحمل دارد (چرخ‌دنده‌ی قرمز). برای همین باید تقسیم‌کننده‌ی APB1 را روی ÷۲ بگذاری تا چرخ‌دنده‌ی APB1 عدد را نصف کند.`);
     if(c.p2 > 72) return say('1', 'error', `⚠️ PCLK2 شد ${ctHz(c.p2 * 1e6)}؛ سقفِ APB2 هم ۷۲ مگاهرتز است.`);
     if(!done.pll) return say('1', 'running', `SYSCLK الان ${ctHz(c.sys * 1e6)} است. برای ۷۲ مگاهرتز ضریبِ PLL را روی ×۹ بگذار تا چرخ‌دنده‌ی PLL عددِ ۸ را ۹ برابر کند (۸ × ۹).`);
     if(!done.apb) return say('1', 'running', '👌 کلاکِ چیپ ۷۲ مگاهرتز شد. حالا APB1 را روی ÷۲ بگذار و به چرخ‌دنده‌ی «ضریبِ تایمر» نگاه کن: PCLK1 می‌شود ۳۶ ولی تایمر دوباره ۷۲!');
