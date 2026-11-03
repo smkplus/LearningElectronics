@@ -900,3 +900,78 @@ body.sim-fullscreen-lock #knightSection{ z-index:1200 !important; }
 .sim-phone-btns{ display:flex; gap:8px; }
 .sim-phone-btn{ flex:1; padding:8px 6px; font:inherit; font-size:13px; font-weight:700; cursor:pointer; border-radius:10px; border:1px solid #3a4250; background:#1b2230; color:#e8e2d0; }
 .sim-phone-btn:hover{ border-color:var(--gold,#d4af37); color:var(--gold,#d4af37); }
+
+/* ---------- STM32: کلاک و تایمر (چرخ‌دنده، صفحه‌ی شمارنده، PWM) ---------- */
+.ct-wrap{ gap:12px; }
+.ct-answer{ background:#141924; border:1px solid var(--gold); border-radius:10px; padding:10px 12px; font-size:12.5px; line-height:1.9; color:#cfc8b6; }
+.ct-answer b{ color:var(--gold); }
+.ct-stage-t{ font-weight:800; font-size:15px; color:var(--gold); margin-top:8px; padding-top:12px; border-top:1px solid var(--panel-border); }
+.ct-explain{ background:#141924; border-inline-start:3px solid var(--trace-bright); border-radius:8px; padding:10px 12px; font-size:13px; line-height:2; color:#d8d2c0; }
+.ct-explain b{ color:var(--gold); }
+.ct-sc{ background:#141924; border:1px solid var(--panel-border); border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:8px; }
+.ct-sc-h{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+.ct-sc-h b{ font-size:13.5px; color:var(--gold); cursor:pointer; }
+.ct-ctl{ display:flex; align-items:center; gap:6px; font-size:12px; color:#cfc8b6; }
+.ct-sel{ font-family:'Vazirmatn'; font-weight:700; font-size:13px; background:#0a0d13; color:var(--gold); border:1px solid var(--panel-border); border-radius:8px; padding:5px 8px; cursor:pointer; }
+.ct-svg{ width:100%; height:auto; display:block; direction:ltr; }
+.ct-svg text{ font-family:'Vazirmatn',sans-serif; text-anchor:middle; fill:#cfc8b6; font-size:11px; }
+.ct-g path{ fill:#6b7280; stroke:#05070a; stroke-width:1; stroke-linejoin:round; }
+.ct-g.hse path{ fill:#e79a54; }
+.ct-g.sys path{ fill:#57d8a3; }
+.ct-g.pclk path{ fill:#6cb4ff; }
+.ct-g.tim path{ fill:#d4af37; }
+.ct-g.psc path{ fill:#b58cf0; }
+.ct-g.bad path{ fill:#c1554a; }
+.ct-g .hole{ fill:#0d1119; fill-opacity:.7; }
+.ct-g .spoke{ stroke:#05070a; stroke-width:2.2; stroke-linecap:round; opacity:.6; }
+.ct-gh{ fill:#0d1119; fill-opacity:.82; stroke:#05070a; cursor:pointer; }
+.ct-svg text.ct-gtx{ fill:#fff; font-family:'JetBrains Mono','Vazirmatn',monospace; font-weight:800; pointer-events:none; }
+.ct-svg g[data-talk]{ cursor:pointer; }
+.ct-pill{ fill:#1b2231; stroke:var(--gold); stroke-width:1.2; }
+.ct-svg text.ct-mk{ fill:var(--gold); font-size:15px; font-weight:800; }
+.ct-mkl{ stroke:var(--gold); stroke-width:1; stroke-dasharray:3 3; opacity:.6; }
+.ct-tk{ stroke:#8b93a5; stroke-width:1.5; stroke-linecap:round; }
+.ct-tk.z{ stroke:var(--gold); stroke-width:2.5; }
+.ct-track{ fill:none; stroke:#2a3142; stroke-width:14; }
+.ct-arc{ fill:none; stroke:#57d8a3; stroke-width:14; }
+.ct-flag{ stroke:var(--gold); stroke-width:2; }
+.ct-svg text.ct-fl{ font-size:11px; font-weight:700; fill:var(--gold); }
+.ct-lamp{ fill:#1a2130; stroke:#2a3142; stroke-width:2; }
+.ct-lamp.on{ fill:#57d8a3; filter:drop-shadow(0 0 8px #57d8a3); }
+.ct-ptr{ stroke:var(--gold); stroke-width:3; stroke-linecap:round; }
+.ct-pd{ fill:var(--gold); }
+.ct-svg text.ct-cnt{ font-family:'JetBrains Mono',monospace; font-weight:800; font-size:20px; fill:#fff; stroke:#05070a; stroke-width:3px; paint-order:stroke; pointer-events:none; }
+.ct-leg{ display:flex; flex-direction:column; gap:5px; }
+.ct-lg{ display:grid; grid-template-columns:14px 1fr auto; align-items:center; gap:1px 8px; font-size:12.5px; padding:6px 10px; border-radius:8px; background:#0f1420; }
+.ct-lg i{ width:12px; height:12px; border-radius:50%; grid-row:1 / span 2; background:#6b7280; }
+.ct-lg i.hse{ background:#e79a54; }
+.ct-lg i.sys{ background:#57d8a3; }
+.ct-lg i.pclk{ background:#6cb4ff; }
+.ct-lg i.tim{ background:#d4af37; }
+.ct-lg i.psc{ background:#b58cf0; }
+.ct-lg .n{ color:#e8e2d0; font-weight:700; }
+.ct-lg .v{ font-family:'JetBrains Mono','Vazirmatn',monospace; color:var(--trace-bright); font-weight:700; text-align:end; }
+.ct-lg .t{ grid-column:2 / -1; color:var(--muted); font-size:11px; }
+.ct-lg.bad{ background:#241517; }
+.ct-lg.bad .v{ color:#ff9c92; }
+.ct-rel{ font-size:12.5px; line-height:1.95; color:#cfc8b6; }
+.ct-rel b{ color:var(--gold); }
+.ct-quiz{ background:#141924; border:1px dashed var(--copper); border-radius:10px; padding:10px 12px; display:flex; flex-direction:column; gap:8px; }
+.ct-quiz .ll-row{ flex-wrap:wrap; }
+.ct-row{ display:grid; grid-template-columns:minmax(0, 1fr) 84px; gap:4px 10px; align-items:center; }
+.ct-rn{ grid-column:1 / -1; display:flex; flex-direction:column; gap:1px; cursor:pointer; }
+.ct-rn b{ font-size:13px; color:var(--parchment); }
+.ct-rn span{ font-size:11.5px; color:var(--muted); }
+.ct-row input[type="range"]{ width:100%; accent-color:var(--trace-bright); }
+.ct-num{ width:100%; direction:ltr; text-align:center; font-family:'JetBrains Mono',monospace; font-size:13px; background:#0a0d13; color:var(--gold); border:1px solid var(--panel-border); border-radius:8px; padding:5px 6px; }
+.ct-pre{ display:flex; gap:6px; flex-wrap:wrap; }
+.ct-cv{ width:100%; height:170px; display:block; background:#10151f; border:1px solid var(--panel-border); border-radius:10px; }
+.ct-motor{ display:flex; align-items:center; gap:10px; }
+.ct-motor b{ min-width:44px; text-align:end; color:var(--trace-bright); font-size:13px; }
+.ct-gear{ font-size:26px; display:inline-block; animation:ctSpin 2.6s linear infinite; }
+@keyframes ctSpin{ to{ transform:rotate(360deg); } }
+.ct-bar{ flex:1; height:12px; border-radius:7px; background:#0a0d13; border:1px solid var(--panel-border); overflow:hidden; }
+.ct-bar i{ display:block; height:100%; width:0; background:linear-gradient(90deg, var(--trace), var(--trace-bright)); transition:width .15s ease; }
+.ct-fl2{ font-size:12px; color:var(--muted); }
+.ct-eq{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-family:'JetBrains Mono','Vazirmatn',monospace; font-size:14px; color:#e8e2d0; padding:7px 10px; background:#0f1420; border-radius:8px; }
+.ct-eq b{ color:var(--trace-bright); }

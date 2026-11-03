@@ -798,6 +798,7 @@ const CONCEPT_SIMS = {
   // STM32 — quest-sims-stm32.js + cube-block.js / hal-code-editor.js
   stm32_cube: mountStm32CubeSim,
   stm32_stlink: mountStlinkSim,
+  stm32_clock_timer: mountClockTimerSim,
   line_read: mountHalReadSim,
   line_motors: mountHalMotorSim,
   motor_pwm: mountHalPwmSim
@@ -812,6 +813,7 @@ const HELLO_MISSION_INTRO_TEXT = '📝 تو این ماموریت باید مت�
 const LINE_INTRO_TEXT = '🤖 به بخش رباتیک خوش اومدی! اول بخون ربات تعقیب خط چیه و چطور کار می‌کنه، بعد ببین یه ربات کامل چطور روی چند مسیر خط رو می‌ره. دو مسیر رو تا 🏁 برسون تا مأموریت تکمیل بشه.';
 const ROBOT_ASSEMBLE_INTRO_TEXT = '🛠️ حالا که چشم ربات رو شناختی، وقت ساختنه! قبل از اینکه ربات راه بیفته، باید خودت بدنه‌ش رو سر هم کنی. هر قطعه رو بگیر و بنداز روی جایگاه خط‌چینِ خودش؛ آخرش هم روشنش کن!';
 const STLINK_INTRO_TEXT = '🔌 برد Blue Pill برخلاف آردوینو خودش مبدل USB به سریال و بوت‌لودر نداره، واسه همین برای ریختن برنامه یه «برنامه‌ریز» به اسم ST-Link لازمه. چهار تا سیم رو وصل کن: 3.3V، GND، SWDIO و SWCLK. مواظب ۵ ولت هم باش، چیپ رو می‌سوزونه!';
+const CLOCK_TIMER_INTRO_TEXT = '⏱️ بعد از این همه بحث سر ۷۲ و ۳۶ مگاهرتز، وقتشه یه بار برای همیشه بفهمیم! ۷۲ کلاکِ خودِ چیپه، ۳۶ فقط کلاکِ یه راهروی کندتره و تایمرها روش دوباره ×۲ می‌شن. این بار با چرخ‌دنده نشونت می‌دم: چرخ‌دنده‌ی کوچیک‌تر تندتر می‌چرخه! روی هر چرخ‌دنده بزن تا برات بگم چیه، و ضریب‌ها رو عوض کن تا ببینی چرخ‌دنده‌ها چطور عوض می‌شن.';
 const LINE_SENSOR_INTRO_TEXT = '🤖 ربات تعقیب خط اول از همه یه «چشم» می‌خواد: سنسور مادون‌قرمز. اول بخش توضیحی رو ببین تا بفهمی IR چیه و چرا با چشم فرق داره؛ بعد سنسور رو روی مسیر بکش و آستانه رو جوری تنظیم کن که روی سفید LED خاموش و روی خط مشکی روشن بشه.';
 
 const LINE_LOGIC_INTRO_TEXT = '🧠 مغزِ ربات یه فهرست قانونه! اول با ربات متحرک ببین هر قانون چی کار می‌کنه: «شروع» رو بزن و قانون‌های چپ و راست رو روشن کن. بعدش پایین‌تر مثل STM32CubeIDE اول پایه‌ها رو تو CubeMX تنظیم کن و بعد همین قانون‌ها رو با if و else if کد بزن؛ ربات دقیقاً کدِ تو رو اجرا می‌کنه.';
@@ -977,6 +979,10 @@ function onNodeClick(i, locked, evt){
 
   if(q.id === 'robot_assemble' && !done){
     setTimeout(() => showKnightLine(ROBOT_ASSEMBLE_INTRO_TEXT, 'happy', 'knight'), 400);
+  }
+
+  if(q.id === 'stm32_clock_timer' && !done){
+    setTimeout(() => showKnightLine(CLOCK_TIMER_INTRO_TEXT, 'happy', 'knight'), 400);
   }
 
   if(q.id === 'stm32_stlink' && !done){
