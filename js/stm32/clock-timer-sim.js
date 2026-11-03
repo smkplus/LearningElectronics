@@ -31,6 +31,7 @@ const CT_TALK = {
   uart:  'UART2 روی APB1 است و برای فرستادنِ متن (مثلاً به کامپیوتر) به کار می‌رود. با کلاکِ بیش از حد، بیت‌ها خراب می‌شوند و به‌جای متنِ درست، علامت‌های بی‌معنی می‌رسد.',
   i2c:   'I2C هم روی APB1 است و برای حرف زدن با سنسورها و نمایشگرها به کار می‌رود. با کلاکِ بیش از حد، سنسور «ACK» نمی‌دهد و ارتباط قطع می‌شود.',
   can:   'CAN شبکه‌ی ارتباطیِ خودرو و صنعت است و روی APB1 نشسته. بیتِ خراب یعنی فریمِ خطادار (CRC Error) و دورریخته شدنِ پیام.',
+  wave:  'این موجِ پینِ خروجی (PA8) است. هر دورِ عقربه یک دوره‌ی موج است: تا وقتی عقربه روی کمانِ سبز است موج بالاست (HIGH) و بعدش پایین (LOW). خطِ زردِ Pulse جایی است که موج می‌افتد؛ هرچه Pulse بزرگ‌تر، بخشِ بالا پهن‌تر و موتور تندتر.',
   tick:  'این سرعتِ شمارشِ عقربه‌ی تایمر است: کلاکِ تایمر ÷ (PSC+۱). با هر ضربه عقربه یک خانه جلو می‌رود.',
   arr:   'Period (یا ARR) تعدادِ خانه‌های صفحه است: ARR+۱ خانه. عقربه از ۰ می‌رود تا ARR و دوباره به ۰ برمی‌گردد. یک دورِ کامل = یک دوره‌ی PWM.',
   pulse: 'Pulse (یا CCR) اندازه‌ی کمانِ سبز است. تا وقتی عقربه روی کمانِ سبز است پین روشن (HIGH) می‌ماند و بعدش خاموش. کمانِ بزرگ‌تر یعنی موتور بیشتر برق می‌گیرد و تندتر می‌چرخد.',
@@ -180,7 +181,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   const row = (k, title, min, max) => `<div class="ct-row"><div class="ct-rn" data-talk="${k}"><b>${title}</b><span data-h="${k}"></span></div><input type="range" data-k="${k}" min="${min}" max="${max}"><input type="number" class="ct-num" data-k="${k}" min="${min}" max="${max}" inputmode="numeric"></div>`;
   const pre = (list) => `<div class="ct-pre">${list.map(([l, v]) => `<button type="button" class="sim-btn sim-btn-ghost" data-preset="${v}">${l}</button>`).join('')}</div>`;
   const head = (talk, title, ctl) => `<div class="ct-sc-h"><b data-talk="${talk}">${title}</b>${ctl ? `<label class="ct-ctl">${ctl}</label>` : ''}</div>`;
-  const block = (id, headHtml, ctrl = '') => `<div class="ct-sc">${headHtml}${ctrl}<svg class="ct-svg" id="${id}" viewBox="0 0 320 200"></svg><div class="ct-rel" id="${id}R"></div></div>`;
+  const block = (id, headHtml, ctrl = '', extra = '') => `<div class="ct-sc">${headHtml}${ctrl}${extra ? '<div class="ct-pair">' : ''}<svg class="ct-svg" id="${id}" viewBox="0 0 320 200"></svg>${extra}${extra ? '</div>' : ''}<div class="ct-rel" id="${id}R"></div></div>`;
 
   container.innerHTML = `
     <div class="sim-wrap ct-wrap">
@@ -264,7 +265,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
 
       <div class="ct-stage-t">💡 بخش ۳ — PWM یعنی چی؟</div>
       <div class="ct-explain"><b>PWM یعنی یک پین را خیلی سریع روشن و خاموش کنیم.</b> موتور آن‌قدر کُند است که تک‌تک چشمک‌ها را حس نمی‌کند و فقط «میانگین» را می‌بیند. مثلاً نیمی از دور روشن = نصفِ ولتاژ = نصفِ سرعت. روشن‌ماندن را همان عقربه تعیین می‌کند: <b>روی کمانِ سبز (Pulse) پین روشن است و روی بقیه خاموش.</b></div>
-      ${block('ctD2', head('pulse', '⑥ کمانِ سبز = روشن ماندنِ پین'), row('pulse', 'Pulse (CCR)', 0, 16) + pre([['۲۵٪', 'duty:25'], ['۵۰٪', 'duty:50'], ['۷۵٪', 'duty:75'], ['۱۰۰٪', 'duty:100']]))}
+      ${block('ctD2', head('pulse', '⑥ کمانِ سبز = بالا بودنِ موجِ PWM'), row('pulse', 'Pulse (CCR)', 0, 16) + pre([['۲۵٪', 'duty:25'], ['۵۰٪', 'duty:50'], ['۷۵٪', 'duty:75'], ['۱۰۰٪', 'duty:100']]), '<canvas class="ct-cv ct-pw" id="ctPw" data-talk="wave"></canvas>')}
       <div class="ct-sc">
         <div class="ct-sc-h"><b>موجِ خروجی (سه دور پشت‌سرهم)</b></div>
         <canvas class="ct-cv" id="ctCv"></canvas>
@@ -347,7 +348,8 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     q('#ctD1R').innerHTML = `<div>صفحه ${ctFa(steps)} خانه دارد (۰ تا ${ctFa(st.arr)})${steps > 64 ? ' ؛ فقط ۶۴ خط نشان داده شده' : ''}. یک دورِ کامل = ${ctFa(steps)} ضربه = <b>${ctTime(per)}</b>.</div>`
       + `<div>(سرعتِ عقربه اینجا نمایشی و کُند شده است؛ در واقعیت ${ctNum(1 / per)} دور در ثانیه می‌چرخد.)</div>`;
     q('#ctD2R').innerHTML = `<div>هر دور = یک دوره‌ی PWM = ${ctHz(m.freq)}.</div>`
-      + `<div>روی کمانِ سبز ${ctFa(Math.min(st.pulse, steps))} از ${ctFa(steps)} خانه ⇒ پین <b>${ctNum(m.duty * 100)}٪</b> از دور روشن است.</div>`;
+      + `<div>روی کمانِ سبز ${ctFa(Math.min(st.pulse, steps))} از ${ctFa(steps)} خانه ⇒ پین <b>${ctNum(m.duty * 100)}٪</b> از دور روشن است.</div>`
+      + '<div>موجِ کنارِ صفحه همان پینِ PA8 است: وقتی عقربه روی کمانِ سبز است موج بالاست و بعدش پایین؛ هر دورِ عقربه = یک دوره‌ی موج.</div>';
   }
 
   function spin(dt){
@@ -643,6 +645,40 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     gx.fillStyle = col; gx.textAlign = 'right'; gx.fillText(`${f.toFixed(0)} MHz ${ok ? 'OK' : 'ERROR'}`, w - 10, 14);
   }
 
+  function drawPw(){
+    const cp = q('#ctPw'), w = cp.clientWidth, h = 170;
+    if(!w) return;
+    const dpr = window.devicePixelRatio || 1, gx = cp.getContext('2d');
+    if(cp.width !== Math.round(w * dpr) || cp.height !== Math.round(h * dpr)){ cp.width = Math.round(w * dpr); cp.height = Math.round(h * dpr); }
+    gx.setTransform(dpr, 0, 0, dpr, 0, 0); gx.clearRect(0, 0, w, h);
+    const steps = st.arr + 1, duty = Math.min(1, st.pulse / steps), x0 = 44, pw = (w - x0 - 10) / 2, yH = 46, yL = 110, xe = x0 + duty * pw;
+    const fr = (tp / revT) % 1, cnt = Math.min(steps - 1, Math.floor(fr * steps)), ph = steps <= 64 ? (cnt + .5) / steps : fr, hi = cnt < st.pulse;
+    gx.font = '11px JetBrains Mono, monospace'; gx.textAlign = 'left';
+    gx.fillStyle = '#6b7280'; gx.fillText('HIGH', 4, yH + 4); gx.fillText('LOW', 4, yL + 4);
+    gx.setLineDash([4, 4]); gx.lineWidth = 1; gx.strokeStyle = '#4a5163';
+    [0, 1, 2].forEach(i => { gx.beginPath(); gx.moveTo(x0 + i * pw, yH - 16); gx.lineTo(x0 + i * pw, yL + 14); gx.stroke(); });
+    if(duty > 0 && duty < 1){ gx.strokeStyle = '#d4af37'; gx.beginPath(); gx.moveTo(xe, yH - 16); gx.lineTo(xe, yL + 14); gx.stroke(); }
+    gx.setLineDash([]);
+    for(let i = 0; i < 2; i++){
+      const xs = x0 + i * pw;
+      if(duty > 0){ gx.fillStyle = 'rgba(87,216,163,.16)'; gx.fillRect(xs, yH, duty * pw, yL - yH); }
+      gx.lineWidth = 3; gx.lineJoin = 'round'; gx.strokeStyle = '#57d8a3'; gx.beginPath();
+      if(duty >= 1){ gx.moveTo(xs, yH); gx.lineTo(xs + pw, yH); }
+      else { gx.moveTo(xs, yL); if(duty > 0){ gx.lineTo(xs, yH); gx.lineTo(xs + duty * pw, yH); gx.lineTo(xs + duty * pw, yL); } gx.lineTo(xs + pw, yL); }
+      gx.stroke();
+    }
+    gx.textAlign = 'center';
+    if(duty > 0 && duty < 1){ gx.fillStyle = '#d4af37'; gx.fillText('Pulse=' + st.pulse, xe, yH - 22); }
+    gx.fillStyle = '#8b93a5'; gx.fillText('1 period', x0 + pw / 2, yL + 32);
+    gx.fillStyle = '#57d8a3'; gx.fillText('Duty ' + Math.round(duty * 100) + '%', x0 + pw * 1.5, yL + 32);
+    [[0, 1], [1, .35]].forEach(([i, a]) => {
+      const xc = x0 + (i + ph) * pw;
+      gx.globalAlpha = a; gx.lineWidth = 1.5; gx.strokeStyle = '#e8e2d0'; gx.beginPath(); gx.moveTo(xc, yH - 16); gx.lineTo(xc, yL + 14); gx.stroke();
+      gx.fillStyle = hi ? '#57d8a3' : '#9aa3b5'; gx.beginPath(); gx.arc(xc, hi ? yH : yL, 5, 0, 6.2832); gx.fill();
+      gx.globalAlpha = 1;
+    });
+  }
+
   function frame(ts){
     raf = requestAnimationFrame(frame);
     const dt = last ? Math.min(.05, (ts - last) / 1000) : 0;
@@ -650,6 +686,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     spin(dt);
     drawWave();
     drawBus();
+    drawPw();
   }
 
   reset();

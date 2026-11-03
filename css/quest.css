@@ -977,6 +977,9 @@ body.sim-fullscreen-lock #knightSection{ z-index:1200 !important; }
 .ct-eq b{ color:var(--trace-bright); }
 .ct-scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius:8px; }
 .ct-wide{ min-width:720px; }
+.ct-pair{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; direction:ltr; }
+.ct-pair .ct-svg{ flex:1 1 230px; max-width:320px; margin:0 auto; }
+.ct-pair .ct-pw{ flex:1 1 250px; width:auto; min-width:0; }
 .ct-devs{ display:flex; flex-direction:column; gap:6px; }
 .ct-dev{ display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; padding:7px 10px; border-radius:8px; background:#0f1420; border:1px solid #1f6f50; font-size:12px; cursor:pointer; }
 .ct-dev b{ min-width:52px; color:var(--trace-bright); font-family:'JetBrains Mono',monospace; }
