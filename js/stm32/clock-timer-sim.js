@@ -124,6 +124,12 @@ function ctFlow(svg, trunk, branches = [], wide = false){
     }
   });
 
+  nodes.forEach(({ it, cx, cy }) => {
+    if(!it.edit) return;
+    const o = gearOf(it.T).ro * .72;
+    out += `<g data-edit="${it.edit}" text-anchor="middle" transform="translate(${f1(cx + o)} ${f1(cy - o)})" style="cursor:pointer"><title>تغییرِ ضریب</title>`
+      + `<circle r="9" fill="#d4af37" stroke="#14161c" stroke-width="1.5"/><path d="M-3.8 4.2L-3.2 1.2L2.6 -4.6L4.6 -2.6L-1.2 3.2Z" fill="#14161c"/></g>`;
+  });
   svg.setAttribute('viewBox', `0 0 ${VW} ${H}`);
   if(wide) Object.assign(svg.style, { width: VW + 'px', height: H + 'px', minWidth: VW + 'px', maxWidth: 'none' });
   else Object.assign(svg.style, { maxWidth: Math.round(VW * 1.3) + 'px', display: 'block', margin: '0 auto' });
@@ -208,7 +214,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
       <div class="ct-sc">
         <div class="ct-sc-h"><b>🧩 مسیرِ کاملِ کلاک: از کریستال تا تایمر</b></div>
         <div class="ct-sc-h"><label class="ct-ctl">PSC ${sel('psc', Array.from({ length: 12 }, (_, i) => i), '=')}</label><label class="ct-ctl">APB2 ${sel('a2', CT_DIV_OPTS, '÷')}</label><label class="ct-ctl">APB1 ${sel('a1', CT_DIV_OPTS, '÷')}</label><label class="ct-ctl">PLL ${sel('pll', CT_PLL_OPTS, '×')}</label></div>
-        <div class="hs-p ct-cap">از چپ به راست بخوان: هر چرخ‌دنده‌ی بزرگ یک کلاک و مقدارش است و چرخ‌دنده‌ی کوچکِ بینِ دو کلاک ضرب یا تقسیمش را انجام می‌دهد؛ عددِ داخلِ چرخ‌دنده‌ی کوچک همان ضریب است. بعد از HCLK مسیر دو شاخه می‌شود: APB1 (بالا) و APB2 (پایین). چرخ‌دنده‌های «✔ جواب» نتیجه‌اند. چرخ‌دنده‌ی ضریب هرچه کوچک‌تر باشد (×) تندتر می‌چرخد و هرچه بزرگ‌تر باشد (÷) سخت‌تر و کُندتر؛ با تغییرِ ضریب‌ها سرعتِ کلِ چرخ‌دنده‌ها هم عوض می‌شود. برای دیدنِ همه‌ی مسیر صفحه را به چپ و راست بکش.</div>
+        <div class="hs-p ct-cap">از چپ به راست بخوان: هر چرخ‌دنده‌ی بزرگ یک کلاک و مقدارش است و چرخ‌دنده‌ی کوچکِ بینِ دو کلاک ضرب یا تقسیمش را انجام می‌دهد؛ عددِ داخلِ چرخ‌دنده‌ی کوچک همان ضریب است. بعد از HCLK مسیر دو شاخه می‌شود: APB1 (بالا) و APB2 (پایین). چرخ‌دنده‌های «✔ جواب» نتیجه‌اند. روی علامتِ ✎ کنارِ چرخ‌دنده‌های PLL، APB و PSC بزن تا ضریبشان را عوض کنی. چرخ‌دنده‌ی ضریب هرچه کوچک‌تر باشد (×) تندتر می‌چرخد و هرچه بزرگ‌تر باشد (÷) سخت‌تر و کُندتر؛ با تغییرِ ضریب‌ها سرعتِ کلِ چرخ‌دنده‌ها هم عوض می‌شود. برای دیدنِ همه‌ی مسیر صفحه را به چپ و راست بکش.</div>
         <div class="ct-scroll" dir="ltr"><svg class="ct-svg ct-wide" id="ctGA" viewBox="0 0 720 300"></svg></div>
         <div class="ct-rel" id="ctGAR"></div>
       </div>
@@ -282,13 +288,13 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     const t1 = ctNode('t1', 'TIM2/3/4', c.t1, 'tim', { bad: c.t1 > 72 });
     const t2 = ctNode('t2', 'TIM1', c.t2, 'tim', { bad: c.t2 > 72 });
     const cnt = ctNode('tick', 'شمارنده', tick, 'psc');
-    const pll = ctOp('pll', 'PLL', '×', st.pll, CT_HSE, c.sys, 'sys');
+    const pll = ctOp('pll', 'PLL', '×', st.pll, CT_HSE, c.sys, 'sys', { edit: 'pll' });
     const ahb = ctOp('ahb', 'AHB', '÷', 1, c.sys, c.sys, 'sys');
-    const apb1 = ctOp('apb1', 'APB1', '÷', st.a1, c.sys, c.p1, 'pclk', { bad: b1 });
-    const apb2 = ctOp('apb2', 'APB2', '÷', st.a2, c.sys, c.p2, 'pclk', { bad: b2 });
+    const apb1 = ctOp('apb1', 'APB1', '÷', st.a1, c.sys, c.p1, 'pclk', { bad: b1, edit: 'a1' });
+    const apb2 = ctOp('apb2', 'APB2', '÷', st.a2, c.sys, c.p2, 'pclk', { bad: b2, edit: 'a2' });
     const mul1 = ctOp('tmul', 'ضریبِ تایمر', '×', st.a1 === 1 ? 1 : 2, c.p1, c.t1, 'tim');
     const mul2 = ctOp('tmul', 'ضریبِ تایمر', '×', st.a2 === 1 ? 1 : 2, c.p2, c.t2, 'tim');
-    const psc = ctOp('psc', 'PSC', '÷', st.psc + 1, c.t2, tick, 'psc');
+    const psc = ctOp('psc', 'PSC', '÷', st.psc + 1, c.t2, tick, 'psc', { edit: 'psc' });
     const fin = n => ({ ...n, final: true });
     scenes = [
       ctFlow(q('#ctG1'), [hse, pll, fin(sys)]),
@@ -435,6 +441,40 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     refresh();
   }
 
+  const EDIT = {
+    pll: { t: 'PLL', sym: '×', list: CT_PLL_OPTS.map(v => [v, v]) },
+    a1:  { t: 'APB1', sym: '÷', list: CT_DIV_OPTS.map(v => [v, v]) },
+    a2:  { t: 'APB2', sym: '÷', list: CT_DIV_OPTS.map(v => [v, v]) },
+    psc: { t: 'Prescaler', sym: '÷', list: Array.from({ length: 12 }, (_, i) => [i, i + 1]) }
+  };
+  let pop = null;
+  const closePop = () => { if(pop){ pop.remove(); pop = null; } };
+  function openPop(badge){
+    closePop();
+    const k = badge.dataset.edit, def = EDIT[k], r = badge.getBoundingClientRect();
+    pop = document.createElement('div');
+    pop.className = 'ct-pop';
+    pop.dir = 'rtl';
+    pop.style.cssText = 'position:fixed;z-index:9999;background:#1b1e26;border:1px solid #d4af37;border-radius:12px;padding:10px;box-shadow:0 8px 28px rgba(0,0,0,.55);color:#e8e2d0;max-width:260px;font-family:' + getComputedStyle(container).fontFamily;
+    const btn = ([v, n]) => `<button type="button" data-v="${v}" style="cursor:pointer;direction:ltr;padding:7px 4px;border-radius:8px;font:inherit;font-weight:700;border:1px solid ${st[k] === v ? '#d4af37' : '#3a4050'};background:${st[k] === v ? '#d4af37' : '#262b36'};color:${st[k] === v ? '#14161c' : '#e8e2d0'}">${def.sym}${ctFa(n)}</button>`;
+    pop.innerHTML = `<div style="font-size:12px;margin-bottom:8px"><b>${def.t}</b> — ضریب را انتخاب کن${k === 'psc' ? ' (عددِ PSC یکی کمتر از تقسیم است)' : ''}</div>`
+      + `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">${def.list.map(btn).join('')}</div>`;
+    pop.addEventListener('click', ev => {
+      const b = ev.target.closest('button[data-v]');
+      if(!b) return;
+      st[k] = +b.dataset.v;
+      closePop(); syncInputs(null); refresh();
+    });
+    document.body.appendChild(pop);
+    const w = pop.offsetWidth, h = pop.offsetHeight;
+    pop.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px';
+    pop.style.top = Math.max(8, Math.min(innerHeight - h - 8, r.bottom + 6)) + 'px';
+  }
+  const onDocClick = e => { if(pop && !e.target.closest('.ct-pop, [data-edit]')) closePop(); };
+  const onKey = e => { if(e.key === 'Escape') closePop(); };
+  document.addEventListener('click', onDocClick);
+  document.addEventListener('keydown', onKey);
+
   container.addEventListener('input', e => {
     const el = e.target.closest('input[data-k]');
     if(!el) return;
@@ -455,6 +495,8 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   });
 
   container.addEventListener('click', e => {
+    const ed = e.target.closest('[data-edit]');
+    if(ed){ openPop(ed); return; }
     const pr = e.target.closest('[data-preset]');
     if(pr){
       const [k, v] = pr.dataset.preset.split(':');
@@ -519,5 +561,5 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   reset();
   if(alreadyDone) say('2', 'success', '✅ قبلاً این مأموریت را کامل کرده‌ای. اگر دوست داری دوباره با منوها و اسلایدرها بازی کن.');
   raf = requestAnimationFrame(frame);
-  return { stop(){ cancelAnimationFrame(raf); } };
+  return { stop(){ cancelAnimationFrame(raf); closePop(); document.removeEventListener('click', onDocClick); document.removeEventListener('keydown', onKey); } };
 }
