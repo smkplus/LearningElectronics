@@ -775,6 +775,7 @@ const nextMissionBtn = document.getElementById('nextMissionBtn');
 let activeSim = null;
 
 const READ_ONLY_SIMS = { schematic_intro: mountSchematicIntroSim, footprint_intro: mountFootprintIntroSim, esp32_intro: mountEsp32IntroSim };
+const WIDE_MISSIONS = new Set(['stm32_clock_timer']);
 const READ_ONLY_MISSIONS = new Set(Object.keys(READ_ONLY_SIMS));
 
 const CONCEPT_SIMS = {
@@ -1095,6 +1096,8 @@ function onNodeClick(i, locked, evt){
     btn.textContent = done ? 'قبلاً تکمیل شده ✓' : (READ_ONLY_MISSIONS.has(q.id) ? 'مطالعه کردم ✓' : 'مأموریت را تکمیل کردم');
     btn.disabled = done;
   }
+  // مأموریت‌های پهن (مثل چرخ‌دنده‌های کلاک) مودال عریض‌تری می‌گیرند
+  modalSim.closest('.modal').classList.toggle('wide', WIDE_MISSIONS.has(q.id));
   openOverlay();
 }
 

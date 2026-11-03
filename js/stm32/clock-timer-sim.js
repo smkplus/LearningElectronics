@@ -27,7 +27,6 @@ const CT_TALK = {
   t2:    'TIM1 روی APB2 است. با ÷۱ هم‌اندازه است و ۷۲ می‌چرخد؛ با ÷۲ هم دوباره ×۲ می‌شود و ۷۲. برای PWMِ موتور کلاکش ۷۲ مگاهرتز است.',
   psc:   'Prescaler یک چرخ‌دنده‌ی تقسیم‌کننده است: کلاکِ تایمر را بر (PSC+۱) تقسیم می‌کند تا عقربه‌ی شمارنده آهسته‌تر بشمرد. در CubeMX عدد PSC = ۸ یعنی تقسیم بر ۹؛ همیشه یکی بیشتر.',
   busq:  'خط‌چینِ خاکستری موجِ ایده‌آلِ کلاکِ باسِ APB1 است و خطِ رنگی آن چیزی که سیمِ واقعیِ داخلِ چیپ می‌سازد: سیم مثل یک خازنِ کوچک است و هر نیم‌دوره باید پر یا خالی شود. اگر کلاک آن‌قدر تند باشد که فرصتِ پر شدن نباشد، موج به خطِ HIGH (۷۵٪) نمی‌رسد و گیرنده بیت را اشتباه می‌خواند. (مدلِ ساده‌شده برای فهمیدنِ ماجرا)',
-  res:   'هر خطِ عمودی یک «تیک» تایمر است و تایمر با شمردنِ تیک‌ها زمان را اندازه می‌گیرد و PWM می‌سازد. تیک‌ها هرچه ریزتر، دقت بیشتر. اگر کلاکِ تایمر نصف شود، تیک‌ها دو برابر درشت می‌شوند و دقت (Resolution) نصف می‌شود.',
   uart:  'UART2 روی APB1 است و برای فرستادنِ متن (مثلاً به کامپیوتر) به کار می‌رود. با کلاکِ بیش از حد، بیت‌ها خراب می‌شوند و به‌جای متنِ درست، علامت‌های بی‌معنی می‌رسد.',
   i2c:   'I2C هم روی APB1 است و برای حرف زدن با سنسورها و نمایشگرها به کار می‌رود. با کلاکِ بیش از حد، سنسور «ACK» نمی‌دهد و ارتباط قطع می‌شود.',
   can:   'CAN شبکه‌ی ارتباطیِ خودرو و صنعت است و روی APB1 نشسته. بیتِ خراب یعنی فریمِ خطادار (CRC Error) و دورریخته شدنِ پیام.',
@@ -251,17 +250,12 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
         <div class="ct-rel" id="ctBusR"></div>
         <div class="ct-devs" id="ctDevs"></div>
       </div>
-      <div class="ct-sc">
-        <div class="ct-sc-h"><b data-talk="res">🎯 آزمایش ۲: اگر کلاکِ تایمر هم با باس نصف می‌شد</b></div>
-        <svg class="ct-svg" id="ctRes" viewBox="0 0 320 160"></svg>
-        <div class="ct-rel" id="ctResR"></div>
-      </div>
 
       <div class="ct-stage-t">⏲️ بخش ۲ — تایمر یعنی چی؟</div>
       <div class="ct-explain"><b>تایمر یک عقربه روی یک صفحه‌ی گرد است.</b> هر ضربه‌ی کلاک، عقربه یک خانه جلو می‌رود؛ به آخرین خانه که رسید دوباره به ۰ برمی‌گردد. همین! خودِ سخت‌افزار می‌شمارد و CPU آزاد می‌ماند. دو تنظیم دارد: <b>Prescaler</b> (ضربه‌ها چقدر کُند شوند) و <b>Period</b> (صفحه چند خانه دارد).</div>
       <div class="hs-p" data-v="src"></div>
-      ${block('ctG4', head('psc', '④ Prescaler: گیربکسِ ضربه‌ها'), row('psc', 'Prescaler (PSC)', 0, 11))}
-      ${block('ctD1', head('arr', '⑤ شمارنده: صفحه‌ی گرد'), row('arr', 'Period (ARR)', 1, 1023) + pre([['۷ (۸ خانه)', 'arr:7'], ['۱۵', 'arr:15'], ['۲۵۵', 'arr:255'], ['۹۹۹', 'arr:999']]))}
+      ${block('ctG4', head('psc', '④ Prescaler: گیربکسِ ضربه‌ها'), row('psc', 'Prescaler (PSC)', 0, 11) + '<div class="ct-rel">❓ چرا PSC می‌تواند ۰ باشد؟ چون سخت‌افزار بر (PSC+۱) تقسیم می‌کند، پس هیچ‌وقت تقسیم بر صفر نمی‌شود: PSC=۰ یعنی ÷۱.</div>')}
+      ${block('ctD1', head('arr', '⑤ شمارنده: صفحه‌ی گرد'), row('arr', 'Period (ARR)', 1, 1023) + '<div class="ct-rel">❓ چرا از ۱ شروع می‌شود؟ ARR=۰ یعنی فقط ۱ خانه؛ عقربه جایی برای حرکت ندارد و PWM فقط می‌تواند ۰٪ یا ۱۰۰٪ باشد.</div>' + pre([['۷', 'arr:7'], ['۱۵', 'arr:15'], ['۲۵۵', 'arr:255'], ['۱۰۲۳', 'arr:1023']]))}
 
       <div class="ct-stage-t">💡 بخش ۳ — PWM یعنی چی؟</div>
       <div class="ct-explain"><b>PWM یعنی یک پین را خیلی سریع روشن و خاموش کنیم.</b> موتور آن‌قدر کُند است که تک‌تک چشمک‌ها را حس نمی‌کند و فقط «میانگین» را می‌بیند. مثلاً نیمی از دور روشن = نصفِ ولتاژ = نصفِ سرعت. روشن‌ماندن را همان عقربه تعیین می‌کند: <b>روی کمانِ سبز (Pulse) پین روشن است و روی بقیه خاموش.</b></div>
@@ -269,7 +263,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
       <div class="ct-sc">
         <div class="ct-sc-h"><b>موجِ خروجی (سه دور پشت‌سرهم)</b></div>
         <canvas class="ct-cv" id="ctCv"></canvas>
-        <div class="ct-motor"><span class="ct-gear" id="ctGear">⚙️</span><div class="ct-bar"><i id="ctBar"></i></div><b data-o="d2"></b></div>
+        <div class="ct-motor"><span class="ct-gear" id="ctGear"><svg viewBox="-15 -15 30 30" width="30" height="30" aria-hidden="true"><g fill="#c9ced8"><rect x="-2.6" y="-14" width="5.2" height="6" rx="1" transform="rotate(0)"/><rect x="-2.6" y="-14" width="5.2" height="6" rx="1" transform="rotate(45)"/><rect x="-2.6" y="-14" width="5.2" height="6" rx="1" transform="rotate(90)"/><rect x="-2.6" y="-14" width="5.2" height="6" rx="1" transform="rotate(135)"/><rect x="-2.6" y="-14" width="5.2" height="6" rx="1" transform="rotate(180)"/><rect x="-2.6" y="-14" width="5.2" height="6" rx="1" transform="rotate(225)"/><rect x="-2.6" y="-14" width="5.2" height="6" rx="1" transform="rotate(270)"/><rect x="-2.6" y="-14" width="5.2" height="6" rx="1" transform="rotate(315)"/><circle r="10.5"/></g><circle r="4.5" fill="#10151f"/></svg></span><div class="ct-bar"><i id="ctBar"></i></div><b data-o="d2"></b></div>
         <div class="ct-rel" data-o="avg"></div>
       </div>
       <div class="ct-sc ct-form">
@@ -594,26 +588,6 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     q('#ctDevs').innerHTML = dev('uart', 'UART2', 'ارسالِ متن به کامپیوتر', 'Hello', bad('Hello', Math.round(f)))
       + dev('i2c', 'I2C', 'خواندنِ سنسور', 'ACK · 24°C', 'NACK · ---')
       + dev('can', 'CAN', 'شبکه‌ی خودرو', 'Frame OK', 'CRC Error');
-
-    const rows = [['با قانونِ ×۲ (واقعیِ STM32)', c.t1, '#57d8a3'], ['بدون قانون (تایمر مستقیم از باس)', c.p1, '#ff6b6b']], PX = 1.5, X0 = 10;
-    let out = '';
-    rows.forEach(([lab, hz, col], r) => {
-      const T = 1000 / hz, y = 44 + r * 84, n = Math.floor(100 / T);
-      let tk = '';
-      for(let k = 0; X0 + k * T * PX <= 310; k++){
-        const x = (X0 + k * T * PX).toFixed(1);
-        tk += `<line x1="${x}" y1="${y - 10}" x2="${x}" y2="${y}" stroke="${k <= n ? col : '#4a5163'}" stroke-width="1.5"/>`;
-      }
-      out += `<text x="160" y="${y - 20}" style="font-size:11px;font-weight:700;fill:${col}">${lab} — ${ctHz(hz * 1e6)}</text>`
-        + tk + `<line x1="${X0}" y1="${y}" x2="310" y2="${y}" stroke="#4a5163"/>`
-        + `<rect x="${X0}" y="${y + 5}" width="${100 * PX}" height="8" rx="3" fill="#d4af37" opacity=".85"/>`
-        + `<text x="${X0 + 50 * PX}" y="${y + 24}" style="font-size:10px">پالسِ ۱۰۰ ns ⇒ ${ctFa(n)} تیک ≈ ${ctNum(n * T)} ns</text>`;
-    });
-    q('#ctRes').innerHTML = out;
-    const ratio = c.t1 / c.p1;
-    q('#ctResR').innerHTML = ratio === 1
-      ? `<div>الان تقسیم‌کننده‌ی APB1 برابر ۱ است، پس کلاکِ تایمر همان کلاکِ باس است (${ctHz(c.t1 * 1e6)}) و دو ردیف یکی‌اند. APB1 را روی ÷۲ بگذار تا قانونِ ×۲ را ببینی.</div>`
-      : `<div>تایمر با قانونِ ×۲ هر <b>${ctTime(1 / (c.t1 * 1e6))}</b> یک تیک می‌زند؛ بدونِ آن فقط ${ctHz(c.p1 * 1e6)} داشت و هر ${ctTime(1 / (c.p1 * 1e6))} یک تیک می‌زد: <b>دقت ${ctFa(ratio)} برابر بدتر</b>. همین دقت تعیین می‌کند PWM چند پله داشته باشد.</div>`;
   }
 
   function drawBus(){
@@ -679,10 +653,23 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     });
   }
 
+  /* هنگامِ اسکرول (صفحه یا نوارِ افقیِ چرخ‌دنده‌ها) انیمیشن‌ها می‌ایستند تا اسکرول روان بماند؛
+     ۱۵۰ میلی‌ثانیه بعد از آخرین رویدادِ اسکرول دوباره ادامه می‌دهند. capture=true چون رویدادِ scroll حباب نمی‌کند. */
+  let scrolling = false, scrollT = 0;
+  const onScroll = () => {
+    scrolling = true;
+    clearTimeout(scrollT);
+    scrollT = setTimeout(() => { scrolling = false; }, 150);
+  };
+  window.addEventListener('scroll', onScroll, { passive: true, capture: true });
+  container.addEventListener('wheel', onScroll, { passive: true });
+  container.addEventListener('touchmove', onScroll, { passive: true });
+
   function frame(ts){
     raf = requestAnimationFrame(frame);
     const dt = last ? Math.min(.05, (ts - last) / 1000) : 0;
     last = ts;
+    if(scrolling) return;
     spin(dt);
     drawWave();
     drawBus();
@@ -692,5 +679,5 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   reset();
   if(alreadyDone) say('2', 'success', '✅ قبلاً این مأموریت را کامل کرده‌ای. اگر دوست داری دوباره با منوها و اسلایدرها بازی کن.');
   raf = requestAnimationFrame(frame);
-  return { stop(){ cancelAnimationFrame(raf); closePop(); document.removeEventListener('click', onDocClick); document.removeEventListener('keydown', onKey); } };
+  return { stop(){ cancelAnimationFrame(raf); clearTimeout(scrollT); window.removeEventListener('scroll', onScroll, { capture: true }); closePop(); document.removeEventListener('click', onDocClick); document.removeEventListener('keydown', onKey); } };
 }

@@ -112,6 +112,7 @@
 
   /* ---------- MISSION-1 ARDUINO SIMULATOR ---------- */
   .modal.has-sim{ max-width:640px; }
+  .modal.has-sim.wide{ width:96vw; max-width:826px; }
   .modal-sim{ margin-bottom:18px; }
   .sim-wrap{
     background:#0d1119; border:1px solid var(--panel-border); border-radius:14px;
@@ -914,6 +915,8 @@ body.sim-fullscreen-lock #knightSection{ z-index:1200 !important; }
 .ct-ctl{ display:flex; align-items:center; gap:6px; font-size:12px; color:#cfc8b6; }
 .ct-sel{ font-family:'Vazirmatn'; font-weight:700; font-size:13px; background:#0a0d13; color:var(--gold); border:1px solid var(--panel-border); border-radius:8px; padding:5px 8px; cursor:pointer; }
 .ct-svg{ width:100%; height:auto; display:block; direction:ltr; }
+/* شمارنده‌ی گردِ تایمر (دارای عقربه) کوچک‌تر */
+.ct-svg:has(.ct-ptr){ max-width:420px; margin-inline:auto; }
 .ct-svg text{ font-family:'Vazirmatn',sans-serif; text-anchor:middle; fill:#cfc8b6; font-size:11px; }
 .ct-g path{ fill:#6b7280; stroke:#05070a; stroke-width:1; stroke-linejoin:round; }
 .ct-g.hse path{ fill:#e79a54; }
@@ -968,7 +971,8 @@ body.sim-fullscreen-lock #knightSection{ z-index:1200 !important; }
 .ct-cv{ width:100%; height:170px; display:block; background:#10151f; border:1px solid var(--panel-border); border-radius:10px; }
 .ct-motor{ display:flex; align-items:center; gap:10px; }
 .ct-motor b{ min-width:44px; text-align:end; color:var(--trace-bright); font-size:13px; }
-.ct-gear{ font-size:26px; display:inline-block; animation:ctSpin 2.6s linear infinite; }
+.ct-gear{ display:inline-flex; width:30px; height:30px; flex:none; transform-origin:50% 50%; animation:ctSpin 2.6s linear infinite; }
+.ct-gear svg{ display:block; }
 @keyframes ctSpin{ to{ transform:rotate(360deg); } }
 .ct-bar{ flex:1; height:12px; border-radius:7px; background:#0a0d13; border:1px solid var(--panel-border); overflow:hidden; }
 .ct-bar i{ display:block; height:100%; width:0; background:linear-gradient(90deg, var(--trace), var(--trace-bright)); transition:width .15s ease; }
