@@ -184,7 +184,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
 
   container.innerHTML = `
     <div class="sim-wrap ct-wrap">
-      <div class="sim-hw-note">هدف: با چرخ‌دنده‌ها ببین ضریب‌های کلاک چطور ساخته می‌شوند، تایمر و PWM را قدم‌به‌قدم بفهم، و آخرش یک PWM ۳۱٫۲۵ کیلوهرتزیِ ۵۰٪ برای موتور بساز. روی هر چرخ‌دنده یا صفحه بزن تا شوالیه توضیحش بدهد.</div>
+      <div class="sim-hw-note">هدف: با چرخ‌دنده‌ها ببین ضریب‌های کلاک چطور ساخته می‌شوند، تایمر و PWM را قدم‌به‌قدم بفهم، و اگر دوست داشتی آخرش یک PWM ۳۱٫۲۵ کیلوهرتزیِ ۵۰٪ هم بساز. امتحان کردنِ شبیه‌ساز اختیاری است؛ اگر فقط مطالعه کردی، پایینِ صفحه «مطالعه کردم ✓» را بزن تا مأموریت کامل شود. روی هر چرخ‌دنده یا صفحه بزن تا شوالیه توضیحش بدهد.</div>
       <div class="ct-answer"><b>جوابِ کوتاه به سؤالِ همیشگی:</b> ۷۲ مگاهرتز کلاکِ خودِ چیپ است. ۳۶ مگاهرتز فقط کلاکِ «باس APB1» است (یک گیربکسِ کُندکننده داخل چیپ)، نه کلاکِ تایمر. تایمرهای روی APB1 دوباره ×۲ می‌شوند و ۷۲ می‌گیرند؛ TIM1 هم اصلاً روی APB1 نیست و بی‌هیچ ضربی ۷۲ می‌گیرد.</div>
       <details class="hs-det" open>
         <summary>⏱️ کلاک یعنی چی؟</summary>
@@ -278,6 +278,8 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     </div>`;
 
   const q = s => container.querySelector(s), qa = s => container.querySelectorAll(s);
+  const ac = new AbortController(), sig = { signal: ac.signal };
+  const listen = (t, f) => container.addEventListener(t, f, sig);
   const cv = q('#ctCv'), g = cv.getContext('2d');
   const st = { ...CT_INIT };
   const done = { pll: false, apb: false, quiz: false, pwm: false };
@@ -469,7 +471,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     psc: { t: 'Prescaler', sym: '÷', list: Array.from({ length: 12 }, (_, i) => [i, i + 1]) }
   };
   let pop = null;
-  const closePop = () => { if(pop){ pop.remove(); pop = null; } };
+  const closePop = () => { document.querySelectorAll('.ct-pop').forEach(n => n.remove()); pop = null; };
   function openPop(badge){
     closePop();
     const k = badge.dataset.edit, def = EDIT[k], r = badge.getBoundingClientRect();
@@ -493,10 +495,10 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   }
   const onDocClick = e => { if(pop && !e.target.closest('.ct-pop, [data-edit]')) closePop(); };
   const onKey = e => { if(e.key === 'Escape') closePop(); };
-  document.addEventListener('click', onDocClick);
-  document.addEventListener('keydown', onKey);
+  document.addEventListener('click', onDocClick, sig);
+  document.addEventListener('keydown', onKey, sig);
 
-  container.addEventListener('input', e => {
+  listen('input', e => {
     const el = e.target.closest('input[data-k]');
     if(!el) return;
     const k = el.dataset.k, v = parseInt(el.value, 10);
@@ -508,14 +510,14 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     refresh();
   });
 
-  container.addEventListener('change', e => {
+  listen('change', e => {
     const s = e.target.closest('select.ct-sel');
     if(!s) return;
     st[s.dataset.k] = +s.value;
     refresh();
   });
 
-  container.addEventListener('click', e => {
+  listen('click', e => {
     const ed = e.target.closest('[data-edit]');
     if(ed){ openPop(ed); return; }
     const pr = e.target.closest('[data-preset]');
@@ -661,9 +663,9 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     clearTimeout(scrollT);
     scrollT = setTimeout(() => { scrolling = false; }, 150);
   };
-  window.addEventListener('scroll', onScroll, { passive: true, capture: true });
-  container.addEventListener('wheel', onScroll, { passive: true });
-  container.addEventListener('touchmove', onScroll, { passive: true });
+  window.addEventListener('scroll', onScroll, { passive: true, capture: true, signal: ac.signal });
+  container.addEventListener('wheel', onScroll, { passive: true, signal: ac.signal });
+  container.addEventListener('touchmove', onScroll, { passive: true, signal: ac.signal });
 
   function frame(ts){
     raf = requestAnimationFrame(frame);
@@ -679,5 +681,5 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   reset();
   if(alreadyDone) say('2', 'success', '✅ قبلاً این مأموریت را کامل کرده‌ای. اگر دوست داری دوباره با منوها و اسلایدرها بازی کن.');
   raf = requestAnimationFrame(frame);
-  return { stop(){ cancelAnimationFrame(raf); clearTimeout(scrollT); window.removeEventListener('scroll', onScroll, { capture: true }); closePop(); document.removeEventListener('click', onDocClick); document.removeEventListener('keydown', onKey); } };
+  return { stop(){ ac.abort(); cancelAnimationFrame(raf); clearTimeout(scrollT); closePop(); } };
 }
