@@ -78,7 +78,7 @@ function ctFlow(svg, trunk, branches = [], wide = false){
   let x = PAD + rOf(trunk[0]);
   trunk.forEach((it, i) => {
     if(i) x += rOf(trunk[i - 1]) + rOf(it);
-    nodes.push({ it, cx: x, cy: 0, par: i - 1, phi: 0 });
+    nodes.push({ it, cx: x, cy: 0, par: i - 1, phi: 0, lane: 0 });
   });
   const hi = nodes.length - 1, hub = nodes[hi];
   branches.forEach(b => { lane = Math.min(lane, rOf(hub.it) + rOf(b[0]) - 6); });
@@ -87,12 +87,13 @@ function ctFlow(svg, trunk, branches = [], wide = false){
     let bx = hub.cx + Math.sqrt(d * d - dy * dy);
     b.forEach((it, i) => {
       if(i) bx += rOf(b[i - 1]) + rOf(it);
-      nodes.push({ it, cx: bx, cy: dy, par: i ? nodes.length - 1 : hi, phi: i ? 0 : Math.atan2(dy, bx - hub.cx), side: i ? '' : (bi ? 'down' : 'up') });
+      nodes.push({ it, cx: bx, cy: dy, par: i ? nodes.length - 1 : hi, phi: i ? 0 : Math.atan2(dy, bx - hub.cx), side: i ? '' : (bi ? 'down' : 'up'), lane: bi ? 1 : -1 });
     });
   });
-  const ext = nodes.map(({ it, cx, cy }) => {
-    const ro = gearOf(it.T).ro, isN = it.t === 'n';
-    return { top: cy - ro - (isN ? 2 : 28), bot: cy + ro + (isN ? (it.final ? 18 : 2) + useOf(it).length * 10 + (useOf(it).length ? 2 : 0) : 28), right: cx + ro };
+  const UL = 11;
+  const ext = nodes.map(({ it, cx, cy, lane }) => {
+    const ro = gearOf(it.T).ro, isN = it.t === 'n', n = isN ? useOf(it).length : 0, extra = n ? n * UL + 8 : 0;
+    return { top: cy - ro - (isN ? 2 + (lane < 0 ? extra + 6 : 0) : 28), bot: cy + ro + (isN ? (it.final ? 18 : 2) + (lane < 0 ? 0 : extra) : 28), right: cx + ro };
   });
   const oy = 6 - Math.min(...ext.map(e => e.top));
   nodes.forEach(n => { n.cy += oy; });
@@ -108,7 +109,13 @@ function ctFlow(svg, trunk, branches = [], wide = false){
   const LTR = 'style="direction:ltr;unicode-bidi:bidi-override"';
 
   let out = '';
-  nodes.forEach(({ it, cx, cy, side }) => {
+  const HALO = 'stroke:#141924;stroke-width:3px;paint-order:stroke;stroke-linejoin:round';
+  const usesSvg = (it, cx, cy, ro, up) => {
+    const L = useOf(it), n = L.length, col = it.bad ? '#ff8a80' : '#c9d0de';
+    return L.map((u, j) => tx(cx, up ? cy - ro - 10 - (n - 1 - j) * UL : cy + ro + (it.final ? 23 : 18) + j * UL, u, 10, '',
+      `style="fill:${col};font-size:10px;font-weight:600;${HALO};${/^[\x00-\x7F·✖ ]+$/.test(u) ? 'direction:ltr;unicode-bidi:bidi-override' : 'direction:rtl;unicode-bidi:embed'}"`)).join('');
+  };
+  nodes.forEach(({ it, cx, cy, side, lane }) => {
     const g = gearOf(it.T), HO = Math.min(15, g.ri * .72);
     const at = `<g transform="translate(${f1(cx)} ${f1(cy)})">`;
     if(it.t === 'n'){
@@ -120,14 +127,14 @@ function ctFlow(svg, trunk, branches = [], wide = false){
         + `<text y="5" font-size="${num.length > 5 ? 13 : 15}" font-weight="700" style="fill:${col}">${num}</text>`
         + `<text y="16" font-size="8.5" style="fill:#8b93a3">${unit}</text></g>`
         + (it.final ? tx(cx, cy + g.ro + 11, '✔ جواب', 9.5, col, 'font-weight="700"') : '')
-        + useOf(it).map((u, j) => tx(cx, cy + g.ro + (it.final ? 22 : 11) + j * 10, u, 9, '', `style="font-size:9px;fill:${it.bad ? '#ff6b6b' : '#9aa3b5'};${/^[\x00-\x7F·✖ ]+$/.test(u) ? 'direction:ltr;unicode-bidi:bidi-override' : 'direction:rtl;unicode-bidi:embed'}"`)).join('') + '</g>';
+        + usesSvg(it, cx, cy, g.ro, lane < 0) + '</g>';
     } else {
       const eq = `${ctNum(it.inM)} ${it.sym} ${ctFa(it.n)} = ${ctNum(it.outM)}`;
       out += `<g data-talk="${it.key}" text-anchor="middle">` + at
         + `<g class="ct-g ${it.cls}${it.bad ? ' bad' : ''}"><path d="${g.d}"/>${holes(5, (HO + g.ri) / 2, 1.6)}</g>`
         + `<circle class="ct-gh" r="${HO}"/><text class="ct-gtx" y="${f1(HO * .3)}" font-size="${Math.round(Math.min(13, HO * 1.05))}" ${LTR}>${it.sym}${ctFa(it.n)}</text></g>`
-        + tx(cx, side === 'up' ? cy - g.ro - 17 : side === 'down' ? cy + g.ro + 24 : cy - g.ro - 5, it.name, 10, '#e8e2d0', 'font-weight="700"')
-        + tx(cx, side === 'up' ? cy - g.ro - 5 : cy + g.ro + 12, eq, 9.5, it.bad ? '#ff6b6b' : '#e8e2d0', LTR) + '</g>';
+        + tx(cx, side === 'up' ? cy - g.ro - 17 : side === 'down' ? cy + g.ro + 24 : cy - g.ro - 9, it.name, 10, '#e8e2d0', `font-weight="700" style="${HALO}"`)
+        + tx(cx, side === 'up' ? cy - g.ro - 5 : cy + g.ro + 12, eq, 9.5, it.bad ? '#ff6b6b' : '#e8e2d0', `style="direction:ltr;unicode-bidi:bidi-override;${HALO}"`) + '</g>';
     }
   });
 
@@ -142,7 +149,7 @@ function ctFlow(svg, trunk, branches = [], wide = false){
   else Object.assign(svg.style, { maxWidth: Math.round(VW * 1.3) + 'px', display: 'block', margin: '0 auto' });
   svg.innerHTML = out;
   const els = svg.querySelectorAll('.ct-g');
-  return { id, geo: nodes.map(n => ({ cx: n.cx, cy: n.cy, r: rOf(n.it) })), gears: nodes.map((n, i) => ({ el: els[i], T: n.it.T, par: n.par, phi: n.phi, ang: 0 })) };
+  return { id, svg, geo: nodes.map(n => ({ cx: n.cx, cy: n.cy, r: rOf(n.it) })), gears: nodes.map((n, i) => ({ el: els[i], T: n.it.T, par: n.par, phi: n.phi, ang: 0 })) };
 }
 
 function ctDial(svg, { steps, pulse, pwm }){
@@ -172,7 +179,7 @@ function ctDial(svg, { steps, pulse, pwm }){
     + `<text class="ct-fl" x="${cx}" y="14">شروع: خانه‌ی ۰</text>`
     + `<g transform="translate(${cx} ${cy})"><g data-ptr><line class="ct-ptr" x1="0" y1="0" x2="0" y2="${-(R - 6)}"/><circle class="ct-pd" cy="${-(R - 6)}" r="5.5"/></g></g>`
     + `<text class="ct-cnt${pwm ? ' on' : ''}" x="${cx}" y="${cy + 8}" data-cnt></text>`;
-  return { ptr: svg.querySelector('[data-ptr]'), cnt: svg.querySelector('[data-cnt]'), lamp: pwm ? svg.querySelector('.ct-lamp') : null };
+  return { svg, ptr: svg.querySelector('[data-ptr]'), cnt: svg.querySelector('[data-cnt]'), lamp: pwm ? svg.querySelector('.ct-lamp') : null };
 }
 
 function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
@@ -280,7 +287,14 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   const q = s => container.querySelector(s), qa = s => container.querySelectorAll(s);
   const ac = new AbortController(), sig = { signal: ac.signal };
   const listen = (t, f) => container.addEventListener(t, f, sig);
-  const cv = q('#ctCv'), g = cv.getContext('2d');
+  const cv = q('#ctCv'), g = cv.getContext('2d'), cvBus = q('#ctBus'), cvPw = q('#ctPw');
+  const vis = new Map(), sizes = new Map();
+  const io = typeof IntersectionObserver === 'function' ? new IntersectionObserver(es => es.forEach(e => vis.set(e.target, e.isIntersecting)), { rootMargin: '150px' }) : null;
+  const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(es => es.forEach(e => sizes.set(e.target, e.contentRect.width))) : null;
+  const seen = el => !io || vis.get(el) !== false;
+  const widthOf = el => sizes.get(el) || el.clientWidth;
+  qa('svg.ct-svg').forEach(el => io && io.observe(el));
+  [cv, cvBus, cvPw].forEach(el => { io && io.observe(el); ro && ro.observe(el); });
   const st = { ...CT_INIT };
   const done = { pll: false, apb: false, quiz: false, pwm: false };
   let succeeded = !!alreadyDone, raf = 0, last = 0, tp = 0, revT = 3.2, scenes = [], dials = [];
@@ -352,18 +366,22 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     tp += dt;
     scenes.forEach(sc => {
       angs[sc.id] = (angs[sc.id] || 0) + CT_W * 2 * Math.sqrt(sc.mhz / CT_HSE) * dt;
+      if(!seen(sc.svg)) return;
       sc.gears.forEach(gr => {
         const pr = sc.gears[gr.par];
         gr.ang = pr ? ctMeshAt(pr.T, gr.T, pr.ang, gr.phi) : angs[sc.id];
-        gr.el.setAttribute('transform', `rotate(${(gr.ang * 57.2958).toFixed(1)})`);
+        const t = `rotate(${(gr.ang * 57.2958).toFixed(1)})`;
+        if(t !== gr.t){ gr.t = t; gr.el.setAttribute('transform', t); }
       });
     });
     const steps = st.arr + 1, fr = (tp / revT) % 1, cnt = Math.min(steps - 1, Math.floor(fr * steps));
     const ang = (steps <= 64 ? (cnt + .5) / steps : fr) * 360;
     dials.forEach(d => {
-      d.ptr.setAttribute('transform', `rotate(${ang.toFixed(1)})`);
-      d.cnt.textContent = ctFa(cnt);
-      if(d.lamp) d.lamp.setAttribute('class', 'ct-lamp' + (cnt < st.pulse ? ' on' : ''));
+      if(!seen(d.svg)) return;
+      const t = `rotate(${ang.toFixed(1)})`;
+      if(t !== d.t){ d.t = t; d.ptr.setAttribute('transform', t); }
+      if(cnt !== d.n){ d.n = cnt; d.cnt.textContent = ctFa(cnt); }
+      if(d.lamp){ const on = cnt < st.pulse; if(on !== d.on){ d.on = on; d.lamp.setAttribute('class', 'ct-lamp' + (on ? ' on' : '')); } }
     });
   }
 
@@ -481,7 +499,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     pop.style.cssText = 'position:fixed;z-index:9999;background:#1b1e26;border:1px solid #d4af37;border-radius:12px;padding:10px;box-shadow:0 8px 28px rgba(0,0,0,.55);color:#e8e2d0;max-width:260px;font-family:' + getComputedStyle(container).fontFamily;
     const btn = ([v, n]) => `<button type="button" data-v="${v}" style="cursor:pointer;direction:ltr;padding:7px 4px;border-radius:8px;font:inherit;font-weight:700;border:1px solid ${st[k] === v ? '#d4af37' : '#3a4050'};background:${st[k] === v ? '#d4af37' : '#262b36'};color:${st[k] === v ? '#14161c' : '#e8e2d0'}">${def.sym}${ctFa(n)}</button>`;
     pop.innerHTML = `<div style="font-size:12px;margin-bottom:8px"><b>${def.t}</b> — ضریب را انتخاب کن${k === 'psc' ? ' (عددِ PSC یکی کمتر از تقسیم است)' : ''}</div>`
-      + `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">${def.list.map(btn).join('')}</div>`;
+      + `<div style="display:grid;direction:ltr;grid-template-columns:repeat(4,1fr);gap:6px">${def.list.map(btn).join('')}</div>`;
     pop.addEventListener('click', ev => {
       const b = ev.target.closest('button[data-v]');
       if(!b) return;
@@ -536,7 +554,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   });
 
   function drawWave(){
-    const w = cv.clientWidth, h = 170;
+    const w = widthOf(cv), h = 170;
     if(!w) return;
     const dpr = window.devicePixelRatio || 1;
     if(cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)){ cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
@@ -593,14 +611,14 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   }
 
   function drawBus(){
-    const cb = q('#ctBus'), w = cb.clientWidth, h = 170;
+    const cb = cvBus, w = widthOf(cb), h = 170;
     if(!w) return;
     const dpr = window.devicePixelRatio || 1, gx = cb.getContext('2d');
     if(cb.width !== Math.round(w * dpr) || cb.height !== Math.round(h * dpr)){ cb.width = Math.round(w * dpr); cb.height = Math.round(h * dpr); }
     gx.setTransform(dpr, 0, 0, dpr, 0, 0); gx.clearRect(0, 0, w, h);
     const f = clocks().p1, T = 1000 / f, ok = busQ(f).ok, x0 = 46, x1 = w - 10, top = 22, bot = 142;
     const X = u => x0 + u / (4 * T) * (x1 - x0), Y = v => bot - v * (bot - top);
-    const tgt = t => (t % T) < T / 2 ? 1 : 0, off = ((tp * .25) % 1) * T, tw = 6 * T + off;
+    const tgt = t => (t % T) < T / 2 ? 1 : 0, off = ((tp * .25) % 1) * T, tw = 2 * T + off;
     const col = ok ? '#57d8a3' : '#ff6b6b';
     gx.font = '11px JetBrains Mono, monospace'; gx.textAlign = 'left';
     gx.fillStyle = '#6b7280'; gx.fillText('VDD', 6, top + 4); gx.fillText('0 V', 6, bot + 4);
@@ -622,7 +640,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   }
 
   function drawPw(){
-    const cp = q('#ctPw'), w = cp.clientWidth, h = 170;
+    const cp = cvPw, w = widthOf(cp), h = 170;
     if(!w) return;
     const dpr = window.devicePixelRatio || 1, gx = cp.getContext('2d');
     if(cp.width !== Math.round(w * dpr) || cp.height !== Math.round(h * dpr)){ cp.width = Math.round(w * dpr); cp.height = Math.round(h * dpr); }
@@ -655,31 +673,18 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     });
   }
 
-  /* هنگامِ اسکرول (صفحه یا نوارِ افقیِ چرخ‌دنده‌ها) انیمیشن‌ها می‌ایستند تا اسکرول روان بماند؛
-     ۱۵۰ میلی‌ثانیه بعد از آخرین رویدادِ اسکرول دوباره ادامه می‌دهند. capture=true چون رویدادِ scroll حباب نمی‌کند. */
-  let scrolling = false, scrollT = 0;
-  const onScroll = () => {
-    scrolling = true;
-    clearTimeout(scrollT);
-    scrollT = setTimeout(() => { scrolling = false; }, 150);
-  };
-  window.addEventListener('scroll', onScroll, { passive: true, capture: true, signal: ac.signal });
-  container.addEventListener('wheel', onScroll, { passive: true, signal: ac.signal });
-  container.addEventListener('touchmove', onScroll, { passive: true, signal: ac.signal });
-
   function frame(ts){
     raf = requestAnimationFrame(frame);
     const dt = last ? Math.min(.05, (ts - last) / 1000) : 0;
     last = ts;
-    if(scrolling) return;
     spin(dt);
-    drawWave();
-    drawBus();
-    drawPw();
+    if(seen(cv)) drawWave();
+    if(seen(cvBus)) drawBus();
+    if(seen(cvPw)) drawPw();
   }
 
   reset();
   if(alreadyDone) say('2', 'success', '✅ قبلاً این مأموریت را کامل کرده‌ای. اگر دوست داری دوباره با منوها و اسلایدرها بازی کن.');
   raf = requestAnimationFrame(frame);
-  return { stop(){ ac.abort(); cancelAnimationFrame(raf); clearTimeout(scrollT); closePop(); } };
+  return { stop(){ ac.abort(); cancelAnimationFrame(raf); io && io.disconnect(); ro && ro.disconnect(); closePop(); } };
 }

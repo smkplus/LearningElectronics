@@ -909,7 +909,7 @@ body.sim-fullscreen-lock #knightSection{ z-index:1200 !important; }
 .ct-stage-t{ font-weight:800; font-size:15px; color:var(--gold); margin-top:8px; padding-top:12px; border-top:1px solid var(--panel-border); }
 .ct-explain{ background:#141924; border-inline-start:3px solid var(--trace-bright); border-radius:8px; padding:10px 12px; font-size:13px; line-height:2; color:#d8d2c0; }
 .ct-explain b{ color:var(--gold); }
-.ct-sc{ background:#141924; border:1px solid var(--panel-border); border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:8px; }
+.ct-sc{ background:#141924; border:1px solid var(--panel-border); border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:8px; contain:layout paint style; }
 .ct-sc-h{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
 .ct-sc-h b{ font-size:13.5px; color:var(--gold); cursor:pointer; }
 .ct-ctl{ display:flex; align-items:center; gap:6px; font-size:12px; color:#cfc8b6; }
