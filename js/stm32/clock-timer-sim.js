@@ -25,6 +25,9 @@ const CT_TALK = {
   tmul:  'ضریبِ تایمر یک چرخ‌دنده‌ی ضرب‌کننده است. اگر تقسیم‌کننده‌ی APB برابر ۱ نباشد، کلاکِ تایمر ×۲ می‌شود (۳۶ × ۲ = ۷۲)؛ با ÷۱ هیچ ضربی نیست (×۱).',
   t1:    'این کلاکِ تایمرهای APB1 (TIM2/3/4) است و جوابِ این مسیر. با ÷۲ دوباره ×۲ می‌شود و ۷۲ می‌گیرد.',
   t2:    'TIM1 روی APB2 است. با ÷۱ هم‌اندازه است و ۷۲ می‌چرخد؛ با ÷۲ هم دوباره ×۲ می‌شود و ۷۲. برای PWMِ موتور کلاکش ۷۲ مگاهرتز است.',
+  warn_pll: '❗ این را روی ×۹ بگذار تا SYSCLK بشود ۷۲ مگاهرتز (۸ × ۹)؛ کریستالِ ۸ مگاهرتزی برای یک ARM کُند است و PLL آن را تند می‌کند.',
+  warn_a1:  '❗ این را روی ÷۲ بگذار، چون باسِ APB1 بیش از ۳۶ مگاهرتز تحمل ندارد. تایمرهای این باس هم با قانونِ ×۲ دوباره ۷۲ می‌گیرند.',
+  warn_a2:  '❗ این را روی ÷۱ بگذار، چون APB2 تا ۷۲ مگاهرتز تحمل دارد و تایمرِ TIM1 باید با ۷۲ کار کند.',
   psc:   'Prescaler یک چرخ‌دنده‌ی تقسیم‌کننده است: کلاکِ تایمر را بر (PSC+۱) تقسیم می‌کند تا عقربه‌ی شمارنده آهسته‌تر بشمرد. در CubeMX عدد PSC = ۸ یعنی تقسیم بر ۹؛ همیشه یکی بیشتر.',
   busq:  'خط‌چینِ خاکستری موجِ ایده‌آلِ کلاکِ باسِ APB1 است و خطِ رنگی آن چیزی که سیمِ واقعیِ داخلِ چیپ می‌سازد: سیم مثل یک خازنِ کوچک است و هر نیم‌دوره باید پر یا خالی شود. اگر کلاک آن‌قدر تند باشد که فرصتِ پر شدن نباشد، موج به خطِ HIGH (۷۵٪) نمی‌رسد و گیرنده بیت را اشتباه می‌خواند. (مدلِ ساده‌شده برای فهمیدنِ ماجرا)',
   uart:  'UART2 روی APB1 است و برای فرستادنِ متن (مثلاً به کامپیوتر) به کار می‌رود. با کلاکِ بیش از حد، بیت‌ها خراب می‌شوند و به‌جای متنِ درست، علامت‌های بی‌معنی می‌رسد.',
@@ -143,6 +146,13 @@ function ctFlow(svg, trunk, branches = [], wide = false){
     const o = gearOf(it.T).ro * .72;
     out += `<g data-edit="${it.edit}" text-anchor="middle" transform="translate(${f1(cx + o)} ${f1(cy - o)})" style="cursor:pointer"><title>تغییرِ ضریب</title>`
       + `<circle r="9" fill="#d4af37" stroke="#14161c" stroke-width="1.5"/><path d="M-3.8 4.2L-3.2 1.2L2.6 -4.6L4.6 -2.6L-1.2 3.2Z" fill="#14161c"/></g>`;
+  });
+  nodes.forEach(({ it, cx, cy }) => {
+    if(!it.warn) return;
+    const o = gearOf(it.T).ro * .72;
+    out += `<g data-talk="${it.warn}" text-anchor="middle" transform="translate(${f1(cx - o)} ${f1(cy - o)})" style="cursor:pointer"><title>نیاز به تنظیم: بزن تا بگویم چطور</title>`
+      + `<circle r="9" fill="#ff6b6b" stroke="#14161c" stroke-width="1.5"><animate attributeName="r" values="9;11;9" dur="1.2s" repeatCount="indefinite"/></circle>`
+      + `<text y="4.2" font-size="12" font-weight="800" style="fill:#fff">!</text></g>`;
   });
   svg.setAttribute('viewBox', `0 0 ${VW} ${H}`);
   if(wide) Object.assign(svg.style, { width: VW + 'px', height: H + 'px', minWidth: VW + 'px', maxWidth: 'none' });
@@ -317,10 +327,10 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     const t1 = ctNode('t1', 'TIM2/3/4', c.t1, 'tim', { bad: c.t1 > 72, uses: ['PWM و زمان‌سنجی'] });
     const t2 = ctNode('t2', 'TIM1', c.t2, 'tim', { bad: c.t2 > 72, uses: ['PWM موتور'] });
     const cnt = ctNode('tick', 'شمارنده', tick, 'psc');
-    const pll = ctOp('pll', 'PLL', '×', st.pll, CT_HSE, c.sys, 'sys', { edit: 'pll' });
+    const pll = ctOp('pll', 'PLL', '×', st.pll, CT_HSE, c.sys, 'sys', { edit: 'pll', warn: st.pll !== 9 && 'warn_pll' });
     const ahb = ctOp('ahb', 'AHB', '÷', 1, c.sys, c.sys, 'sys');
-    const apb1 = ctOp('apb1', 'APB1', '÷', st.a1, c.sys, c.p1, 'pclk', { bad: b1, edit: 'a1' });
-    const apb2 = ctOp('apb2', 'APB2', '÷', st.a2, c.sys, c.p2, 'pclk', { bad: b2, edit: 'a2' });
+    const apb1 = ctOp('apb1', 'APB1', '÷', st.a1, c.sys, c.p1, 'pclk', { bad: b1, edit: 'a1', warn: st.a1 !== 2 && 'warn_a1' });
+    const apb2 = ctOp('apb2', 'APB2', '÷', st.a2, c.sys, c.p2, 'pclk', { bad: b2, edit: 'a2', warn: st.a2 !== 1 && 'warn_a2' });
     const mul1 = ctOp('tmul', 'ضریبِ تایمر', '×', st.a1 === 1 ? 1 : 2, c.p1, c.t1, 'tim');
     const mul2 = ctOp('tmul', 'ضریبِ تایمر', '×', st.a2 === 1 ? 1 : 2, c.p2, c.t2, 'tim');
     const psc = ctOp('psc', 'PSC', '÷', st.psc + 1, c.t2, tick, 'psc', { edit: 'psc' });
