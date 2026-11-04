@@ -126,7 +126,7 @@ function ctFlow(svg, trunk, branches = [], wide = false){
         + `<text y="-10" font-size="8.5" font-weight="700" style="fill:#e8e2d0">${it.name}</text>`
         + `<text y="5" font-size="${num.length > 5 ? 13 : 15}" font-weight="700" style="fill:${col}">${num}</text>`
         + `<text y="16" font-size="8.5" style="fill:#8b93a3">${unit}</text></g>`
-        + (it.final ? tx(cx, cy + g.ro + 11, '✔ جواب', 9.5, col, 'font-weight="700"') : '')
+        + (it.final ? tx(cx, cy + g.ro + 11, '✔ فرکانس نهایی', 9.5, col, 'font-weight="700"') : '')
         + usesSvg(it, cx, cy, g.ro, lane < 0) + '</g>';
     } else {
       const eq = `${ctNum(it.inM)} ${it.sym} ${ctFa(it.n)} = ${ctNum(it.outM)}`;
@@ -215,20 +215,13 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
           <tr><td>Pulse (CCR)</td><td>اندازه‌ی کمانِ سبز</td><td>سرعتِ موتور (دیوتی)</td></tr>
         </table>
       </details>
-      <div class="st-steps" id="ctSteps">
-        <span class="st-chip" data-s="pll">۱ PLL ×۹</span>
-        <span class="st-chip" data-s="apb">۲ APB1 ÷۲</span>
-        <span class="st-chip" data-s="quiz">۳ سؤالِ تایمر</span>
-        <span class="st-chip" data-s="pwm">۴ PWM ۵۰٪</span>
-        <button type="button" class="sim-btn sim-btn-ghost st-reset" id="ctReset">↺ از اول</button>
-      </div>
-
       <div class="ct-stage-t">⚙️ بخش ۱ — کلاکِ چیپ با چرخ‌دنده</div>
+      <div class="hs-p">⚙️ این چرخ‌دنده‌ها مفهوم فنی «درخت کلاک (Clock Tree)» را به زبان مکانیک نشان می‌دهند: در میکروکنترلر سرعت همه‌چیز یکسان نیست؛ بلکه فرکانس اصلی با کمک ضریب‌ها (ضرب و تقسیم)، به هر بخش با سرعت متناسب خودش می‌رسد.</div>
       <div class="hs-p">هر چرخ‌دنده‌ی بزرگ یک کلاک را با مقدارش نشان می‌دهد و چرخ‌دنده‌ی کوچکِ بینِ دو کلاک عملِ ضرب (×) یا تقسیم (÷) را انجام می‌دهد؛ عددِ داخلِ چرخ‌دنده‌ی کوچک ضریب است و زیرش خودِ حساب نوشته شده. چرخ‌دنده‌ها به هم درگیرند و با هم می‌چرخند. منوها را عوض کن و ببین عددها چه می‌شوند.</div>
       <div class="ct-sc">
         <div class="ct-sc-h"><b>🧩 مسیرِ کاملِ کلاک: از کریستال تا تایمر</b></div>
-        <div class="ct-sc-h"><label class="ct-ctl">PSC ${sel('psc', Array.from({ length: 12 }, (_, i) => i), '=')}</label><label class="ct-ctl">APB2 ${sel('a2', CT_DIV_OPTS, '÷')}</label><label class="ct-ctl">APB1 ${sel('a1', CT_DIV_OPTS, '÷')}</label><label class="ct-ctl">PLL ${sel('pll', CT_PLL_OPTS, '×')}</label></div>
-        <div class="hs-p ct-cap">از چپ به راست بخوان: هر چرخ‌دنده‌ی بزرگ یک کلاک و مقدارش است و چرخ‌دنده‌ی کوچکِ بینِ دو کلاک ضرب یا تقسیمش را انجام می‌دهد؛ عددِ داخلِ چرخ‌دنده‌ی کوچک همان ضریب است. بعد از HCLK مسیر دو شاخه می‌شود: APB1 (بالا) و APB2 (پایین). چرخ‌دنده‌های «✔ جواب» نتیجه‌اند. روی علامتِ ✎ کنارِ چرخ‌دنده‌های PLL، APB و PSC بزن تا ضریبشان را عوض کنی. چرخ‌دنده‌ی ضریب هرچه کوچک‌تر باشد (×) تندتر می‌چرخد و هرچه بزرگ‌تر باشد (÷) سخت‌تر و کُندتر؛ با تغییرِ ضریب‌ها سرعتِ کلِ چرخ‌دنده‌ها هم عوض می‌شود. برای دیدنِ همه‌ی مسیر صفحه را به چپ و راست بکش.</div>
+        <div class="ct-sc-h" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px"><button type="button" class="sim-btn sim-btn-ghost st-reset" id="ctReset" style="margin:0;flex:0 0 auto">↺ از اول</button><label class="ct-ctl">PSC ${sel('psc', Array.from({ length: 12 }, (_, i) => i), '=')}</label><label class="ct-ctl">APB2 ${sel('a2', CT_DIV_OPTS, '÷')}</label><label class="ct-ctl">APB1 ${sel('a1', CT_DIV_OPTS, '÷')}</label><label class="ct-ctl">PLL ${sel('pll', CT_PLL_OPTS, '×')}</label></div>
+        <div class="hs-p ct-cap">این صفحه یک شبیه‌ساز مکانیکی از سیستم تقسیم و ضرب کلاک میکروکنترلر است. کلاک از چپ وارد می‌شود، از مسیرهای مختلف عبور می‌کند و شما با دستکاری چرخ‌دنده‌های ضریب (✎)، سرعت چرخش و فرکانس نهایی هر بخش را به شکل زنده و حرکتی تنظیم و مشاهده می‌کنید</div>
         <div class="ct-scroll" dir="ltr"><svg class="ct-svg ct-wide" id="ctGA" viewBox="0 0 720 300"></svg></div>
         <div class="ct-rel" id="ctGAR"></div>
       </div>
@@ -245,13 +238,13 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
         </div>
       </div>
 
-      <div class="ct-stage-t">🔬 بخش ۱ب — چرا کلاکِ باس را نصف کردند؟ (دلیلِ طراحی)</div>
+      <div class="ct-stage-t">چرا کلاکِ باس را نصف کردند؟ (دلیلِ طراحی)</div>
       <div class="ct-explain"><b>طراحانِ STM32 با یک تضاد روبه‌رو بودند:</b><br>
         ۱) <b>باسِ APB1 تحملِ سرعتِ زیاد را ندارد.</b> قطعاتی مثل I2C و UART و CAN بیش از ۳۶ مگاهرتز نمی‌توانند کار کنند؛ مصرفِ انرژی بالا می‌رود و سیگنالِ دیجیتال خطا پیدا می‌کند.<br>
         ۲) <b>تایمر به سرعتِ بالا نیاز دارد.</b> تایمرها قلبِ ساختنِ PWM و اندازه‌گیریِ زمان‌اند؛ اگر کلاکشان نصف شود، دقتشان (Resolution) هم نصف می‌شود.<br>
         <b>راه‌حل:</b> یک سوئیچِ خودکار در سخت‌افزار گذاشتند: «اگر تقسیم‌کننده‌ی APB برابر ۱ بود، کلاکِ تایمر همان کلاکِ باس است؛ اگر بزرگ‌تر از ۱ بود (مثلاً ۲)، کلاکِ تایمر را دو برابر کن.»</div>
       <div class="ct-sc">
-        <div class="ct-sc-h"><b data-talk="busq">🧪 آزمایش ۱: اگر باسِ APB1 را تندتر از ۳۶ بچرخانیم</b></div>
+        <div class="ct-sc-h"><b data-talk="busq">🧪 آزمایش : اگر باسِ APB1 را تندتر از ۳۶ بچرخانیم</b></div>
         <div class="ct-sc-h"><label class="ct-ctl">APB1 ${sel('a1', CT_DIV_OPTS, '÷')}</label><label class="ct-ctl">PLL ${sel('pll', CT_PLL_OPTS, '×')}</label></div>
         <canvas class="ct-cv" id="ctBus"></canvas>
         <div class="ct-rel" id="ctBusR"></div>
