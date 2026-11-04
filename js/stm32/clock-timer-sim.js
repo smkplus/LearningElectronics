@@ -192,6 +192,64 @@ function ctDial(svg, { steps, pulse, pwm }){
   return { svg, ptr: svg.querySelector('[data-ptr]'), cnt: svg.querySelector('[data-cnt]'), lamp: pwm ? svg.querySelector('.ct-lamp') : null };
 }
 
+/* انیمیشن‌های کوتاهِ بخش‌های توضیحی (کلاک / تایمر / PWM): SVG با SMIL، بدون نیاز به جاوااسکریپت یا CSS بیرونی */
+const ctAnimSvg = (h, body) => `<svg class="ct-anim" viewBox="0 0 320 ${h}" style="display:block;width:100%;max-width:380px;margin:10px auto;background:#10151f;border:1px solid #2a3040;border-radius:12px" aria-hidden="true">${body}</svg>`;
+const ctAnimTx = (x, y, s, fill = '#e8e2d0', fs = 10.5, anchor = 'middle') => `<text x="${x}" y="${y}" text-anchor="${anchor}" font-size="${fs}" font-weight="700" style="fill:${fill};direction:rtl;unicode-bidi:embed">${s}</text>`;
+const ctAnimLat = (x, y, s, anchor = 'start') => `<text x="${x}" y="${y}" text-anchor="${anchor}" font-size="10" style="fill:#8b93a3;font-family:JetBrains Mono,monospace;direction:ltr;unicode-bidi:bidi-override">${s}</text>`;
+const ctSeq = (n, f) => Array.from({ length: n }, (_, i) => f(i)).join(';');
+const ctSquare = (x0, pw, n, yH, yL) => {
+  let d = `M${x0} ${yL}`;
+  for(let i = 0; i < n; i++){ const x = x0 + i * pw; d += `L${x} ${yH}L${x + pw / 2} ${yH}L${x + pw / 2} ${yL}L${x + pw} ${yL}`; }
+  return d;
+};
+const ctSweep = (x0, y1, y2, dist, dur) => `<g><line x1="${x0}" y1="${y1}" x2="${x0}" y2="${y2}" stroke="#e8e2d0" stroke-opacity=".55"/><animateTransform attributeName="transform" type="translate" values="0 0;${dist} 0" dur="${dur}s" repeatCount="indefinite"/></g>`;
+
+/* کلاک: هر لبه‌ی بالارونده‌ی موج = یک ضربه = چرخ‌دنده یک دندانه جلو می‌رود */
+function ctAnimClock(){
+  const g = ctTeeth(8, 20), x0 = 116, pw = 24, n = 8, yH = 28, yL = 60;
+  return ctAnimSvg(118,
+    `<g transform="translate(54 44)"><g><path d="${g.d}" fill="#2a2f3b" stroke="${CT_COL.hse}" stroke-width="2" stroke-linejoin="round"/><circle r="6" fill="#10151f" stroke="${CT_COL.hse}" stroke-width="1.5"/><circle cy="-12" r="2.6" fill="${CT_COL.hse}"/>`
+    + `<animateTransform attributeName="transform" type="rotate" values="${ctSeq(n, i => i * 45)}" dur="2s" calcMode="discrete" repeatCount="indefinite"/></g></g>`
+    + ctAnimLat(x0 - 8, yH + 4, 'CLK', 'end')
+    + `<path d="${ctSquare(x0, pw, n, yH, yL)}" fill="none" stroke="${CT_COL.sys}" stroke-width="2.4" stroke-linejoin="round"/>`
+    + ctSweep(x0, yH - 10, yL + 10, n * pw, 2)
+    + ctAnimTx(160, 96, 'هر ضربه = یک قدمِ کوچکِ چیپ، مثل یک دندانه‌ی چرخ‌دنده')
+    + ctAnimTx(160, 111, '۷۲ مگاهرتز یعنی ۷۲ میلیون ضربه در هر ثانیه', '#8b93a3', 10));
+}
+
+/* تایمر: عقربه با هر ضربه یک خانه جلو می‌رود و بعد از آخرین خانه به ۰ برمی‌گردد */
+function ctAnimTimer(){
+  const n = 8, R = 34, cx = 70, cy = 56, dur = n * .5;
+  let tk = '';
+  for(let i = 0; i < n; i++){
+    const a = i / n * 6.2832, s = Math.sin(a), c = Math.cos(a);
+    tk += `<line x1="${(cx + (R + 3) * s).toFixed(1)}" y1="${(cy - (R + 3) * c).toFixed(1)}" x2="${(cx + (R + 9) * s).toFixed(1)}" y2="${(cy - (R + 9) * c).toFixed(1)}" stroke="${i ? '#6b7280' : CT_COL.tim}" stroke-width="${i ? 2 : 3}" stroke-linecap="round"/>`;
+  }
+  const nums = Array.from({ length: n }, (_, i) => `<text x="${cx}" y="${cy + 7}" text-anchor="middle" font-size="20" font-weight="700" visibility="hidden" style="fill:#e8e2d0">${ctFa(i)}<animate attributeName="visibility" values="${ctSeq(n, j => j === i ? 'visible' : 'hidden')}" dur="${dur}s" calcMode="discrete" repeatCount="indefinite"/></text>`).join('');
+  return ctAnimSvg(112,
+    `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#2a3040" stroke-width="2"/>${tk}`
+    + `<g transform="translate(${cx} ${cy})"><g><line y1="-17" y2="${-(R - 4)}" stroke="${CT_COL.tim}" stroke-width="3" stroke-linecap="round"/><circle cy="${-(R - 4)}" r="4.5" fill="${CT_COL.tim}"/>`
+    + `<animateTransform attributeName="transform" type="rotate" values="${ctSeq(n, i => i * 45)}" dur="${dur}s" calcMode="discrete" repeatCount="indefinite"/></g></g>`
+    + `<circle cx="${cx}" cy="${cy}" r="16" fill="#10151f" stroke="#2a3040" stroke-width="1.5"/>${nums}`
+    + ctAnimTx(224, 40, 'هر ضربه ⇒ عقربه یک خانه جلو')
+    + ctAnimTx(224, 62, 'به آخرین خانه رسید ⇒ برمی‌گردد به ۰')
+    + ctAnimTx(224, 84, 'سخت‌افزار می‌شمارد و CPU آزاد است', '#8b93a3', 10));
+}
+
+/* PWM: پین بالا/پایین می‌شود، چراغ هم‌زمان روشن/خاموش، و میانگین = نصف */
+function ctAnimPwm(){
+  const x0 = 100, pw = 68, n = 3, yH = 26, yL = 62, dur = 6;
+  return ctAnimSvg(128,
+    `<circle cx="44" cy="44" r="16" fill="#1d2330" stroke="#3a4050" stroke-width="2"/>`
+    + `<circle cx="44" cy="44" r="16" fill="${CT_COL.sys}" opacity="1"><animate attributeName="opacity" values="${ctSeq(6, i => i % 2 ? .12 : 1)}" dur="${dur}s" calcMode="discrete" repeatCount="indefinite"/></circle>`
+    + ctAnimLat(44, 76, 'PA8', 'middle')
+    + ctAnimLat(x0 - 8, yH + 4, 'HIGH', 'end') + ctAnimLat(x0 - 8, yL + 4, 'LOW', 'end')
+    + `<path d="${ctSquare(x0, pw, n, yH, yL)}" fill="none" stroke="${CT_COL.sys}" stroke-width="2.4" stroke-linejoin="round"/>`
+    + ctSweep(x0, yH - 10, yL + 10, n * pw, dur)
+    + ctAnimTx(160, 100, 'میانگین ۵۰٪', '#e8e2d0', 11)
+    + ctAnimTx(160, 120, 'روشن و خاموشِ خیلی سریع ⇒ موتور فقط «میانگین» را حس می‌کند', '#8b93a3', 10));
+}
+
 function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   const sel = (k, opts, sign) => `<select class="ct-sel" data-k="${k}">${opts.map(o => `<option value="${o}">${sign}${ctFa(o)}</option>`).join('')}</select>`;
   const row = (k, title, min, max) => `<div class="ct-row"><div class="ct-rn" data-talk="${k}"><b>${title}</b><span data-h="${k}"></span></div><input type="range" data-k="${k}" min="${min}" max="${max}"><input type="number" class="ct-num" data-k="${k}" min="${min}" max="${max}" inputmode="numeric"></div>`;
@@ -207,6 +265,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
         <summary>⏱️ کلاک یعنی چی؟</summary>
         <div class="hs-p">کلاک یک ضربانِ ثابت است، مثل چرخیدنِ یک چرخ‌دنده. چیپ با هر ضربه فقط یک قدمِ خیلی کوچک برمی‌دارد. «۷۲ مگاهرتز» یعنی ۷۲ میلیون ضربه در هر ثانیه؛ هرچه چرخ‌دنده تندتر بچرخد، چیپ سریع‌تر است.</div>
         <div class="hs-p">Blue Pill از یک کریستالِ ۸ مگاهرتزی شروع می‌کند. این برای یک ARM کُند است، پس PLL آن را ×۹ می‌کند و می‌شود ۷۲ مگاهرتز. این «کلاکِ خودِ چیپ» (SYSCLK) است و CPU با همین کار می‌کند.</div>
+        ${ctAnimClock()}
       </details>
       <details class="hs-det">
         <summary>🔧 قانونِ چرخ‌دنده (همه‌ی ضریب‌ها همین است)</summary>
@@ -263,12 +322,14 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
 
       <div class="ct-stage-t">⏲️ بخش ۲ — تایمر یعنی چی؟</div>
       <div class="ct-explain"><b>تایمر یک عقربه روی یک صفحه‌ی گرد است.</b> هر ضربه‌ی کلاک، عقربه یک خانه جلو می‌رود؛ به آخرین خانه که رسید دوباره به ۰ برمی‌گردد. همین! خودِ سخت‌افزار می‌شمارد و CPU آزاد می‌ماند. دو تنظیم دارد: <b>Prescaler</b> (ضربه‌ها چقدر کُند شوند) و <b>Period</b> (صفحه چند خانه دارد).</div>
+      ${ctAnimTimer()}
       <div class="hs-p" data-v="src"></div>
       ${block('ctG4', head('psc', '④ Prescaler: گیربکسِ ضربه‌ها'), row('psc', 'Prescaler (PSC)', 0, 11) + '<div class="ct-rel">❓ چرا PSC می‌تواند ۰ باشد؟ چون سخت‌افزار بر (PSC+۱) تقسیم می‌کند، پس هیچ‌وقت تقسیم بر صفر نمی‌شود: PSC=۰ یعنی ÷۱.</div>')}
       ${block('ctD1', head('arr', '⑤ شمارنده: صفحه‌ی گرد'), row('arr', 'Period (ARR)', 1, 1023) + '<div class="ct-rel">❓ چرا از ۱ شروع می‌شود؟ ARR=۰ یعنی فقط ۱ خانه؛ عقربه جایی برای حرکت ندارد و PWM فقط می‌تواند ۰٪ یا ۱۰۰٪ باشد.</div>' + pre([['۷', 'arr:7'], ['۱۵', 'arr:15'], ['۲۵۵', 'arr:255'], ['۱۰۲۳', 'arr:1023']]))}
 
       <div class="ct-stage-t">💡 بخش ۳ — PWM یعنی چی؟</div>
       <div class="ct-explain"><b>PWM یعنی یک پین را خیلی سریع روشن و خاموش کنیم.</b> موتور آن‌قدر کُند است که تک‌تک چشمک‌ها را حس نمی‌کند و فقط «میانگین» را می‌بیند. مثلاً نیمی از دور روشن = نصفِ ولتاژ = نصفِ سرعت. روشن‌ماندن را همان عقربه تعیین می‌کند: <b>روی کمانِ سبز (Pulse) پین روشن است و روی بقیه خاموش.</b></div>
+      ${ctAnimPwm()}
       ${block('ctD2', head('pulse', '⑥ کمانِ سبز = بالا بودنِ موجِ PWM'), row('pulse', 'Pulse (CCR)', 0, 16) + pre([['۲۵٪', 'duty:25'], ['۵۰٪', 'duty:50'], ['۷۵٪', 'duty:75'], ['۱۰۰٪', 'duty:100']]), '<canvas class="ct-cv ct-pw" id="ctPw" data-talk="wave"></canvas>')}
       <div class="ct-sc">
         <div class="ct-sc-h"><b>موجِ خروجی (سه دور پشت‌سرهم)</b></div>
