@@ -155,7 +155,7 @@ function ctFlow(svg, trunk, branches = [], wide = false){
       + `<text y="4.2" font-size="12" font-weight="800" style="fill:#fff">!</text></g>`;
   });
   svg.setAttribute('viewBox', `0 0 ${VW} ${H}`);
-  if(wide) Object.assign(svg.style, { width: VW + 'px', height: H + 'px', minWidth: VW + 'px', maxWidth: 'none' });
+  if(wide) Object.assign(svg.style, { width: '100%', height: 'auto', minWidth: Math.round(VW * .72) + 'px', maxWidth: Math.round(VW * 1.3) + 'px', display: 'block', margin: '0 auto' });
   else Object.assign(svg.style, { maxWidth: Math.round(VW * 1.3) + 'px', display: 'block', margin: '0 auto' });
   svg.innerHTML = out;
   const els = svg.querySelectorAll('.ct-g');
