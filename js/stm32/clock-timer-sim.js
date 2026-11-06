@@ -9,11 +9,15 @@ const CT_W = .6;
 const CT_BATT = 3.7;
 const CT_PLL_OPTS = [2, 3, 4, 5, 6, 7, 8, 9];
 const CT_DIV_OPTS = [1, 2, 4];
-const CT_INIT = { pll: 2, a1: 1, a2: 1, psc: 0, arr: 15, pulse: 8, dlD: 500 };
+const CT_INIT = { src: 0, pll: 2, a1: 1, a2: 1, psc: 0, arr: 15, pulse: 8, dlD: 500 };
+const ctPllIn = s => s.src ? CT_HSE / 2 : CT_HSE;
 const CT_FINISH = '🏆 تمام شد! کلاکِ چیپ ۷۲ مگاهرتز است، کلاکِ تایمر هم با قانونِ ×۲ دوباره ۷۲ می‌شود، و تایمر با Prescaler و Period و Pulse یک PWM ساخت که سرعتِ موتور را تنظیم می‌کند.';
 
 const CT_TALK = {
-  hse:   'چرخ‌دنده‌ی کریستال: آرام و ثابت با ۸ مگاهرتز می‌چرخد. همه‌ی ضربان‌های چیپ از همین‌جا شروع می‌شوند.',
+  hsi:   'HSI اسیلاتورِ RC داخلیِ خودِ چیپ است (۸ مگاهرتز): کریستالِ بیرونی نمی‌خواهد ولی کم‌دقت‌تر است، و چیپ بعد از ریست با همین بالا می‌آید. وقتی HSI وارد PLL می‌شود اول ÷۲ می‌شود (۴ مگاهرتز)؛ برای همین با HSI به ۷۲ مگاهرتز نمی‌رسی (سقفِ واقعی ۴ × ۱۶ = ۶۴). با ✎ می‌توانی دوباره HSE را انتخاب کنی.',
+  hdiv:  'این چرخ‌دنده‌ی ÷۲ فقط برای HSI لازم است: در مسیرِ PLL، کلاکِ HSI همیشه نصف می‌شود (۸ ÷ ۲ = ۴ مگاهرتز) و بعد وارد PLL می‌شود. کریستالِ HSE این چرخ‌دنده را ندارد و مستقیم وارد PLL می‌شود؛ برای همین با HSE می‌شود به ۷۲ رسید.',
+  warn_hsi: '❗ با HSI فقط ۴ مگاهرتز (۸ ÷ ۲) وارد PLL می‌شود و حتی با ×۹ فقط ۳۶ مگاهرتز می‌گیری. برای ۷۲ مگاهرتز با ✎ منبع را روی HSE بگذار.',
+  hse:   'با ✎ می‌توانی منبعِ کلاک را بینِ HSE و HSI عوض کنی. چرخ‌دنده‌ی کریستال: آرام و ثابت با ۸ مگاهرتز می‌چرخد. همه‌ی ضربان‌های چیپ از همین‌جا شروع می‌شوند.',
   pll:   'PLL یک چرخ‌دنده‌ی ضرب‌کننده است: عددِ داخلش را در ورودی ضرب می‌کند. ۸ × ۹ = ۷۲ مگاهرتز. مثل یک چرخ‌دنده‌ی ۷۲ دنده‌ای که یک چرخ‌دنده‌ی ۸ دنده‌ای را می‌چرخاند.',
   sys:   'SYSCLK کلاکِ خودِ چیپ است و خروجیِ PLL. هسته‌ی CPU با همین می‌چرخد. با PLL ×۹ می‌شود ۷۲ مگاهرتز.',
   ahb:   'AHB یک چرخ‌دنده‌ی تقسیم‌کننده است که معمولاً ÷۱ می‌ماند، پس HCLK هم ۷۲ مگاهرتز است. از اینجا مسیر دو شاخه می‌شود: APB1 و APB2.',
@@ -136,7 +140,7 @@ function ctFlow(svg, trunk, branches = [], wide = false){
   const usesSvg = (it, cx, cy, ro, up) => {
     const L = useOf(it), n = L.length, col = it.bad ? '#ff8a80' : '#c9d0de';
     return L.map((u, j) => tx(cx, up ? cy - ro - 10 - (n - 1 - j) * UL : cy + ro + (it.final ? 23 : 18) + j * UL, u, 10, '',
-      `style="fill:${col};font-size:10px;font-weight:600;${HALO};${/^[\x00-\x7F·✖ ]+$/.test(u) ? 'direction:ltr;unicode-bidi:bidi-override' : 'direction:rtl;unicode-bidi:embed'}"`)).join('');
+      `style="fill:${col};font-size:10px;font-weight:600;${HALO};${it.usesLtr || /^[\x00-\x7F·✖ ]+$/.test(u) ? 'direction:ltr;unicode-bidi:bidi-override' : 'direction:rtl;unicode-bidi:embed'}"`)).join('');
   };
   nodes.forEach(({ it, cx, cy, side, lane }) => {
     const g = gearOf(it.T), HO = Math.min(15, g.ri * .72);
@@ -152,23 +156,25 @@ function ctFlow(svg, trunk, branches = [], wide = false){
         + (it.final ? tx(cx, cy + g.ro + 11, '✔ فرکانس نهایی', 9.5, col, 'font-weight="700"') : '')
         + usesSvg(it, cx, cy, g.ro, lane < 0) + '</g>';
     } else {
-      const eq = `${ctNum(it.inM)} ${it.sym} ${ctFa(it.n)} = ${ctNum(it.outM)}`;
+      const eq = `${ctNum(it.inM)} ${it.sym} ${ctFa(it.n)} = ${ctNum(it.outM)}`, sd = side || (g.ro > 44 && lane ? (lane < 0 ? 'up' : 'down') : '');
       out += `<g data-talk="${it.key}" text-anchor="middle">` + at
         + `<g class="ct-g ${it.cls}${it.bad ? ' bad' : ''}"><path d="${g.d}"/>${holes(5, (HO + g.ri) / 2, 1.6)}</g>`
         + `<circle class="ct-gh" r="${HO}"/><text class="ct-gtx" y="${f1(HO * .3)}" font-size="${Math.round(Math.min(13, HO * 1.05))}" ${LTR}>${it.sym}${ctFa(it.n)}</text></g>`
-        + tx(cx, side === 'up' ? cy - g.ro - 17 : side === 'down' ? cy + g.ro + 24 : cy - g.ro - 9, it.name, 10, '#e8e2d0', `font-weight="700" style="${HALO}"`)
-        + tx(cx, side === 'up' ? cy - g.ro - 5 : cy + g.ro + 12, eq, 9.5, it.bad ? '#ff6b6b' : '#e8e2d0', `style="direction:ltr;unicode-bidi:bidi-override;${HALO}"`) + '</g>';
+        + tx(cx, sd === 'up' ? cy - g.ro - 17 : sd === 'down' ? cy + g.ro + 24 : cy - g.ro - 9, it.name, 10, '#e8e2d0', `font-weight="700" style="${HALO}"`)
+        + tx(cx, sd === 'up' ? cy - g.ro - 5 : cy + g.ro + 12, eq, 9.5, it.bad ? '#ff6b6b' : '#e8e2d0', `style="direction:ltr;unicode-bidi:bidi-override;${HALO}"`) + '</g>';
     }
   });
 
   nodes.forEach(({ it, cx, cy }) => {
     if(!it.edit) return;
     const o = gearOf(it.T).ro * .72;
-    out += `<g data-edit="${it.edit}" text-anchor="middle" transform="translate(${f1(cx + o)} ${f1(cy - o)})" style="cursor:pointer"><title>تغییرِ ضریب</title>`
-      + `<circle r="9" fill="#d4af37" stroke="#14161c" stroke-width="1.5"/><path d="M-3.8 4.2L-3.2 1.2L2.6 -4.6L4.6 -2.6L-1.2 3.2Z" fill="#14161c"/></g>`;
+    out += `<g data-edit="${it.edit}"${it.warn ? ` data-warn="${it.warn}"` : ''} text-anchor="middle" transform="translate(${f1(cx + o)} ${f1(cy - o)})" style="cursor:pointer"><title>تغییرِ ضریب</title>`
+      + `${it.warn
+        ? `<circle r="9" fill="#ff6b6b" stroke="#14161c" stroke-width="1.5"><animate attributeName="r" values="9;11;9" dur="1.2s" repeatCount="indefinite"/></circle><path d="M-3.8 4.2L-3.2 1.2L2.6 -4.6L4.6 -2.6L-1.2 3.2Z" fill="#fff"/>`
+        : `<circle r="9" fill="#d4af37" stroke="#14161c" stroke-width="1.5"/><path d="M-3.8 4.2L-3.2 1.2L2.6 -4.6L4.6 -2.6L-1.2 3.2Z" fill="#14161c"/>`}</g>`;
   });
   nodes.forEach(({ it, cx, cy }) => {
-    if(!it.warn) return;
+    if(!it.warn || it.edit) return;
     const o = gearOf(it.T).ro * .72;
     out += `<g data-talk="${it.warn}" text-anchor="middle" transform="translate(${f1(cx - o)} ${f1(cy - o)})" style="cursor:pointer"><title>نیاز به تنظیم: بزن تا بگویم چطور</title>`
       + `<circle r="9" fill="#ff6b6b" stroke="#14161c" stroke-width="1.5"><animate attributeName="r" values="9;11;9" dur="1.2s" repeatCount="indefinite"/></circle>`
@@ -579,7 +585,7 @@ function ctFullTree(){
 
 function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   const sel = (k, opts, sign) => `<select class="ct-sel" data-k="${k}">${opts.map(o => `<option value="${o}">${sign}${ctFa(o)}</option>`).join('')}</select>`;
-  const row = (k, title, min, max) => `<div class="ct-row"><div class="ct-rn" data-talk="${k}"><b>${title}</b><span data-h="${k}"></span></div><input type="range" data-k="${k}" min="${min}" max="${max}"><input type="number" class="ct-num" data-k="${k}" min="${min}" max="${max}" inputmode="numeric"></div>`;
+  const row = (k, title, min, max) => `<div class="ct-row"><div class="ct-rn" data-talk="${k}"><b>${title}</b><span data-h="${k}"></span></div><input type="range" dir="ltr" data-k="${k}" min="${min}" max="${max}"><input type="number" class="ct-num" data-k="${k}" min="${min}" max="${max}" inputmode="numeric"></div>`;
   const pre = (list) => `<div class="ct-pre">${list.map(([l, v]) => `<button type="button" class="sim-btn sim-btn-ghost" data-preset="${v}">${l}</button>`).join('')}</div>`;
   const head = (talk, title, ctl) => `<div class="ct-sc-h"><b data-talk="${talk}">${title}</b>${ctl ? `<label class="ct-ctl">${ctl}</label>` : ''}</div>`;
   const block = (id, headHtml, ctrl = '', extra = '') => `<div class="ct-sc">${headHtml}${ctrl}${extra ? '<div class="ct-pair">' : ''}<svg class="ct-svg" id="${id}" viewBox="0 0 320 200"></svg>${extra}${extra ? '</div>' : ''}<div class="ct-rel" id="${id}R"></div></div>`;
@@ -597,9 +603,11 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
       <div class="ct-sc">
         <div class="ct-sc-h"><b data-talk="dly">🧪 آزمایش: LED چشمک‌زن + دکمه</b><label class="ct-ctl">delay (ms) ${sel('dlD', [200, 500, 1000], '')}</label></div>
         <div class="hs-p">برنامه دو کار دارد: <b>LED را چشمک بزند</b> و <b>به دکمه جواب بدهد</b>. دکمه را چندبار بزن و ببین کدام روش آن را می‌بیند. (هر کلیک یک فشارِ کوتاه است.)</div>
-        ${ctCodeBlock('روش ۱: با delay', CT_CODE_DELAY, '#ff8a80')}
-        <div class="ll-row" id="ctDlm" style="margin:8px 0"><button type="button" class="sim-btn" data-dlm="2" aria-pressed="true">⏱️ روش ۲: شمارنده</button><button type="button" class="sim-btn sim-btn-ghost" data-dlm="3" aria-pressed="false">🔔 روش ۳: callback</button></div>
-        <div id="ctDlm2">
+        <div class="ll-row" id="ctDlm" style="margin:8px 0"><button type="button" class="sim-btn" data-dlm="1" aria-pressed="true">⏳ روش ۱: delay</button><button type="button" class="sim-btn sim-btn-ghost" data-dlm="2" aria-pressed="false">⏱️ روش ۲: شمارنده</button><button type="button" class="sim-btn sim-btn-ghost" data-dlm="3" aria-pressed="false">🔔 روش ۳: callback</button></div>
+        <div id="ctDlm1">
+          ${ctCodeBlock('روش ۱: با delay', CT_CODE_DELAY, '#ff8a80')}
+        </div>
+        <div id="ctDlm2" hidden>
           ${ctCodeBlock('روش ۲: با تایمر (شمارنده را خودت نگاه می‌کنی)', CT_CODE_TIMER, '#57d8a3')}
         </div>
         <div id="ctDlm3" hidden>
@@ -666,15 +674,6 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
         <div class="ct-scroll" dir="ltr">${ctFullTree()}</div>
       </details>
       <div class="sim-status" id="ctSt1" data-state="idle"></div>
-      <div class="ct-quiz">
-        <div class="hs-p"><b>🧠 سؤال:</b> فرض کن SYSCLK برابر ۷۲ باشد و APB1 را روی ÷۴ بگذاری. کلاکِ تایمرهای APB1 چند مگاهرتز می‌شود؟ اول حساب کن، بعد با منوی ② امتحانش کن.</div>
-        <div class="ll-row">
-          <button type="button" class="sim-btn sim-btn-ghost" data-q="18">۱۸ مگاهرتز</button>
-          <button type="button" class="sim-btn sim-btn-ghost" data-q="36">۳۶ مگاهرتز</button>
-          <button type="button" class="sim-btn sim-btn-ghost" data-q="72">۷۲ مگاهرتز</button>
-        </div>
-      </div>
-
       <div class="ct-stage-t">چرا کلاکِ باس را نصف کردند؟ (دلیلِ طراحی)</div>
       <div class="ct-explain"><b>طراحانِ STM32 با یک تضاد روبه‌رو بودند:</b><br>
         ۱) <b>باسِ APB1 تحملِ سرعتِ زیاد را ندارد.</b> قطعاتی مثل I2C و UART و CAN بیش از ۳۶ مگاهرتز نمی‌توانند کار کنند؛ مصرفِ انرژی بالا می‌رود و سیگنالِ دیجیتال خطا پیدا می‌کند.<br>
@@ -707,7 +706,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
       <div class="ct-stage-t">💡 بخش ۴ — PWM یعنی چی؟</div>
       <div class="ct-explain"><b>PWM یعنی یک پین را خیلی سریع روشن و خاموش کنیم.</b> موتور آن‌قدر کُند است که تک‌تک چشمک‌ها را حس نمی‌کند و فقط «میانگین» را می‌بیند. مثلاً نیمی از دور روشن = نصفِ ولتاژ = نصفِ سرعت. روشن‌ماندن را همان عقربه تعیین می‌کند: <b>روی کمانِ سبز (Pulse) پین روشن است و روی بقیه خاموش.</b></div>
       ${ctAnimPwm()}
-      ${block('ctD2', head('pulse', '⑥ کمانِ سبز = بالا بودنِ موجِ PWM'), row('pulse', 'Pulse (CCR)', 0, 16) + pre([['۲۵٪', 'duty:25'], ['۵۰٪', 'duty:50'], ['۷۵٪', 'duty:75'], ['۱۰۰٪', 'duty:100']]), '<canvas class="ct-cv ct-pw" id="ctPw" data-talk="wave"></canvas>')}
+      ${block('ctD2', head('pulse', '⑥ ناحیه‌ی سبز = بالا بودنِ موجِ PWM'), row('pulse', 'Pulse (CCR)', 0, 16) + pre([['۲۵٪', 'duty:25'], ['۵۰٪', 'duty:50'], ['۷۵٪', 'duty:75'], ['۱۰۰٪', 'duty:100']]), '<canvas class="ct-cv ct-pw" id="ctPw" data-talk="wave"></canvas>')}
       <div class="ct-sc">
         <div class="ct-sc-h"><b>موجِ خروجی (سه دور پشت‌سرهم)</b></div>
         <canvas class="ct-cv" id="ctCv"></canvas>
@@ -732,11 +731,10 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
         ${row('pulse', 'Pulse (CCR) = عددِ داخلِ کد', 0, 16)}
         ${pre([['۰٪', 'duty:0'], ['۲۵٪', 'duty:25'], ['۵۰٪', 'duty:50'], ['۷۵٪', 'duty:75'], ['۱۰۰٪', 'duty:100']])}
         <div id="ctPmCode"></div>
-        <canvas class="ct-cv" id="ctCar" data-talk="car"></canvas>
+        <svg id="ctCar" data-talk="car" viewBox="0 0 360 138" role="img" aria-label="N20 motor" style="direction:ltr;display:block;width:100%;max-width:480px;margin:8px auto;background:#10151f;border:1px solid #2a3040;border-radius:12px"></svg>
         <div class="ct-rel" id="ctPmR"></div>
       </div>
       <div class="sim-status" id="ctSt2" data-state="idle"></div>
-      <div class="ll-row"><button type="button" class="sim-btn sim-btn-ghost" id="ctHint">💡 راهنما</button></div>
     </div>`;
 
   const q = s => container.querySelector(s), qa = s => container.querySelectorAll(s);
@@ -751,7 +749,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   qa('svg.ct-svg').forEach(el => io && io.observe(el));
   [cv, cvBus, cvPw, cvDl, cvCar].forEach(el => { io && io.observe(el); ro && ro.observe(el); });
   const st = { ...CT_INIT };
-  const done = { pll: false, apb: false, quiz: false, pwm: false };
+  const done = { pll: false, apb: false, pwm: false };
   let succeeded = !!alreadyDone, raf = 0, last = 0, tp = 0, revT = 3.2, scenes = [], dials = [];
   const angs = {};
   const dl = { D: CT_INIT.dlD, C: 40, t: 0, press: 0, a: 0, evs: [] };
@@ -761,7 +759,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   const knight = k => { if(typeof showKnightLine === 'function') showKnightLine(CT_TALK[k], 'happy', 'knight'); };
 
   const clocks = () => {
-    const sys = CT_HSE * st.pll, p1 = sys / st.a1, p2 = sys / st.a2;
+    const sys = ctPllIn(st) * st.pll, p1 = sys / st.a1, p2 = sys / st.a2;
     return { sys, p1, p2, t1: st.a1 === 1 ? p1 : p1 * 2, t2: st.a2 === 1 ? p2 : p2 * 2 };
   };
   const pwm = () => {
@@ -773,7 +771,9 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   function buildScenes(){
     const c = clocks(), m = pwm(), steps = m.steps, tick = m.tick / 1e6, fa = ctNum;
     const b1 = c.p1 > 36, b2 = c.p2 > 72;
-    const hse = ctNode('hse', 'HSE', CT_HSE, 'hse');
+    const hse = st.src
+      ? ctNode('hsi', 'HSI', CT_HSE, 'hse', { edit: 'src', warn: 'warn_hsi' })
+      : ctNode('hse', 'HSE', CT_HSE, 'hse', { edit: 'src' });
     const sys = ctNode('sys', 'SYSCLK', c.sys, 'sys', { uses: ['هسته‌ی CPU'] });
     const hclk = ctNode('hclk', 'HCLK', c.sys, 'sys');
     const p1 = ctNode('pclk1', 'PCLK1', c.p1, 'pclk', { bad: b1, uses: ['I2C · UART2 · CAN'], badUses: ['✖ I2C · UART2 · CAN', 'ارتباط خراب می‌شود'] });
@@ -781,7 +781,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     const t1 = ctNode('t1', 'TIM2/3/4', c.t1, 'tim', { bad: c.t1 > 72, uses: ['PWM و زمان‌سنجی'] });
     const t2 = ctNode('t2', 'TIM1', c.t2, 'tim', { bad: c.t2 > 72, uses: ['PWM موتور'] });
     const cnt = ctNode('tick', 'شمارنده', tick, 'psc');
-    const pll = ctOp('pll', 'PLL', '×', st.pll, CT_HSE, c.sys, 'sys', { edit: 'pll', warn: st.pll !== 9 && 'warn_pll' });
+    const pll = ctOp('pll', 'PLL', '×', st.pll, ctPllIn(st), c.sys, 'sys', { edit: 'pll', warn: st.pll !== 9 && !st.src && 'warn_pll' });
     const ahb = ctOp('ahb', 'AHB', '÷', 1, c.sys, c.sys, 'sys');
     const apb1 = ctOp('apb1', 'APB1', '÷', st.a1, c.sys, c.p1, 'pclk', { bad: b1, edit: 'a1', warn: st.a1 !== 2 && 'warn_a1' });
     const apb2 = ctOp('apb2', 'APB2', '÷', st.a2, c.sys, c.p2, 'pclk', { bad: b2, edit: 'a2', warn: st.a2 !== 1 && 'warn_a2' });
@@ -789,15 +789,16 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     const mul2 = ctOp('tmul', 'ضریبِ تایمر', '×', st.a2 === 1 ? 1 : 2, c.p2, c.t2, 'tim');
     const psc = ctOp('psc', 'PSC', '÷', st.psc + 1, c.t2, tick, 'psc', { edit: 'psc' });
     const fin = n => ({ ...n, final: true });
+    const pre = st.src ? [ctOp('hdiv', 'HSI', '÷', 2, CT_HSE, CT_HSE / 2, 'sys')] : [];
     scenes = [
-      ctFlow(q('#ctG1'), [hse, pll, fin(sys)]),
+      ctFlow(q('#ctG1'), [hse, ...pre, pll, fin(sys)]),
       ctFlow(q('#ctG2'), [sys, apb1, p1, mul1, fin(t1)]),
       ctFlow(q('#ctG3'), [sys, apb2, p2, mul2, fin(t2)]),
       ctFlow(q('#ctG4'), [t2, psc, fin(cnt)]),
-      ctFlow(q('#ctGA'), [hse, pll, { ...sys, uses: [] }, ahb, { ...hclk, uses: ['CPU \xb7 Flash \xb7 RAM'] }], [[apb1, p1, mul1, fin(t1), { ...psc, inM: c.t1, outM: c.t1 / (st.psc + 1) }, fin({ ...cnt, mhz: c.t1 / (st.psc + 1) })], [apb2, p2, mul2, fin(t2), psc, fin(cnt)]], true)
+      ctFlow(q('#ctGA'), [hse, ...pre, pll, { ...sys, uses: [] }, ahb, { ...hclk, uses: ['CPU \xb7 Flash \xb7 RAM'] }], [[apb1, p1, mul1, fin(t1), { ...psc, inM: c.t1, outM: c.t1 / (st.psc + 1) }, fin({ ...cnt, mhz: c.t1 / (st.psc + 1) })], [apb2, p2, mul2, fin(t2), psc, fin(cnt)]], true)
     ];
     [c.sys, c.p1, c.p2, tick, (c.p1 + c.p2 + tick) / 3].forEach((v, i) => { scenes[i].mhz = v; });
-    q('#ctG1R').innerHTML = `<div>چرخ‌دنده‌ی PLL ورودی را ${ctFa(st.pll)} برابر می‌کند: ${fa(CT_HSE)} × ${ctFa(st.pll)} = <b>${ctHz(c.sys * 1e6)}</b></div>`;
+    q('#ctG1R').innerHTML = `<div>چرخ‌دنده‌ی PLL ورودی را ${ctFa(st.pll)} برابر می‌کند: ${fa(ctPllIn(st))} × ${ctFa(st.pll)} = <b>${ctHz(c.sys * 1e6)}</b></div>`;
     const laneTxt = (a, apb, pc, tm, tn) => `<div>چرخ‌دنده‌ی ${apb} تقسیم می‌کند: ${fa(c.sys)} ÷ ${ctFa(a)} = ${ctHz(pc * 1e6)}</div>`
       + `<div>${a === 1 ? 'چون تقسیم‌کننده ۱ است، ضریبِ تایمر ×۱ می‌ماند' : 'چون تقسیم‌کننده ۱ نیست، چرخ‌دنده‌ی «ضریبِ تایمر» آن را ×۲ می‌کند'}: ${fa(pc)} × ${a === 1 ? '۱' : '۲'} = <b>${ctHz(tm * 1e6)}</b> (${tn})</div>`;
     q('#ctG2R').innerHTML = laneTxt(st.a1, 'APB1', c.p1, c.t1, 'کلاکِ تایمرهای TIM2/3/4');
@@ -805,7 +806,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     q('#ctG4R').innerHTML = `<div>چرخ‌دنده‌ی PSC کلاکِ تایمر را بر ${ctFa(st.psc + 1)} تقسیم می‌کند: ${ctHz(m.tclk)} ÷ ${ctFa(st.psc + 1)} = <b>${ctHz(m.tick)}</b></div>`
       + `<div>یعنی عقربه‌ی شمارنده هر <b>${ctTime(1 / m.tick)}</b> یک خانه جلو می‌رود (${ctFa(Math.round(m.tick))} خانه در ثانیه).</div>`;
     q('#ctGAR').innerHTML = `<div><b>جواب نهایی:</b> کلاکِ تایمرهای TIM2/3/4 = <b>${ctHz(c.t1 * 1e6)}</b> ، کلاکِ TIM1 = <b>${ctHz(c.t2 * 1e6)}</b> و شمارنده‌ی TIM1 بعد از Prescaler با <b>${ctHz(m.tick)}</b> می‌شمارد.</div>`
-      + `<div>مسیرِ TIM1: ${fa(CT_HSE)} ×${ctFa(st.pll)} ⇒ ${fa(c.sys)} ÷${ctFa(st.a2)} ⇒ ${fa(c.p2)} ×${st.a2 === 1 ? '۱' : '۲'} ⇒ ${fa(c.t2)} ÷${ctFa(st.psc + 1)} ⇒ ${fa(tick)}</div>`;
+      + `<div>مسیرِ TIM1: ${st.src ? fa(CT_HSE) + ' ÷۲ ⇒ ' + fa(ctPllIn(st)) : fa(CT_HSE)} ×${ctFa(st.pll)} ⇒ ${fa(c.sys)} ÷${ctFa(st.a2)} ⇒ ${fa(c.p2)} ×${st.a2 === 1 ? '۱' : '۲'} ⇒ ${fa(c.t2)} ÷${ctFa(st.psc + 1)} ⇒ ${fa(tick)}</div>`;
     revT = steps <= 64 ? Math.min(5, Math.max(2.4, steps * .2)) : 4;
     dials = [
       ctDial(q('#ctD1'), { steps, pulse: st.pulse, pwm: false }),
@@ -846,9 +847,8 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   }
 
   function paintChips(){
-    const keys = ['pll', 'apb', 'quiz', 'pwm'], next = keys.find(k => !done[k]);
+    const keys = ['pll', 'apb', 'pwm'], next = keys.find(k => !done[k]);
     qa('.st-chip').forEach(c => { c.classList.toggle('ok', done[c.dataset.s]); c.classList.toggle('next', c.dataset.s === next); });
-    qa('[data-q]').forEach(b => { b.disabled = !done.apb; });
   }
 
   function paintTimer(){
@@ -873,10 +873,10 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     const c = clocks(), std = c.sys === 72 && st.a1 === 2 && st.a2 === 1;
     if(c.p1 > 36) return say('1', 'error', `⚠️ PCLK1 شد ${ctHz(c.p1 * 1e6)} ولی باسِ APB1 فقط تا ۳۶ مگاهرتز تحمل دارد (چرخ‌دنده‌ی قرمز). برای همین باید تقسیم‌کننده‌ی APB1 را روی ÷۲ بگذاری تا چرخ‌دنده‌ی APB1 عدد را نصف کند.`);
     if(c.p2 > 72) return say('1', 'error', `⚠️ PCLK2 شد ${ctHz(c.p2 * 1e6)}؛ سقفِ APB2 هم ۷۲ مگاهرتز است.`);
+    if(st.src) return say('1', 'running', `منبعِ کلاک الان HSI است: ۸ ÷ ۲ = ۴ مگاهرتز وارد PLL می‌شود و SYSCLK می‌شود ${ctHz(c.sys * 1e6)}. حتی با ×۹ فقط ۳۶ می‌شود. برای ۷۲ مگاهرتز با ✎ روی چرخ‌دنده‌ی اول، منبع را به HSE برگردان.`);
     if(!done.pll) return say('1', 'running', `SYSCLK الان ${ctHz(c.sys * 1e6)} است. برای ۷۲ مگاهرتز ضریبِ PLL را روی ×۹ بگذار تا چرخ‌دنده‌ی PLL عددِ ۸ را ۹ برابر کند (۸ × ۹).`);
     if(!done.apb) return say('1', 'running', '👌 کلاکِ چیپ ۷۲ مگاهرتز شد. حالا APB1 را روی ÷۲ بگذار و به چرخ‌دنده‌ی «ضریبِ تایمر» نگاه کن: PCLK1 می‌شود ۳۶ ولی تایمر دوباره ۷۲!');
     if(!std) return say('1', 'running', `APB1 روی ÷${ctFa(st.a1)}: PCLK1 = ${ctHz(c.p1 * 1e6)} و کلاکِ تایمرهای APB1 = ${ctHz(c.t1 * 1e6)}.`);
-    if(!done.quiz) return say('1', 'success', '✅ این همان تنظیمِ استانداردِ CubeMX است. حالا به سؤالِ پایین جواب بده.');
     say('1', 'success', '✅ کلاک درست است. با منوها بازی کن و ببین چرخ‌دنده‌ها چطور تغییر می‌کنند.');
   }
 
@@ -885,7 +885,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     const note = m.tclk === 72e6 ? '' : ` (کلاکِ ورودیِ تایمر الان ${ctHz(m.tclk)} است؛ بخش ۲ را کامل کن.)`;
     if(pwmOk()){
       const exact = st.psc === 8 && st.arr === 255 ? ' دقیقاً همان تنظیمِ CubeMX: Prescaler = ۸ و Period = ۲۵۵.' : '';
-      const rest = done.apb && done.quiz ? '' : ' بخش ۲ هم هنوز مانده است.';
+      const rest = done.apb ? '' : ' بخش ۲ هم هنوز مانده است.';
       return say('2', 'success', `✅ PWM ${ctHz(f)} با دیوتیِ ${ctNum(m.duty * 100)}٪ ⇒ موتور با نصفِ سرعت می‌چرخد.${exact}${rest}`);
     }
     if(f > 32500) return say('2', 'running', `فرکانسِ PWM ${ctHz(f)} است و بالاتر از هدف (حدود ۳۱٫۲۵ کیلوهرتز). Prescaler یا Period را بزرگ‌تر کن؛ یعنی خانه‌های بیشتر یا ضربه‌های کُندتر.${note}`);
@@ -899,7 +899,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     if(safe && c.sys === 72 && st.a1 === 2 && st.a2 === 1) done.apb = true;
     if(pwmOk()) done.pwm = true;
     paintChips();
-    if(succeeded || !(done.pll && done.apb && done.quiz && done.pwm)) return false;
+    if(succeeded || !(done.pll && done.apb && done.pwm)) return false;
     succeeded = true;
     if(onSuccess) onSuccess();
     return true;
@@ -910,26 +910,6 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     if(dl.D !== st.dlD){ dl.D = st.dlD; dlReset(); }
     paintDl(); paintPm();
     if(fin) say('2', 'success', CT_FINISH);
-  }
-
-  function answer(v){
-    if(v !== 36){
-      say('1', 'error', v === 18
-        ? '۱۸ کلاکِ باس (PCLK1) است: ۷۲ ÷ ۴. ولی چرخ‌دنده‌ی «ضریبِ تایمر» آن را ×۲ می‌کند (چون تقسیم‌کننده ۱ نیست). دوباره حساب کن.'
-        : '۷۲ فقط وقتی درست است که تقسیم‌کننده ۱ یا ۲ باشد. اینجا ۷۲ ÷ ۴ = ۱۸ و بعد ×۲. منوی ② را روی ÷۴ بگذار و به چرخ‌دنده‌ها نگاه کن.');
-      return;
-    }
-    done.quiz = true;
-    const fin = checkDone();
-    say('1', 'success', '✅ درست! ۷۲ ÷ ۴ = ۱۸ مگاهرتز PCLK1 می‌شود و چون تقسیم‌کننده ۱ نیست، چرخ‌دنده‌ی «ضریبِ تایمر» آن را ×۲ می‌کند: ۱۸ × ۲ = ۳۶. منوی ② را روی ÷۴ بگذار و خودت ببین؛ بعد برگردان روی ÷۲.');
-    if(fin) say('2', 'success', CT_FINISH);
-  }
-
-  function hint(){
-    if(!done.pll) return say('1', 'running', 'راهنما: ضریبِ PLL را روی ×۹ بگذار (۸ × ۹ = ۷۲).');
-    if(!done.apb) return say('1', 'running', 'راهنما: APB1 را روی ÷۲ و APB2 را روی ÷۱ بگذار.');
-    if(!done.quiz) return say('1', 'running', 'راهنما: اول ۷۲ ÷ ۴ را حساب کن؛ بعد یادت باشد چون تقسیم‌کننده ۱ نیست، تایمر ×۲ می‌شود.');
-    say('2', 'running', 'راهنما: Prescaler را ۸ (تقسیم بر ۹ ⇒ ۸ مگاهرتز)، Period را ۲۵۵ و Pulse را ۱۲۸ بگذار.');
   }
 
   function syncInputs(except){
@@ -949,7 +929,8 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     pll: { t: 'PLL', sym: '×', list: CT_PLL_OPTS.map(v => [v, v]) },
     a1:  { t: 'APB1', sym: '÷', list: CT_DIV_OPTS.map(v => [v, v]) },
     a2:  { t: 'APB2', sym: '÷', list: CT_DIV_OPTS.map(v => [v, v]) },
-    psc: { t: 'Prescaler', sym: '÷', list: Array.from({ length: 12 }, (_, i) => [i, i + 1]) }
+    psc: { t: 'Prescaler', sym: '÷', list: Array.from({ length: 12 }, (_, i) => [i, i + 1]) },
+    src: { t: 'منبعِ کلاک', sym: '', cols: 2, msg: 'HSE کریستالِ بیرونی، HSI اسیلاتورِ داخلی', list: [[0, 'HSE'], [1, 'HSI']] }
   };
   let pop = null;
   const closePop = () => { document.querySelectorAll('.ct-pop').forEach(n => n.remove()); pop = null; };
@@ -961,8 +942,8 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     pop.dir = 'rtl';
     pop.style.cssText = 'position:fixed;z-index:9999;background:#1b1e26;border:1px solid #d4af37;border-radius:12px;padding:10px;box-shadow:0 8px 28px rgba(0,0,0,.55);color:#e8e2d0;max-width:260px;font-family:' + getComputedStyle(container).fontFamily;
     const btn = ([v, n]) => `<button type="button" data-v="${v}" style="cursor:pointer;direction:ltr;padding:7px 4px;border-radius:8px;font:inherit;font-weight:700;border:1px solid ${st[k] === v ? '#d4af37' : '#3a4050'};background:${st[k] === v ? '#d4af37' : '#262b36'};color:${st[k] === v ? '#14161c' : '#e8e2d0'}">${def.sym}${ctFa(n)}</button>`;
-    pop.innerHTML = `<div style="font-size:12px;margin-bottom:8px"><b>${def.t}</b> — ضریب را انتخاب کن${k === 'psc' ? ' (عددِ PSC یکی کمتر از تقسیم است)' : ''}</div>`
-      + `<div style="display:grid;direction:ltr;grid-template-columns:repeat(4,1fr);gap:6px">${def.list.map(btn).join('')}</div>`;
+    pop.innerHTML = `<div style="font-size:12px;margin-bottom:8px"><b>${def.t}</b> — ${def.msg || 'ضریب را انتخاب کن'}${k === 'psc' ? ' (عددِ PSC یکی کمتر از تقسیم است)' : ''}</div>`
+      + `<div style="display:grid;direction:ltr;grid-template-columns:repeat(${def.cols || 4},1fr);gap:6px">${def.list.map(btn).join('')}</div>`;
     pop.addEventListener('click', ev => {
       const b = ev.target.closest('button[data-v]');
       if(!b) return;
@@ -1000,7 +981,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
 
   listen('click', e => {
     const ed = e.target.closest('[data-edit]');
-    if(ed){ openPop(ed); return; }
+    if(ed){ if(ed.dataset.warn) knight(ed.dataset.warn); openPop(ed); return; }
     const pr = e.target.closest('[data-preset]');
     if(pr){
       const [k, v] = pr.dataset.preset.split(':');
@@ -1008,9 +989,6 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
       else st.pulse = Math.round((st.arr + 1) * +v / 100);
       syncInputs(null); refresh(); return;
     }
-    const qb = e.target.closest('[data-q]');
-    if(qb){ answer(+qb.dataset.q); return; }
-    if(e.target.closest('#ctHint')){ hint(); return; }
     if(e.target.closest('#ctReset')){ reset(); return; }
     const pk = e.target.closest('[data-pm]');
     if(pk){ pm[pk.dataset.pm] = !pm[pk.dataset.pm]; paintPm(); return; }
@@ -1027,6 +1005,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
         b.classList.toggle('sim-btn-ghost', !on);
         b.setAttribute('aria-pressed', on);
       });
+      q('#ctDlm1').hidden = dm.dataset.dlm !== '1';
       q('#ctDlm2').hidden = dm.dataset.dlm !== '2';
       q('#ctDlm3').hidden = dm.dataset.dlm !== '3';
       return;
@@ -1070,10 +1049,29 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     }
     g.stroke();
 
-    const phase = (tp / revT) % n, fr = phase % 1, xc = x0 + phase * pw, hi = Math.floor(fr * steps) < st.pulse;
+    const phase = (tp / revT) % n, fr = phase % 1, xc = x0 + phase * pw, cnt = Math.min(steps - 1, Math.floor(fr * steps)), hi = cnt < st.pulse;
+    const yc = base - fr * (base - top), yp = hi ? yH : yL;
     g.lineWidth = 1; g.strokeStyle = 'rgba(232,226,208,.25)'; g.beginPath(); g.moveTo(xc, top - 4); g.lineTo(xc, yL + 6); g.stroke();
-    g.fillStyle = '#e79a54'; dot(xc, base - fr * (base - top));
-    g.fillStyle = hi ? '#57d8a3' : '#6b7280'; dot(xc, hi ? yH : yL);
+    g.fillStyle = '#e79a54'; dot(xc, yc);
+    g.fillStyle = hi ? '#57d8a3' : '#6b7280'; dot(xc, yp);
+
+    /* برچسبِ نقطه‌ها: بالا «عدد» (مقدارِ شمارنده)، پایین «پایه» (وضعیتِ پینِ PA8: ۱ یا ۰) */
+    const tag = (txt, color, x, y, flip) => {
+      g.save();
+      g.direction = 'rtl'; g.font = '700 12px JetBrains Mono, sans-serif';
+      const tw = g.measureText(txt).width, padX = 5;
+      let bx = flip ? x + 10 : x - 10 - tw - padX * 2;           // flip=true ⇒ سمتِ راستِ نقطه
+      if(bx < 2) bx = x + 10;                                       // جا نبود ⇒ بیا سمتِ راست
+      if(bx + tw + padX * 2 > w - 2) bx = x - 10 - tw - padX * 2;   // باز هم جا نبود ⇒ سمتِ چپ
+      const by = y - 22, bw = tw + padX * 2, bh = 18;
+      g.fillStyle = 'rgba(16,21,31,.92)'; g.strokeStyle = color; g.lineWidth = 1.2;
+      g.beginPath(); g.roundRect ? g.roundRect(bx, by, bw, bh, 6) : g.rect(bx, by, bw, bh); g.fill(); g.stroke();
+      g.fillStyle = color; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(txt, bx + bw / 2, by + bh / 2 + .5);
+      g.restore();
+    };
+    tag(`عدد = ${ctFa(cnt)}`, '#e79a54', xc, yc, false);
+    tag(`پایه = ${hi ? '۱ (HIGH)' : '۰ (LOW)'}`,hi ? '#57d8a3' : '#9aa3b5', xc, yp, false);
   }
 
   const BUS_TAU = 8, BUS_HI = .75;
@@ -1259,39 +1257,89 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     q('#ctPmR').innerHTML = `<div>${msg}</div>` + (pmDuty() > 0 || (pm.cube && pm.start && pm.cmp) ? '<div>بعد از Start حلقه‌ی while خالی است: PWM را سخت‌افزار می‌سازد و CPU آزاد است.</div>' : '');
   }
 
+  const ctRp = T => T * 5 / 6.2832;
+  let mt = null;
+
+  function buildMotor(){
+    const f = n => n.toFixed(1);
+    const rP = ctRp(8), r1 = ctRp(20), r2 = ctRp(16);
+    const A1 = .5, A2 = 1.9, P0 = { x: 186, y: 58 };
+    const G1 = { x: P0.x + (rP + r1) * Math.cos(A1), y: P0.y + (rP + r1) * Math.sin(A1) };
+    const G2 = { x: G1.x + (rP + r2) * Math.cos(A2), y: G1.y + (rP + r2) * Math.sin(A2) };
+    const WX = 300, WR = 32, sy = G2.y;
+    const gear = (T, fill, stroke) => '<path d="' + ctTeeth(T, ctRp(T)).d + '" fill="' + fill + '" stroke="' + stroke + '" stroke-width=".9" stroke-linejoin="round"/>';
+    const holes = (n, r, hr) => Array.from({ length: n }, (_, k) => { const a = k * 6.2832 / n; return '<circle cx="' + f(r * Math.cos(a)) + '" cy="' + f(r * Math.sin(a)) + '" r="' + hr + '" fill="#10151f"/>'; }).join('');
+    const at = (p, key, inner) => '<g transform="translate(' + f(p.x) + ' ' + f(p.y) + ')"><g data-' + key + '>' + inner + '</g></g>';
+    const screw = (x, y) => '<circle cx="' + x + '" cy="' + y + '" r="3.4" fill="#c9ced8" stroke="#5a430f" stroke-width=".8"/><line x1="' + (x - 2.2) + '" y1="' + (y - 2.2) + '" x2="' + (x + 2.2) + '" y2="' + (y + 2.2) + '" stroke="#5a430f" stroke-width=".9"/>';
+    const mono = 'style="font-family:JetBrains Mono,monospace;direction:ltr;unicode-bidi:bidi-override"';
+    const polar = (n, r1_, r2_, extra) => Array.from({ length: n }, (_, k) => { const a = k * 6.2832 / n, c = Math.cos(a), sn = Math.sin(a); return '<line x1="' + f(c * r1_) + '" y1="' + f(sn * r1_) + '" x2="' + f(c * r2_) + '" y2="' + f(sn * r2_) + '" ' + extra + '/>'; }).join('');
+    const wheel = '<circle r="' + WR + '" fill="#1b1e26" stroke="#0b0d11" stroke-width="1"/>'            /* بدنه‌ی تایر */
+      + polar(18, WR - 5, WR - .6, 'stroke="#3d4352" stroke-width="3.2"')                                 /* آج تایر */
+      + '<circle r="' + (WR - 5.5) + '" fill="none" stroke="#2c3140" stroke-width="1"/>'
+      + '<circle r="22" fill="#9aa3b5" stroke="#5b6475" stroke-width="1.2"/>'                            /* رینگ */
+      + holes(5, 14.5, 5.2)                                                                                /* پنجره‌های رینگ */
+      + polar(5, 7, 10, 'stroke="#8d96a6" stroke-width="3.4" stroke-linecap="round" transform="rotate(36)"')
+      + '<circle r="7.2" fill="#d4af37" stroke="#5a430f" stroke-width="1"/><circle r="2.6" fill="#3a4050"/>'  /* توپی */
+      + '<circle cx="0" cy="-' + (WR - 2.6) + '" r="1.9" fill="#e79a54"/>';                              /* نشانه‌ی چرخش */
+    cvCar.innerHTML = '<defs>'
+      + '<linearGradient id="ctMtMetal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef1f6"/><stop offset=".3" stop-color="#c3cad6"/><stop offset=".7" stop-color="#8d96a6"/><stop offset="1" stop-color="#586071"/></linearGradient>'
+      + '<linearGradient id="ctMtBrass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0d27c"/><stop offset=".5" stop-color="#c39a38"/><stop offset="1" stop-color="#85651c"/></linearGradient>'
+      + '<linearGradient id="ctMtShaft" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f6fa"/><stop offset=".5" stop-color="#b4bcc9"/><stop offset="1" stop-color="#6e7686"/></linearGradient>'
+      + '<linearGradient id="ctMtGlass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".45" stop-color="#fff" stop-opacity=".04"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>'
+      + '</defs>'
+      + '<g data-root transform="translate(12 12)">'
+      + '<ellipse cx="170" cy="119" rx="140" ry="4" fill="#000" opacity=".28"/>'
+      /* سیم‌های موتور */
+      + '<path d="M16 45.5H4" stroke="#e0483e" stroke-width="3" stroke-linecap="round"/><path d="M16 67.5H4" stroke="#8b93a5" stroke-width="3" stroke-linecap="round"/>'
+      + '<text x="3" y="40" font-size="10" font-weight="700" fill="#e0483e" ' + mono + '>+</text><text x="3" y="63" font-size="10" font-weight="700" fill="#8b93a5" ' + mono + '>−</text>'
+      /* ترمینال‌ها، درپوش و بدنه */
+      + '<rect x="14" y="43" width="18" height="5" rx="1.5" fill="#c9ced8" stroke="#3a4050" stroke-width=".8"/>'
+      + '<rect x="14" y="65" width="18" height="5" rx="1.5" fill="#c9ced8" stroke="#3a4050" stroke-width=".8"/>'
+      + '<rect x="28" y="31" width="16" height="54" rx="4" fill="#2b2f3a" stroke="#14161c"/>'
+      + '<circle cx="36" cy="58" r="4.6" fill="#161922" stroke="#3a4050" stroke-width=".8"/><circle cx="36" cy="58" r="1.8" fill="#6b7280"/>'
+      + '<rect x="42" y="28" width="130" height="60" rx="7" fill="url(#ctMtMetal)" stroke="#2a3040"/>'
+      + '<rect x="46" y="32" width="122" height="5" rx="2.5" fill="#fff" fill-opacity=".35"/>'
+      + '<rect x="46" y="80" width="122" height="3" rx="1.5" fill="#000" fill-opacity=".12"/>'
+      + '<line x1="50" y1="30" x2="50" y2="86" stroke="#586071" stroke-opacity=".55"/><line x1="54" y1="30" x2="54" y2="86" stroke="#586071" stroke-opacity=".3"/>'
+      + '<text x="108" y="62" text-anchor="middle" font-size="15" font-weight="800" fill="#3a4050" style="font-family:JetBrains Mono,monospace;letter-spacing:1px;direction:ltr;unicode-bidi:bidi-override">N20</text>'
+      + '<text x="108" y="76" text-anchor="middle" font-size="8.5" fill="#586071" ' + mono + '>DC GEARMOTOR</text>'
+      /* جعبه‌دنده */
+      + '<rect x="168" y="22" width="72" height="94" rx="6" fill="url(#ctMtBrass)" stroke="#5a430f" stroke-width="1.2"/>'
+      + '<rect x="176" y="42" width="56" height="62" rx="6" fill="#10151f" stroke="#5a430f"/>'
+      + at(G2, 'g2', gear(16, '#d4af37', '#5a430f') + holes(3, r2 * .55, 2.2) + '<circle r="3.2" fill="#c9ced8" stroke="#3a4050" stroke-width=".8"/><line x1="-3" y1="0" x2="3" y2="0" stroke="#3a4050" stroke-width="1"/>')
+      + at(G1, 'g1', gear(20, '#dcdfe6', '#6b7280') + holes(4, r1 * .55, 2.4) + '<circle r="2.4" fill="#10151f"/>')
+      + at(G1, 'gq', gear(8, '#aab1c0', '#4a5163') + '<circle r="1.8" fill="#10151f"/>')
+      + at(P0, 'gp', gear(8, '#e8e2d0', '#6b7280') + '<circle r="2.2" fill="#10151f"/><line x1="0" y1="0" x2="4.2" y2="0" stroke="#10151f" stroke-width="1"/>')
+      + '<rect x="176" y="42" width="56" height="62" rx="6" fill="url(#ctMtGlass)" pointer-events="none"/>'
+      + screw(181, 32) + screw(227, 32) + screw(181, 109) + screw(227, 109)
+      /* محور خروجی، بلبرینگ و چرخ */
+      + '<rect x="240" y="' + f(sy - 9) + '" width="8" height="18" rx="2" fill="#85651c" stroke="#5a430f"/>'
+      + '<rect x="246" y="' + f(sy - 4) + '" width="' + (WX - 246) + '" height="8" rx="1.5" fill="url(#ctMtShaft)" stroke="#3a4050"/>'
+      + '<rect x="248" y="' + f(sy - 8) + '" width="5" height="16" rx="1.5" fill="#aab1c0" stroke="#586071" stroke-width=".8"/>'
+      + at({ x: WX, y: sy }, 'wh', wheel)
+      + '</g>'
+      + '<text data-t1 x="8" y="17" font-size="11" fill="#8b93a5" ' + mono + '></text>'
+      + '<text data-t2 x="8" y="32" font-size="11" fill="#8b93a5" ' + mono + '></text>'
+      + '<circle cx="338" cy="22" r="9" fill="#1d2330"/><circle data-led cx="338" cy="22" r="9" fill="#57d8a3" opacity=".12"/>'
+      + '<text x="338" y="44" text-anchor="middle" font-size="10" fill="#6b7280" ' + mono + '>PA8</text>';
+    const q1 = sel => cvCar.querySelector(sel);
+    mt = { root: q1('[data-root]'), gp: q1('[data-gp]'), g1: q1('[data-g1]'), gq: q1('[data-gq]'), g2: q1('[data-g2]'), wh: q1('[data-wh]'), t1: q1('[data-t1]'), t2: q1('[data-t2]'), led: q1('[data-led]'), A1, A2, WR };
+  }
+
   function drawCar(){
-    const cb = cvCar, w = widthOf(cb), h = 150;
-    if(!w) return;
-    const dpr = window.devicePixelRatio || 1, gx = cb.getContext('2d');
-    if(cb.width !== Math.round(w * dpr) || cb.height !== Math.round(h * dpr)){ cb.width = Math.round(w * dpr); cb.height = Math.round(h * dpr); }
-    gx.setTransform(dpr, 0, 0, dpr, 0, 0); gx.clearRect(0, 0, w, h);
-    const duty = pmDuty(), v = pm.v, powered = pm.cube && pm.start, roadY = 112;
-    const cx = w / 2, bx = cx - 46, by = 62, r = 12, ang = pm.x / r;
-    gx.fillStyle = '#1b212d'; gx.fillRect(0, roadY, w, h - roadY);
-    gx.fillStyle = '#6b7280';
-    const per = 40, off = pm.x % per;
-    for(let x = -off; x < w; x += per) gx.fillRect(x, roadY + 16, 20, 3);
-    if(v > .35){
-      gx.strokeStyle = 'rgba(232,226,208,' + (v * .5).toFixed(2) + ')'; gx.lineWidth = 2;
-      for(let i = 0; i < 3; i++){ const y = by + 12 + i * 10, L = 14 + v * 30 + i * 6; gx.beginPath(); gx.moveTo(bx - 8, y); gx.lineTo(bx - 8 - L, y); gx.stroke(); }
-    }
-    gx.fillStyle = v > .02 ? '#2b6cb0' : '#4b5563';
-    gx.fillRect(bx, by + 14, 92, 22);
-    gx.beginPath(); gx.moveTo(bx + 16, by + 14); gx.lineTo(bx + 28, by); gx.lineTo(bx + 64, by); gx.lineTo(bx + 78, by + 14); gx.closePath(); gx.fill();
-    gx.fillStyle = 'rgba(143,192,245,.55)'; gx.fillRect(bx + 32, by + 4, 14, 10); gx.fillRect(bx + 50, by + 4, 14, 10);
-    [bx + 22, bx + 70].forEach(wx => {
-      const wy = by + 36;
-      gx.fillStyle = '#15171c'; gx.beginPath(); gx.arc(wx, wy, r, 0, 6.2832); gx.fill();
-      gx.strokeStyle = '#c9ced8'; gx.lineWidth = 2;
-      for(let k = 0; k < 4; k++){ const a = ang + k * Math.PI / 2; gx.beginPath(); gx.moveTo(wx, wy); gx.lineTo(wx + (r - 2) * Math.cos(a), wy + (r - 2) * Math.sin(a)); gx.stroke(); }
-      gx.fillStyle = '#d4af37'; gx.beginPath(); gx.arc(wx, wy, 3, 0, 6.2832); gx.fill();
-    });
-    gx.font = '11px JetBrains Mono, monospace'; gx.textAlign = 'left'; gx.fillStyle = '#8b93a5';
-    gx.fillText('PWM ' + (powered ? Math.round(duty * 100) + '%' : 'OFF'), 8, 18);
-    gx.fillText('speed ' + Math.round(v * 100) + '%', 8, 34);
-    gx.fillStyle = '#1d2330'; gx.beginPath(); gx.arc(w - 22, 20, 9, 0, 6.2832); gx.fill();
-    gx.globalAlpha = Math.max(.12, duty); gx.fillStyle = '#57d8a3'; gx.beginPath(); gx.arc(w - 22, 20, 9, 0, 6.2832); gx.fill(); gx.globalAlpha = 1;
-    gx.textAlign = 'center'; gx.fillStyle = '#6b7280'; gx.fillText('PA8', w - 22, 42);
+    if(!mt) buildMotor();
+    const duty = pmDuty(), v = pm.v, powered = pm.cube && pm.start;
+    const a0 = pm.x / 8, a1 = ctMeshAt(8, 20, a0, mt.A1), a2 = ctMeshAt(8, 16, a1, mt.A2);
+    const rot = a => 'rotate(' + (a * 57.2958).toFixed(1) + ')';
+    const put = (el, key, val) => { if(el['_' + key] !== val){ el['_' + key] = val; el.setAttribute(key, val); } };
+    put(mt.gp, 'transform', rot(a0)); put(mt.g1, 'transform', rot(a1)); put(mt.gq, 'transform', rot(a1)); put(mt.g2, 'transform', rot(a2));
+    put(mt.wh, 'transform', rot(a2));
+    const j = v > .02 ? Math.sin(pm.x * 2.1) * .6 * v : 0;
+    put(mt.root, 'transform', 'translate(12 ' + (12 + j).toFixed(2) + ')');
+    put(mt.led, 'opacity', Math.max(.12, duty).toFixed(2));
+    const t1 = 'PWM ' + (powered ? Math.round(duty * 100) + '%' : 'OFF'), t2 = 'speed ' + Math.round(v * 100) + '%';
+    if(mt.t1.textContent !== t1) mt.t1.textContent = t1;
+    if(mt.t2.textContent !== t2) mt.t2.textContent = t2;
   }
 
   function frame(ts){
