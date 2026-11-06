@@ -9,7 +9,7 @@ const CT_W = .6;
 const CT_BATT = 3.7;
 const CT_PLL_OPTS = [2, 3, 4, 5, 6, 7, 8, 9];
 const CT_DIV_OPTS = [1, 2, 4];
-const CT_INIT = { pll: 2, a1: 1, a2: 1, psc: 0, arr: 15, pulse: 8 };
+const CT_INIT = { pll: 2, a1: 1, a2: 1, psc: 0, arr: 15, pulse: 8, dlD: 500 };
 const CT_FINISH = '🏆 تمام شد! کلاکِ چیپ ۷۲ مگاهرتز است، کلاکِ تایمر هم با قانونِ ×۲ دوباره ۷۲ می‌شود، و تایمر با Prescaler و Period و Pulse یک PWM ساخت که سرعتِ موتور را تنظیم می‌کند.';
 
 const CT_TALK = {
@@ -37,7 +37,10 @@ const CT_TALK = {
   tick:  'این سرعتِ شمارشِ عقربه‌ی تایمر است: کلاکِ تایمر ÷ (PSC+۱). با هر ضربه عقربه یک خانه جلو می‌رود.',
   arr:   'Period (یا ARR) تعدادِ خانه‌های صفحه است: ARR+۱ خانه. عقربه از ۰ می‌رود تا ARR و دوباره به ۰ برمی‌گردد. یک دورِ کامل = یک دوره‌ی PWM.',
   pulse: 'Pulse (یا CCR) اندازه‌ی کمانِ سبز است. تا وقتی عقربه روی کمانِ سبز است پین روشن (HIGH) می‌ماند و بعدش خاموش. کمانِ بزرگ‌تر یعنی موتور بیشتر برق می‌گیرد و تندتر می‌چرخد.',
-  lamp:  'این چراغ همان پایه‌ی خروجیِ PWM است (PA8): وقتی عقربه روی کمانِ سبز است روشن می‌شود و بعدش خاموش.'
+  lamp:  'این چراغ همان پایه‌ی خروجیِ PWM است (PA8): وقتی عقربه روی کمانِ سبز است روشن می‌شود و بعدش خاموش.',
+  dly:   'این ردیف برنامه‌ای است که با delay نوشته شده: LED را عوض می‌کند و بعد مدتِ طولانی «گیر» می‌کند (قرمز). فقط در یک لحظه‌ی خیلی کوتاه (سبز) سرکی به دکمه می‌کشد. هر دکمه‌ای که وسطِ قرمز بخورد گم می‌شود.',
+  dlt:   'این ردیف با تایمر است: سخت‌افزارِ تایمر خودش زمان را می‌شمارد و CPU فقط یک نگاهِ کوتاه به عددِ شمارنده می‌اندازد. وقتی به ۵۰۰ رسید (خطِ طلایی) LED را عوض می‌کند. بقیه‌ی وقت CPU آزاد است و هر دکمه‌ای را همان لحظه می‌بیند.',
+  car:   'این ماشین نمونه‌ی موتور است: چرخ‌هایش با دیوتیِ PWM تند و کُند می‌چرخند. برای چرخیدنِ موتور سه خط لازم است: MX_TIM1_Init (که CubeMX می‌نویسد)، HAL_TIM_PWM_Start و __HAL_TIM_SET_COMPARE. هر کدام را کامنت کنی موتور نمی‌چرخد.'
 };
 
 const ctFa = n => String(n).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]).replace('.', '٫');
@@ -85,14 +88,31 @@ function ctFlow(svg, trunk, branches = [], wide = false){
   });
   const hi = nodes.length - 1, hub = nodes[hi];
   branches.forEach(b => { lane = Math.min(lane, rOf(hub.it) + rOf(b[0]) - 6); });
-  branches.forEach((b, bi) => {
-    const dy = (bi ? 1 : -1) * lane, d = rOf(hub.it) + rOf(b[0]);
-    let bx = hub.cx + Math.sqrt(d * d - dy * dy);
-    b.forEach((it, i) => {
-      if(i) bx += rOf(b[i - 1]) + rOf(it);
-      nodes.push({ it, cx: bx, cy: dy, par: i ? nodes.length - 1 : hi, phi: i ? 0 : Math.atan2(dy, bx - hub.cx), side: i ? '' : (bi ? 'down' : 'up'), lane: bi ? 1 : -1 });
+  /* شاخه‌ها از گامِ ۲ به بعد کمی از هم دور می‌شوند (زاویه‌ی alpha) تا چرخ‌دنده‌های بزرگِ دو شاخه (مثلاً PSC) روی هم نیفتند */
+  const placeBranches = alpha => {
+    const out = [];
+    branches.forEach((b, bi) => {
+      const sg = bi ? 1 : -1, dy0 = sg * lane, d0 = rOf(hub.it) + rOf(b[0]);
+      let bx = hub.cx + Math.sqrt(d0 * d0 - dy0 * dy0), by = dy0;
+      b.forEach((it, i) => {
+        let phi;
+        if(i){
+          phi = i >= 2 ? sg * alpha : 0;
+          const d = rOf(b[i - 1]) + rOf(it);
+          bx += d * Math.cos(phi); by += d * Math.sin(phi);
+        } else phi = Math.atan2(dy0, bx - hub.cx);
+        out.push({ it, cx: bx, cy: by, par: i ? nodes.length + out.length - 1 : hi, phi, side: i ? '' : (bi ? 'down' : 'up'), lane: sg });
+      });
     });
-  });
+    return out;
+  };
+  const clash = arr => {
+    const up = arr.filter(n => n.lane < 0), dn = arr.filter(n => n.lane > 0);
+    return up.some(a => dn.some(c => Math.hypot(a.cx - c.cx, a.cy - c.cy) < rOf(a.it) + rOf(c.it) + 6));
+  };
+  let alpha = 0, placed = placeBranches(0);
+  while(nb > 1 && clash(placed) && alpha < .8){ alpha += .04; placed = placeBranches(alpha); }
+  nodes.push(...placed);
   const UL = 11;
   const ext = nodes.map(({ it, cx, cy, lane }) => {
     const ro = gearOf(it.T).ro, isN = it.t === 'n', n = isN ? useOf(it).length : 0, extra = n ? n * UL + 8 : 0;
@@ -250,6 +270,313 @@ function ctAnimPwm(){
     + ctAnimTx(160, 120, 'روشن و خاموشِ خیلی سریع ⇒ موتور فقط «میانگین» را حس می‌کند', '#8b93a3', 10));
 }
 
+/* رنگ‌آمیزیِ کد: هم‌ایده با halHighlight در ادیتورِ HAL. کد را (مثل halTokenize) به توکن می‌شکند و هر توکن را بر اساسِ نوعش رنگ می‌کند:
+   کامنت، عدد، کلمه‌ی کلیدی، نوعِ متغیر، تابع (هر اسمی که بعدش «(» بیاید)، ثابت‌های حروف‌بزرگ (GPIO_PIN_13 ...) و بقیه. */
+const CT_HL = { kw: '#c792ea', ty: '#57d8a3', fn: '#5db0ff', cn: '#e79a54', num: '#d4af37', cm: '#6b7280' };
+const CT_KW = new Set(['while', 'if', 'else', 'for', 'do', 'switch', 'break', 'continue', 'return', 'void']);
+const CT_TY = new Set(['int', 'uint8_t', 'uint16_t', 'uint32_t', 'int32_t', 'GPIO_PinState', 'TIM_HandleTypeDef']);
+function ctHighlight(src){
+  const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const span = (c, t, extra = '') => `<span style="color:${c}${extra}">${esc(t)}</span>`;
+  const re = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|(\d+)|([A-Za-z_]\w*)|([\s\S])/gy;
+  let out = '', m;
+  while((m = re.exec(src))){
+    if(m[1]) out += span(CT_HL.cm, m[1], ';font-style:italic');
+    else if(m[2]) out += span(CT_HL.num, m[2]);
+    else if(m[3]){
+      const id = m[3], nx = src.slice(re.lastIndex).match(/^\s*(.)/);
+      out += CT_KW.has(id) ? span(CT_HL.kw, id)
+        : CT_TY.has(id) ? span(CT_HL.ty, id)
+        : nx && nx[1] === '(' ? span(CT_HL.fn, id)
+        : /^[A-Z][A-Z0-9_]*$/.test(id) || /^GPIO[A-E]$/.test(id) ? span(CT_HL.cn, id)
+        : esc(id);
+    } else out += esc(m[4]);
+  }
+  return out;
+}
+/* بلوکِ کد مثلِ ادیتورِ HAL: ستونِ شماره‌ی خط + کدِ رنگی (فقط‌خواندنی).
+   toggles = { شماره‌ی خط: کلید } ⇒ آن خط‌ها طلایی و قابل‌کلیک‌اند (data-pm) تا کاربر کامنتشان کند. */
+function ctCodeBlock(title, code, col, toggles){
+  const lines = code.split('\n');
+  const gut = lines.map((_, i) => i + 1).join('\n');
+  const body = lines.map((l, i) => {
+    const k = toggles && toggles[i], h = ctHighlight(l) || ' ';
+    return k ? `<div data-pm="${k}" title="بزن تا این خط کامنت شود یا برگردد" style="cursor:pointer;background:rgba(212,175,55,.1);border-radius:4px;box-shadow:inset 3px 0 0 #d4af37">${h}</div>` : `<div>${h}</div>`;
+  }).join('');
+  return `<div dir="ltr" style="margin:8px 0;border:1px solid #2a3040;border-radius:10px;overflow:hidden;background:#10151f">`
+    + `<div dir="rtl" style="padding:5px 10px;font-size:12px;font-weight:700;color:${col};background:#161c28;border-bottom:1px solid #2a3040">${title}</div>`
+    + `<div style="display:flex;font:11.5px/1.65 JetBrains Mono,monospace">`
+    + `<pre aria-hidden="true" style="margin:0;padding:8px 8px;text-align:right;color:#4a5163;background:#0d121b;border-right:1px solid #2a3040;user-select:none">${gut}</pre>`
+    + `<pre style="margin:0;padding:8px 10px;color:#c9d0de;flex:1;min-width:0;overflow-x:auto;white-space:pre">${body}</pre></div></div>`;
+}
+/* کدِ کوتاهِ درون‌خطی (وسطِ جمله) با همان رنگ‌ها */
+const ctInl = t => `<code dir="ltr" style="font-family:JetBrains Mono,monospace;font-size:12px;background:#10151f;border:1px solid #2a3040;border-radius:6px;padding:1px 6px">${ctHighlight(t)}</code>`;
+const CT_CODE_DELAY = [
+  'while (1)',
+  '{',
+  '  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);',
+  '  HAL_Delay(500);                          // CPU اینجا گیر است',
+  '  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0))   // فقط اینجا به دکمه نگاه می‌کند',
+  '  {',
+  '    // ...',
+  '  }',
+  '}'
+].join('\n');
+const CT_CODE_TIMER = [
+  'HAL_TIM_Base_Start(&htim2);   // تایمر شروع به شمردن می‌کند (هر خانه ۱ میلی‌ثانیه)',
+  '',
+  'while (1)',
+  '{',
+  '  if (__HAL_TIM_GET_COUNTER(&htim2) >= 500)   // ۵۰۰ خانه گذشت؟',
+  '  {',
+  '    __HAL_TIM_SET_COUNTER(&htim2, 0);',
+  '    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);',
+  '  }',
+  '  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0))   // CPU همیشه آزاد است',
+  '  {',
+  '    // ...',
+  '  }',
+  '}'
+].join('\n');
+
+const CT_CODE_CB = [
+  'HAL_TIM_Base_Start_IT(&htim2);   // Period = 499 ⇒ هر ۵۰۰ میلی‌ثانیه یک وقفه',
+  '',
+  'while (1)',
+  '{',
+  '  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0))   // CPU کاملاً آزاد است',
+  '  {',
+  '    // ...',
+  '  }',
+  '}',
+  '',
+  'void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)',
+  '{',
+  '  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);   // خودش صدا زده می‌شود',
+  '}'
+].join('\n');
+
+
+/* کارتِ «هر کلاک چه کاری می‌کند؟»: برای هر کلاک یک صحنه‌ی متحرک (کریستال، کلید، ضربان، جاده‌ی کُند/تند) */
+const CT_CLK = {
+  hse: { mid: ['HSE'], col: 'hse',
+    flow: { srcs: [['Crystal', 'کریستال روی بُرد']], mid: ['HSE', '۸ MHz', 'ورودی خام'], outs: [['PLL', '× ۹ ⇒ ۷۲'], ['SYSCLK', 'مستقیم']] },
+    terms: [['HSE', 'High Speed External', 'کلاکِ پرسرعتِ بیرونی؛ «بیرونی» چون کریستال بیرونِ خودِ چیپ و روی بُرد است'], ['HSI', 'High Speed Internal', 'نسخه‌ی داخلیِ چیپ؛ ارزان‌تر ولی دقتش کمتر است'], ['PLL', 'Phase-Locked Loop', 'مدارِ ضرب‌کننده‌ی فرکانس؛ ۸ را می‌کند ۷۲']],
+    txt: 'روی بُردِ Blue Pill یک کریستالِ فلزیِ کوچک با نوشته‌ی ۸ مگاهرتز هست. داخلش یک تکه‌ی کوارتز است که وقتی برق بگیرد با فرکانسِ بسیار دقیقی می‌لرزد؛ مدارِ چیپ این لرزش را به یک موجِ مربعی (ضربان) تبدیل می‌کند. HSE خودش فقط ۸ مگاهرتز است که برای یک ARM کند است، پس معمولاً به PLL می‌رود تا تند شود. دقتش از HSI (مدارِ داخلی) بیشتر است و برای کارهایی مثل UART و USB که زمان‌بندیِ دقیق می‌خواهند مهم است.',
+    real: 'مثل ساعتِ مچیِ کوارتزی: داخلِ آن هم یک کریستالِ کوارتز مدام با فرکانسِ ثابت می‌لرزد و ساعت با شمردنِ همین لرزش‌ها وقت را نشان می‌دهد. یا مثل مترونومِ یک ارکستر: همه‌ی نوازنده‌ها (بخش‌های چیپ) با ضربِ او هماهنگ می‌شوند؛ اگر ضربش بی‌دقت باشد کلِ ارکستر به هم می‌ریزد.' },
+  sysclk: { mid: ['SYSCLK'], col: 'sys',
+    flow: { srcs: [['HSI', 'داخلی · ۸ MHz'], ['HSE', 'کریستال · ۸ MHz'], ['PLL', '۷۲ MHz']], pick: 2, mid: ['SYSCLK', '۷۲ MHz', 'انتخابگر (MUX)'], outs: [['AHB', '÷ ۱']] },
+    terms: [['SYSCLK', 'System Clock', 'کلاکِ سیستم؛ کلاکِ اصلیِ کلِ چیپ'], ['MUX', 'Multiplexer', 'انتخابگر؛ از چند ورودی فقط یکی را به خروجی وصل می‌کند'], ['HSI / HSE / PLL', 'Internal / External / Phase-Locked Loop', 'سه منبعی که می‌شود از بینشان انتخاب کرد']],
+    txt: 'SYSCLK کلاکِ اصلیِ کلِ چیپ است. پشتِ آن یک انتخابگر (Multiplexer) هست که سه منبع دارد: HSI (کریستالِ داخلی)، HSE (کریستالِ بیرونی) و PLL (خروجیِ ضرب‌شده). فقط یکی از آنها انتخاب می‌شود (در CubeMX اسمش System Clock Mux است). بیشترِ پروژه‌ها PLL را انتخاب می‌کنند تا چیپ با بیشینه‌ی سرعت (۷۲ مگاهرتز) کار کند. چیپ بعد از روشن شدن اول با HSI راه می‌افتد و بعد کلید روی PLL می‌رود.',
+    real: 'مثل دنده‌ی ماشین: چند دنده داری (HSI، HSE، PLL) ولی در هر لحظه فقط یکی درگیر است. ماشین همیشه با دنده‌ی ۱ استارت می‌خورد و بعد دنده‌ی تند را می‌گذاری؛ چیپ هم با HSI بالا می‌آید و بعد روی PLL می‌رود.' },
+  hclk: { mid: ['HCLK'], col: 'sys',
+    flow: { srcs: [['SYSCLK', '۷۲ MHz']], mid: ['HCLK', '۷۲ MHz', '÷ AHB (۱)'], outs: [['CPU', 'هسته‌ی Cortex-M'], ['Flash · RAM', 'حافظه‌ها'], ['DMA', 'انتقال داده'], ['APB1 · APB2', 'باس‌ها']] },
+    terms: [['HCLK', 'AHB Clock', 'کلاکِ باسِ AHB'], ['AHB', 'Advanced High-performance Bus', 'باسِ پیشرفته‌ی پرکارایی؛ شاهراهِ اصلیِ چیپ'], ['DMA', 'Direct Memory Access', 'دسترسیِ مستقیم به حافظه؛ جابه‌جاییِ داده بدونِ زحمتِ CPU'], ['APB', 'Advanced Peripheral Bus', 'باسِ پیشرفته‌ی قطعاتِ جانبی']],
+    txt: 'HCLK کلاکِ باسِ AHB است؛ این باس شاهراهِ اصلیِ چیپ است که CPU، حافظه‌ی Flash (برنامه)، RAM (داده) و DMA را به هم وصل می‌کند. وقتی HCLK برابر ۷۲ مگاهرتز است، CPU می‌تواند تقریباً ۷۲ میلیون دستور در ثانیه اجرا کند. HCLK از SYSCLK و با تقسیم‌کننده‌ی AHB Prescaler (معمولاً ÷۱) ساخته می‌شود و از اینجا راه به دو باسِ دیگر یعنی APB1 و APB2 دو شاخه می‌شود.',
+    real: 'مثل نوار نقاله‌ی اصلیِ یک کارخانه: همه‌ی کارگرانِ سالنِ اصلی (CPU، انبارِ Flash، قفسه‌ی RAM، پیکِ DMA) با همان آهنگِ نوار کار می‌کنند. نوار را کُند کنی کارخانه کندتر می‌شود ولی برق کمتری می‌خورد؛ برای همین در پروژه‌های باتری‌دار گاهی HCLK را عمداً کم می‌کنند.' },
+  apb: { mid: ['APB'], col: 'pclk',
+    flow: { hdr: ['باسِ اصلی', 'پل', 'باس‌های فرعی'], srcs: [['AHB', 'باسِ اصلی · سریع']], mid: ['APB', 'Bridge', 'پلِ AHB ⇒ APB'], outs: [['APB1', 'کُند · تا ۳۶ MHz'], ['APB2', 'تند · تا ۷۲ MHz']] },
+    terms: [['Bus', 'Bus', 'گذرگاه؛ سیم‌های مشترکِ آدرس، داده و کنترل که چند قطعه برای حرف زدن با هم از آن استفاده می‌کنند'], ['APB', 'Advanced Peripheral Bus', 'باسِ ساده و کم‌مصرفِ قطعاتِ جانبی (پریفرال‌ها)'], ['AHB', 'Advanced High-performance Bus', 'باسِ اصلی و پرسرعتِ چیپ'], ['Bridge', 'AHB-to-APB Bridge', 'پلی که AHB را به APB وصل می‌کند و سرعت را با آن تطبیق می‌دهد'], ['Master / Slave', 'Master / Slave', 'آغازکننده (مثل CPU و DMA) / پاسخ‌دهنده (مثل حافظه و UART)'], ['Prescaler', 'Prescaler', 'تقسیم‌کننده‌ی کلاک']],
+    txt: 'اول یک فرق مهم: <b>کلاک</b> «ضربان» است (سرعتِ کار)، ولی <b>باس</b> «جاده» است (مسیرِ رفت‌وآمدِ داده). هر جاده کلاکِ خودش را دارد: AHB کلاکش HCLK و APB1/APB2 کلاکشان PCLK1/PCLK2 است. باس (Bus) یعنی «گذرگاهِ مشترک»: چند سیمِ موازی (آدرس، داده و کنترل) که چند قطعه به آن وصل‌اند. هر وقت CPU (یا DMA) می‌خواهد با یک قطعه حرف بزند، اول روی باس آدرسِ آن قطعه را می‌گذارد («با کی کار دارم؟») و بعد داده رد و بدل می‌شود. در هر لحظه فقط یک آغازکننده (Master) روی باس صحبت می‌کند. در STM32 باسِ اصلی AHB است: سریع و پرمصرف، مخصوصِ CPU و حافظه‌ها. ولی UART، I2C، ADC و امثالِ آنها به آن سرعت نیاز ندارند و اگر همه را مستقیم به AHB می‌چسباندیم، مدار بزرگ و پرمصرف می‌شد. پس یک پل (Bridge) از AHB دو باسِ ساده‌تر می‌سازد: APB1 (تا ۳۶ مگاهرتز) و APB2 (تا ۷۲ مگاهرتز). کلاکِ هر کدام با یک Prescaler جدا از HCLK ساخته می‌شود؛ همان PCLK1 و PCLK2.',
+    real: 'مثل حمل‌ونقلِ شهر: AHB بزرگراهِ اصلی است که ماشین‌های سنگین (CPU و حافظه‌ها) تندروی می‌کنند. APB خیابان‌های فرعیِ محله‌هاست که پیک‌موتوری‌ها (UART، I2C، ADC) در آن رفت‌وآمد می‌کنند؛ لازم نیست همه‌ی خانه‌ها کنارِ بزرگراه باشند. پل (Bridge) هم همان خروجیِ بزرگراه به خیابانِ محله است که سرعت را کم می‌کند. یا مثل سیم‌کشیِ برقِ ساختمان: یک سیمِ اصلیِ ضخیم و بعد شاخه‌های نازک‌تر برای هر اتاق.' },
+  pclk1: { mid: ['PCLK1'], col: 'pclk',
+    flow: { srcs: [['HCLK', '۷۲ MHz']], mid: ['PCLK1', '۳۶ MHz', '÷ ۲ (APB1)'], outs: [['UART2 · I2C', 'CAN · SPI2'], ['TIM2/3/4', '×۲ ⇒ ۷۲ MHz']] },
+    terms: [['PCLK1', 'Peripheral Clock 1', 'کلاکِ پریفرال‌ها (قطعاتِ جانبی) روی باسِ شماره‌ی ۱'], ['APB1', 'Advanced Peripheral Bus 1', 'باسِ کُندترِ قطعاتِ جانبی'], ['UART', 'Universal Asynchronous Receiver/Transmitter', 'فرستنده/گیرنده‌ی سریالِ ناهمگام'], ['I2C', 'Inter-Integrated Circuit', 'ارتباطِ دوسیمه بینِ چیپ‌ها'], ['SPI', 'Serial Peripheral Interface', 'ارتباطِ سریالِ پرسرعت'], ['CAN', 'Controller Area Network', 'شبکه‌ی ارتباطیِ خودرو']],
+    txt: 'PCLK1 کلاکِ باسِ APB1 است؛ باسی برای قطعاتِ جانبی که به سرعتِ بالا نیاز ندارند: UART2، I2C، CAN، SPI2 و تایمرهای TIM2/3/4. این باس حداکثر ۳۶ مگاهرتز تحمل دارد، برای همین APB1 Prescaler را ÷۲ می‌گذاریم (۷۲ ÷ ۲ = ۳۶). ولی تایمرها یک قانونِ ویژه دارند: اگر تقسیم‌کننده‌ی APB برابر ۱ نباشد، کلاکِ تایمر ×۲ می‌شود؛ پس TIM2/3/4 دوباره ۷۲ مگاهرتز می‌گیرند.',
+    real: 'مثل جاده‌ی شهری با محدودیتِ سرعت: ماشین‌های معمولی (ارتباط‌های UART و I2C) فقط تا ۳۶ می‌توانند بروند. ولی تایمرها مثل آمبولانس یک خطِ ویژه‌ی توربویی (×۲) دارند و با سرعتِ کامل می‌روند.' },
+  pclk2: { mid: ['PCLK2'], col: 'pclk',
+    flow: { srcs: [['HCLK', '۷۲ MHz']], mid: ['PCLK2', '۷۲ MHz', '÷ ۱ (APB2)'], outs: [['UART1 · SPI1', 'GPIO'], ['ADC', '÷۶ ⇒ ۱۲ MHz'], ['TIM1', '×۱ ⇒ ۷۲ MHz']] },
+    terms: [['PCLK2', 'Peripheral Clock 2', 'کلاکِ پریفرال‌ها روی باسِ شماره‌ی ۲'], ['APB2', 'Advanced Peripheral Bus 2', 'باسِ تندترِ قطعاتِ جانبی'], ['ADC', 'Analog-to-Digital Converter', 'مبدلِ آنالوگ به دیجیتال؛ ولتاژ سنسور را به عدد تبدیل می‌کند'], ['GPIO', 'General-Purpose Input/Output', 'پایه‌های ورودی/خروجیِ عمومی'], ['TIM', 'Timer', 'تایمر']],
+    txt: 'PCLK2 کلاکِ باسِ APB2 است؛ باسِ تندتر برای UART1، SPI1، ADC، GPIOها و تایمرِ TIM1. تا ۷۲ مگاهرتز تحمل دارد، پس APB2 Prescaler را ÷۱ می‌گذاریم و PCLK2 همان ۷۲ می‌ماند. چون تقسیم‌کننده ۱ است، کلاکِ تایمرِ TIM1 هم ×۱ می‌ماند (۷۲). ADC یک تقسیم‌کننده‌ی جدا دارد (ADC Prescaler) چون بیشتر از ۱۴ مگاهرتز تحمل نمی‌کند: ۷۲ ÷ ۶ = ۱۲ مگاهرتز.',
+    real: 'مثل بزرگراه: کارهای سریع، مثل نمونه‌گیریِ سنسورها با ADC و ساختنِ PWM برای موتور با TIM1، روی آن با سرعتِ کامل می‌روند. در یک ربات همین باس سنسورها را می‌خواند و موتورها را می‌راند.' }
+};
+const ctHasFa = t => /[\u0600-\u06FF]/.test(t);
+const ctLatTx = (x, y, t, fs = 10.5, fill = '#e8e2d0') => `<text x="${x}" y="${y}" text-anchor="middle" font-size="${fs}" font-weight="700" style="fill:${fill};direction:ltr;unicode-bidi:bidi-override">${t}</text>`;
+const ctAnyTx = (x, y, t, fs, fill) => ctHasFa(t) ? ctAnimTx(x, y, t, fill, fs) : ctLatTx(x, y, t, fs, fill);
+function ctClkChip(x, y, w, h, lines, col, hl){
+  const cy = y + h / 2, one = lines.length === 1;
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="${hl ? col : '#161c28'}" fill-opacity="${hl ? .18 : 1}" stroke="${col}" stroke-width="${hl ? 2 : 1.3}"/>`
+    + ctAnyTx(x + w / 2, one ? cy + 4 : cy - 1, lines[0], 10.5, hl ? col : '#e8e2d0')
+    + (one ? '' : ctAnyTx(x + w / 2, cy + 11, lines[1], 8.5, '#8b93a3'));
+}
+function ctClkRoad(x1, x2, y){
+  return `<rect x="${x1}" y="${y - 8}" width="${x2 - x1}" height="16" rx="8" fill="#1b212d" stroke="#2a3040"/>`
+    + `<line x1="${x1 + 6}" x2="${x2 - 6}" y1="${y}" y2="${y}" stroke="#4a5163" stroke-width="1.5" stroke-dasharray="6 6"><animate attributeName="stroke-dashoffset" values="0;-12" dur=".7s" repeatCount="indefinite"/></line>`;
+}
+/* جاده‌ی مسیری (با پیچ): اول کنارِ همه‌ی جاده‌ها، بعد داخلشان، بعد خطِ‌چینِ وسط؛ پس گوشه‌ها و دوراهی‌ها یکپارچه می‌شوند و دایره‌ها دقیقاً روی خطِ وسط می‌روند */
+function ctClkRoads(paths){
+  const st = (w, c, extra = '') => paths.map(d => `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"${extra}/>`).join('');
+  return st(19, '#2a3040') + st(15, '#1b212d')
+    + paths.map(d => `<path d="${d}" fill="none" stroke="#4a5163" stroke-width="1.5" stroke-dasharray="6 6" stroke-linecap="butt" stroke-linejoin="round"><animate attributeName="stroke-dashoffset" values="0;-12" dur=".7s" repeatCount="indefinite"/></path>`).join('');
+}
+const ctClkDots = (path, n, dur, col, r = 3.2) => Array.from({ length: n }, (_, i) =>
+  `<circle r="${r}" fill="${col}"><animateMotion dur="${dur}s" begin="${(-i * dur / n).toFixed(2)}s" repeatCount="indefinite" path="${path}"/></circle>`).join('');
+function ctClkGear(cx, cy, T, rp, txt, col, dur, dir = 1){
+  const g = ctTeeth(T, rp);
+  return `<g transform="translate(${cx} ${cy})"><g><path d="${g.d}" fill="#2a2f3b" stroke="${col}" stroke-width="1.8" stroke-linejoin="round"/>`
+    + `<animateTransform attributeName="transform" type="rotate" values="0;${360 * dir}" dur="${dur}s" repeatCount="indefinite"/></g>`
+    + `<circle r="${(rp * .62).toFixed(1)}" fill="#10151f" stroke="${col}" stroke-width="1.2"/>${ctLatTx(0, 3.5, txt, 9.5, col)}</g>`;
+}
+const ctClkSign = (cx, cy, txt) => `<circle cx="${cx}" cy="${cy}" r="11" fill="#10151f" stroke="#ff6b6b" stroke-width="2.4"/>${ctAnimTx(cx, cy + 3.5, txt, '#e8e2d0', 9.5)}`;
+
+/* نمودارِ مسیر: ورودی(ها) ⇒ خودِ کلاک ⇒ مصرف‌کننده‌ها (با جریانِ متحرک) */
+function ctClkFlow(k){
+  const d = CT_CLK[k], f = d.flow, col = CT_COL[d.col], n = Math.max(f.srcs.length, f.outs.length), rowH = 42, top = 30, H = top + n * rowH + 8;
+  const sx = 4, mx = 118, ox = 232, bw = 84, mw = 84, bh = 34, cy = top + n * rowH / 2;
+  const ys = (cnt, i) => top + (n * rowH / cnt) * (i + .5);
+  const flowPath = (x1, y1, x2, y2, c, on) => {
+    const xm = (x1 + x2) / 2;
+    return `<path d="M${x1} ${y1}C${xm} ${y1} ${xm} ${y2} ${x2 - 6} ${y2}" fill="none" stroke="${on ? c : '#4a5163'}" stroke-width="${on ? 2.4 : 1.3}" stroke-dasharray="${on ? '6 4' : '3 4'}" stroke-linecap="round">`
+      + (on ? '<animate attributeName="stroke-dashoffset" values="10;0" dur=".7s" repeatCount="indefinite"/>' : '') + '</path>'
+      + `<path d="M${x2} ${y2}l-7 -4v8z" fill="${on ? c : '#4a5163'}"/>`;
+  };
+  const card = (x, y, w, h, lines, c, on) => `<rect x="${x}" y="${y - h / 2}" width="${w}" height="${h}" rx="9" fill="${c}" fill-opacity="${on ? .16 : .06}" stroke="${on ? c : '#2a3040'}" stroke-width="${on ? 1.8 : 1.2}"/>`
+    + `<rect x="${x}" y="${y - h / 2 + 5}" width="3.5" height="${h - 10}" rx="1.75" fill="${on ? c : '#4a5163'}"/>`
+    + ctAnyTx(x + w / 2 + 2, lines[1] ? y - 2 : y + 4, lines[0], 10.5, on ? '#f3eedd' : '#aab1c0')
+    + (lines[1] ? ctAnyTx(x + w / 2 + 2, y + 11, lines[1], 8.5, '#8b93a3') : '');
+  let o = `<defs><filter id="ctClkGlow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="5"/></filter></defs>`
+    + [sx + bw / 2, mx + mw / 2, ox + bw / 2].map((x, i) => ctAnimTx(x, 15, (f.hdr || ['ورودی', 'خودِ کلاک', 'کجا می‌رود؟'])[i], '#6b7280', 9)).join('');
+  f.srcs.forEach((s, i) => { const y = ys(f.srcs.length, i), on = f.pick === undefined || f.pick === i; o += flowPath(sx + bw, y, mx, cy, col, on) + card(sx, y, bw, bh, s, on ? col : '#6b7280', on); });
+  o += `<rect x="${mx}" y="${cy - 32}" width="${mw}" height="64" rx="14" fill="${col}" opacity=".5" filter="url(#ctClkGlow)"/>`
+    + `<rect x="${mx}" y="${cy - 32}" width="${mw}" height="64" rx="14" fill="#10151f" stroke="${col}" stroke-width="2.4"/>`
+    + `<rect x="${mx}" y="${cy - 32}" width="${mw}" height="64" rx="14" fill="${col}" fill-opacity=".14"/>`
+    + ctLatTx(mx + mw / 2, cy - 11, f.mid[0], 14, col) + ctLatTx(mx + mw / 2, cy + 7, f.mid[1], 12.5, '#f3eedd') + ctAnyTx(mx + mw / 2, cy + 23, f.mid[2], 9, '#8b93a3');
+  f.outs.forEach((s, i) => { const y = ys(f.outs.length, i); o += flowPath(mx + mw, cy, ox, y, col, true) + card(ox, y, bw, bh, s, col, true); });
+  return ctAnimSvg(H, o);
+}
+const ctClkView = k => {
+  const d = CT_CLK[k];
+  return ctClkSvg(k) + ctClkFlow(k)
+    + `<div class="hs-p">${d.txt}</div>`
+    + `<div class="ct-explain"><b>📚 اسمِ کاملِ هر کلمه:</b><br>${d.terms.map(([a, e, fa]) => `<b>${a}</b> = <span dir="ltr" style="font-family:JetBrains Mono,monospace;font-size:12px;color:#d4af37">${e}</span> — ${fa}`).join('<br>')}</div>`
+    + `<div class="ct-explain"><b>🌍 مثال در دنیای واقعی:</b> ${d.real}</div>`;
+};
+
+function ctClkSvg(k){
+  const C = CT_COL;
+  if(k === 'hse'){
+    const wave = ctSquare(128, 22, 8, 40, 72);
+    return ctAnimSvg(150,
+      `<rect x="6" y="14" width="86" height="92" rx="10" fill="#0f3a2a" fill-opacity=".45" stroke="#2a5a46"/>`
+      + ctAnimLat(14, 27, 'PCB')
+      + `<g transform="translate(46 56)"><g><rect x="-24" y="-16" width="48" height="30" rx="15" fill="#c9ced8" stroke="#8b93a5" stroke-width="1.5"/><text y="4" text-anchor="middle" font-size="9" font-weight="700" fill="#2a2f3b">8.000</text>`
+      + `<animateTransform attributeName="transform" type="translate" values="0 0;1.6 0;0 0;-1.6 0;0 0" dur=".16s" repeatCount="indefinite"/></g>`
+      + `<line x1="-9" y1="14" x2="-9" y2="34" stroke="#c9ced8" stroke-width="2.4"/><line x1="9" y1="14" x2="9" y2="34" stroke="#c9ced8" stroke-width="2.4"/></g>`
+      + [0, 1, 2].map(i => `<path d="M${76 + i * 5} ${46 - i * 3}q${6 + i * 2} ${10 + i * 3} 0 ${20 + i * 6}" fill="none" stroke="${C.hse}" stroke-width="2" stroke-linecap="round" opacity="0"><animate attributeName="opacity" values="0;1;0" dur="1.2s" begin="${(i * .25).toFixed(2)}s" repeatCount="indefinite"/></path>`).join('')
+      + `<line x1="92" y1="56" x2="128" y2="56" stroke="${C.hse}" stroke-width="2.4"/>`
+      + `<path d="${wave}" fill="none" stroke="${C.hse}" stroke-width="2.4" stroke-linejoin="round"/>` + ctSweep(128, 30, 82, 176, 2)
+      + ctAnimTx(46, 124, 'کریستال روی بُرد', '#e8e2d0', 10.5)
+      + ctAnimTx(216, 98, '۸ میلیون ضربه در ثانیه', C.hse, 10)
+      + ctAnimTx(160, 142, 'می‌لرزد ⇒ ضربانِ دقیق و ثابت ⇒ مبدأ همه‌ی کلاک‌ها', '#8b93a3', 9.5));
+  }
+  if(k === 'sysclk'){
+    const ys = [30, 70, 110];
+    const ins = [['HSI', 'داخلی · ۸'], ['HSE', 'کریستال · ۸'], ['PLL', '۷۲ ✔']];
+    return ctAnimSvg(152,
+      ins.map((it, i) => {
+        const on = i === 2, col = on ? C.sys : '#6b7280';
+        return ctClkChip(6, ys[i] - 15, 70, 30, it, on ? C.sys : '#3a4050', on)
+          + `<path d="M76 ${ys[i]}L140 ${ys[i]}" stroke="${col}" stroke-width="${on ? 2.6 : 1.4}" fill="none"${on ? '' : ' stroke-dasharray="4 4"'}/>`;
+      }).join('')
+      + `<path d="M140 14L188 46V94L140 126Z" fill="#161c28" stroke="${C.sys}" stroke-width="2"/>`
+      + ctAnimTx(158, 74, 'MUX', C.sys, 9.5)
+      + `<line x1="178" y1="70" x2="146" y2="110" stroke="${C.sys}" stroke-width="3.4" stroke-linecap="round"/><circle cx="178" cy="70" r="4.5" fill="${C.sys}"/>`
+      + ctClkDots('M76 110L140 110', 3, 1.4, C.sys)
+      + `<path d="M188 70L204 70" stroke="${C.sys}" stroke-width="2.6"/>`
+      + `<path d="${ctSquare(204, 10, 9, 56, 84)}" fill="none" stroke="${C.sys}" stroke-width="2.4" stroke-linejoin="round"/>` + ctSweep(204, 46, 94, 90, 1)
+      + ctLatTx(252, 38, 'SYSCLK', 11, C.sys) + ctAnimTx(252, 108, '۷۲ مگاهرتز', '#e8e2d0', 11)
+      + ctAnimTx(160, 146, 'کلید فقط یکی را وصل می‌کند: اینجا PLL', '#8b93a3', 9.5));
+  }
+  if(k === 'hclk'){
+    return ctAnimSvg(156,
+      `<rect x="108" y="14" width="104" height="44" rx="10" fill="${C.sys}" fill-opacity=".16" stroke="${C.sys}" stroke-width="2.4"><animate attributeName="stroke-width" values="2;5.5;2" dur=".9s" repeatCount="indefinite"/><animate attributeName="fill-opacity" values=".12;.38;.12" dur=".9s" repeatCount="indefinite"/></rect>`
+      + ctLatTx(160, 33, 'CPU', 12, C.sys) + ctAnimTx(160, 48, 'هسته‌ی Cortex-M', '#8b93a3', 8.5)
+      + ctLatTx(228, 39, '♥', 13, '#ff6b6b')
+      + `<line x1="160" y1="58" x2="160" y2="84" stroke="${C.sys}" stroke-width="2.4"/>`
+      + `<rect x="16" y="78" width="288" height="12" rx="6" fill="#1b212d" stroke="#2a3040"/>` + ctLatTx(160, 100 - 1, 'AHB bus', 8.5, '#6b7280')
+      + ctClkDots('M20 84L300 84', 6, 2.4, C.sys, 2.8)
+      + [['Flash', 16, 0], ['RAM', 90, 0], ['DMA', 164, 0]].map(([n, x]) => `<line x1="${x + 32}" y1="90" x2="${x + 32}" y2="110" stroke="#4a5163" stroke-width="2"/>` + ctClkChip(x, 110, 64, 26, [n], '#3a4050')).join('')
+      + `<line x1="268" y1="90" x2="268" y2="110" stroke="${C.pclk}" stroke-width="2"/>` + ctClkChip(238, 110, 74, 26, ['⇒ APB1/2'], C.pclk)
+      + ctAnimTx(160, 150, 'همه با یک ضربان هماهنگ می‌شوند (۷۲ مگاهرتز)', '#8b93a3', 9.5));
+  }
+  if(k === 'apb'){
+    const top = [['CPU', C.sys], ['Flash', '#3a4050'], ['RAM', '#3a4050'], ['DMA', C.sys]];
+    return ctAnimSvg(204,
+      top.map(([n, c], i) => `<line x1="${39 + i * 72}" y1="32" x2="${39 + i * 72}" y2="44" stroke="#4a5163" stroke-width="2"/>` + ctClkChip(6 + i * 72, 10, 66, 22, [n], c, c === C.sys)).join('')
+      + ctClkRoad(6, 314, 52) + ctClkDots('M10 52L310 52', 6, 2.4, C.sys)
+      + ctAnimTx(60, 78, 'AHB: جاده‌ی اصلیِ سریع', C.sys, 9.5)
+      + `<line x1="160" y1="60" x2="160" y2="76" stroke="${C.psc}" stroke-width="3"/>` + ctClkDots('M160 60V76', 2, 1.2, C.psc, 2.6)
+      + ctClkChip(116, 76, 88, 24, ['Bridge'], C.psc, 1)
+      + `<path d="M132 100V108H78V116" fill="none" stroke="${C.pclk}" stroke-width="2.4"/><path d="M188 100V108H242V116" fill="none" stroke="${C.pclk}" stroke-width="2.4"/>`
+      + ctClkDots('M132 100V108H78V116', 2, 3, C.pclk, 2.6) + ctClkDots('M188 100V108H242V116', 3, 1.3, C.pclk, 2.6)
+      + ctClkRoad(6, 154, 126) + ctClkRoad(166, 314, 126)
+      + ctClkDots('M10 126L150 126', 3, 3.6, C.pclk) + ctClkDots('M170 126L310 126', 5, 1.6, C.pclk)
+      + ['UART2', 'I2C', 'CAN'].map((n, i) => `<line x1="${30 + i * 50}" y1="134" x2="${30 + i * 50}" y2="144" stroke="#4a5163" stroke-width="2"/>` + ctClkChip(8 + i * 50, 144, 44, 22, [n], C.pclk)).join('')
+      + ['UART1', 'SPI1', 'ADC'].map((n, i) => `<line x1="${190 + i * 50}" y1="134" x2="${190 + i * 50}" y2="144" stroke="#4a5163" stroke-width="2"/>` + ctClkChip(168 + i * 50, 144, 44, 22, [n], C.pclk)).join('')
+      + ctLatTx(80, 182, 'APB1 ≤ 36 MHz', 9.5, C.pclk) + ctLatTx(240, 182, 'APB2 ≤ 72 MHz', 9.5, C.pclk)
+      + ctAnimTx(160, 198, 'یک جاده‌ی اصلی ⇒ پل ⇒ دو جاده‌ی فرعی', '#8b93a3', 9.5));
+  }
+  const one = k === 'pclk1';
+  const h = one ? 168 : 148, yB = one ? 126 : 108, jx = 136, gx = 174;
+  const branch = `M${jx} 50V${yB}H206`;
+  return ctAnimSvg(h,
+    ctClkRoads(['M58 50H206', branch])
+    + ctClkChip(4, 34, 52, 32, ['HCLK', '۷۲'], C.sys)
+    + ctClkDots('M60 50H84', 2, 1, C.sys) + ctClkGear(100, 50, 10, 14, one ? '÷۲' : '÷۱', C.pclk, 4)
+    + ctClkDots('M116 50H204', one ? 3 : 5, one ? 3.4 : 1.3, C.pclk)
+    + ctClkSign(168, 24, one ? '۳۶' : '۷۲')
+    + ctClkChip(214, 30, 102, 40, one ? ['UART2 · I2C', 'CAN · SPI2'] : ['UART1 · SPI1', 'ADC'], C.pclk)
+    + ctClkDots(`M${jx} 50V${yB}H${gx - 16}`, one ? 2 : 3, one ? 3.4 : 1.4, C.pclk, 2.8)
+    + ctClkGear(gx, yB, 8, 12, one ? '×۲' : '×۱', C.tim, one ? 1.2 : 4, -1)
+    + ctClkDots(`M${gx + 16} ${yB}H204`, 2, one ? .8 : 1.2, one ? C.tim : C.pclk, 2.8)
+    + ctClkChip(214, yB - 18, 102, 36, one ? ['TIM2/3/4', '۷۲ MHz (×۲)'] : ['TIM1', '۷۲ MHz (×۱)'], C.tim, 1)
+    + ctAnimTx(196, one ? 86 : 82, one ? 'جاده‌ی کُند: ÷۲ ⇒ ۳۶' : 'جاده‌ی تند: ÷۱ ⇒ ۷۲', one ? C.pclk : C.sys, 9.5)
+    + ctAnimTx(160, h - 8, one ? 'تایمرها توربوی ×۲ دارند ⇒ دوباره ۷۲' : 'تایمر هم بدونِ ضرب ۷۲ می‌گیرد', '#8b93a3', 9.5));
+}
+
+
+/* نقشه‌ی کاملِ درخت کلاکِ STM32F103 (ایستا): مسیرِ اصلی پررنگ، بقیه‌ی شاخه‌ها کم‌رنگ */
+function ctFullTree(){
+  const W = 762, H = 372, f = n => (+n).toFixed(1);
+  const rtl = 'style="direction:rtl;unicode-bidi:embed"';
+  const box = (x, y, w, h, a, b, col, main) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8" fill="${main ? col : '#161c28'}" fill-opacity="${main ? .16 : 1}" stroke="${main ? col : '#3a4050'}" stroke-width="${main ? 2.2 : 1.2}"/>`
+    + `<text x="${x + w / 2}" y="${y + (b ? h / 2 - 2 : h / 2 + 4)}" font-size="11.5" font-weight="700" fill="${main ? col : '#c9d0de'}" text-anchor="middle">${a}</text>`
+    + (b ? `<text x="${x + w / 2}" y="${y + h / 2 + 11}" font-size="9.5" fill="#8b93a5" text-anchor="middle" ${rtl}>${b}</text>` : '');
+  const ar = (x1, y1, x2, y2, col = '#6b7280', dash) => {
+    const a = Math.atan2(y2 - y1, x2 - x1), hx = x2 - 6 * Math.cos(a), hy = y2 - 6 * Math.sin(a), nx = -Math.sin(a) * 3.4, ny = Math.cos(a) * 3.4;
+    return `<path d="M${x1} ${y1}L${f(hx)} ${f(hy)}" stroke="${col}" stroke-width="1.6" fill="none"${dash ? ' stroke-dasharray="4 3"' : ''}/><path d="M${x2} ${y2}L${f(hx + nx)} ${f(hy + ny)}L${f(hx - nx)} ${f(hy - ny)}z" fill="${col}"/>`;
+  };
+  const lbl = (x, y, t) => `<text x="${x}" y="${y}" font-size="9" fill="#8b93a5" text-anchor="middle" ${rtl}>${t}</text>`;
+  const C = CT_COL;
+  let o = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:560px;display:block;margin:6px auto" role="img" aria-label="Clock tree">`;
+  // خطوط
+  o += ar(90, 47, 140, 88) + ar(90, 127, 140, 102) + lbl(108, 62, '÷۲') + lbl(104, 122, '÷۱ یا ÷۲');
+  o += `<path d="M90 38H316" stroke="#6b7280" stroke-width="1.4" fill="none" stroke-dasharray="4 3"/>` + ar(316, 38, 316, 70, '#6b7280');
+  o += `<path d="M90 139H316" stroke="#6b7280" stroke-width="1.4" fill="none" stroke-dasharray="4 3"/>` + ar(316, 139, 316, 120, '#6b7280');
+  o += ar(236, 95, 290, 95, C.sys) + ar(386, 95, 430, 95, C.sys) + ar(500, 95, 540, 95, C.sys);
+  o += ar(188, 120, 188, 200) + ar(360, 120, 360, 170);
+  o += ar(624, 84, 650, 44, C.sys) + ar(624, 104, 650, 100, C.sys);
+  o += `<path d="M582 120V150H410V308M410 196" stroke="${C.pclk}" stroke-width="1.8" fill="none"/>` + ar(410, 196, 430, 196, C.pclk) + ar(410, 308, 430, 308, C.pclk);
+  o += ar(504, 196, 534, 196, C.pclk) + ar(618, 196, 648, 178, C.pclk) + ar(618, 196, 648, 214, C.tim);
+  o += ar(504, 308, 534, 308, C.pclk) + ar(618, 308, 648, 270, C.pclk) + ar(618, 308, 648, 308, C.tim) + ar(618, 308, 648, 346, C.pclk);
+  // جعبه‌ها
+  o += box(6, 30, 84, 34, 'HSI', '۸ MHz · داخلی', C.hse) + box(6, 110, 84, 34, 'HSE', 'کریستال ۴–۱۶ MHz', C.hse, 1);
+  o += box(140, 70, 96, 50, 'PLL', '× ۲ … × ۱۶', C.sys, 1) + box(290, 70, 96, 50, 'SYSCLK', 'انتخابگر · ≤ ۷۲ MHz', C.sys, 1);
+  o += box(430, 70, 70, 50, 'AHB', '÷۱ … ÷۵۱۲', C.sys, 1) + box(540, 70, 84, 50, 'HCLK', '≤ ۷۲ MHz', C.sys, 1);
+  o += box(650, 24, 104, 40, 'CPU · Flash', 'RAM · DMA', C.sys) + box(650, 82, 104, 36, 'SysTick', 'HCLK ÷ ۸', C.sys);
+  o += box(140, 200, 96, 36, 'USB', 'PLL ÷۱٫۵ ⇒ ۴۸ MHz', C.psc) + box(290, 170, 96, 36, 'MCO', 'خروجیِ کلاک روی PA8', C.psc);
+  o += box(430, 178, 74, 36, 'APB1', '÷۱ … ÷۱۶', C.pclk, 1) + box(534, 178, 84, 36, 'PCLK1', '≤ ۳۶ MHz', C.pclk, 1);
+  o += box(648, 162, 106, 32, 'UART2 · I2C', 'SPI2 · CAN', C.pclk) + box(648, 198, 106, 32, 'TIM2/3/4', 'تایمر (÷۱ ⇒ ×۱ ، وگرنه ×۲)', C.tim, 1);
+  o += box(430, 290, 74, 36, 'APB2', '÷۱ … ÷۱۶', C.pclk, 1) + box(534, 290, 84, 36, 'PCLK2', '≤ ۷۲ MHz', C.pclk, 1);
+  o += box(648, 255, 106, 30, 'UART1 · SPI1', '', C.pclk) + box(648, 293, 106, 30, 'TIM1', 'تایمر (×۱ یا ×۲)', C.tim, 1) + box(648, 331, 106, 34, 'ADC', 'ADCCLK ÷۲/۴/۶/۸ ≤ ۱۴ MHz', C.pclk);
+  o += box(6, 256, 150, 34, 'LSI ۴۰ kHz', '⇒ IWDG · RTC', '#6b7280') + box(6, 300, 150, 34, 'LSE ۳۲٫۷۶۸ kHz', '⇒ RTC', '#6b7280');
+  o += `<rect x="182" y="256" width="206" height="78" rx="8" fill="#161c28" stroke="#d4af37" stroke-dasharray="4 3"/>`
+    + `<text x="285" y="276" font-size="10.5" font-weight="700" fill="#d4af37" text-anchor="middle" ${rtl}>⚠ Flash Latency (Wait State)</text>`
+    + `<text x="285" y="294" font-size="10" fill="#c9d0de" text-anchor="middle" ${rtl}>تا ۲۴ MHz ⇒ ۰ ؛ تا ۴۸ ⇒ ۱ ؛ تا ۷۲ ⇒ ۲</text>`
+    + `<text x="285" y="312" font-size="9.5" fill="#8b93a5" text-anchor="middle" ${rtl}>CubeMX خودش تنظیمش می‌کند</text>`;
+  return o + '</svg>';
+}
+
 function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   const sel = (k, opts, sign) => `<select class="ct-sel" data-k="${k}">${opts.map(o => `<option value="${o}">${sign}${ctFa(o)}</option>`).join('')}</select>`;
   const row = (k, title, min, max) => `<div class="ct-row"><div class="ct-rn" data-talk="${k}"><b>${title}</b><span data-h="${k}"></span></div><input type="range" data-k="${k}" min="${min}" max="${max}"><input type="number" class="ct-num" data-k="${k}" min="${min}" max="${max}" inputmode="numeric"></div>`;
@@ -259,7 +586,33 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
 
   container.innerHTML = `
     <div class="sim-wrap ct-wrap">
-      <div class="sim-hw-note">هدف: با چرخ‌دنده‌ها ببین ضریب‌های کلاک چطور ساخته می‌شوند، تایمر و PWM را قدم‌به‌قدم بفهم، و اگر دوست داشتی آخرش یک PWM ۳۱٫۲۵ کیلوهرتزیِ ۵۰٪ هم بساز. امتحان کردنِ شبیه‌ساز اختیاری است؛ اگر فقط مطالعه کردی، پایینِ صفحه «مطالعه کردم ✓» را بزن تا مأموریت کامل شود. روی هر چرخ‌دنده یا صفحه بزن تا شوالیه توضیحش بدهد.</div>
+      <div class="sim-hw-note">هدف: اول ببین delay چرا مشکل دارد، بعد با چرخ‌دنده‌ها ببین ضریب‌های کلاک چطور ساخته می‌شوند، تایمر و PWM را قدم‌به‌قدم بفهم، و اگر دوست داشتی آخرش یک PWM ۳۱٫۲۵ کیلوهرتزیِ ۵۰٪ هم بساز. امتحان کردنِ شبیه‌ساز اختیاری است؛ اگر فقط مطالعه کردی، پایینِ صفحه «مطالعه کردم ✓» را بزن تا مأموریت کامل شود. روی هر چرخ‌دنده یا صفحه بزن تا شوالیه توضیحش بدهد.</div>
+      <div class="ct-stage-t">⏳ بخش ۱ — delay یعنی چی؟</div>
+      <div class="ct-explain"><b>delay یعنی «همین‌جا بایست و صبر کن».</b> مثلاً ${ctInl('HAL_Delay(500)')} یعنی ۵۰۰ میلی‌ثانیه صبر کن. ساده است و فقط یک خط کد؛ اما در این مدت CPU مثل کسی است که به ساعت زل زده: <b>هیچ کارِ دیگری نمی‌کند</b>. به این حالت <b>مسدودکننده (Blocking)</b> می‌گویند.<br><br>
+        <b>معایبِ delay:</b><br>
+        ۱) <b>CPU قفل می‌شود:</b> در حینِ delay، فشرده شدنِ دکمه یا رسیدنِ داده‌ی سنسور را نمی‌بینی.<br>
+        ۲) <b>کارها پشت‌سرهم می‌شوند، نه هم‌زمان:</b> اگر یک LED را با delay چشمک بزنی، نمی‌توانی در همان لحظه چیزِ دیگری را هم کنترل کنی.<br>
+        ۳) <b>دقتش کامل نیست:</b> delayِ نرم‌افزاری به وقفه‌ها وابسته است و اگر وقفه‌ی دیگری وسط بیاید، زمان کمی بیشتر می‌شود.<br>
+        <b>ایده:</b> زمان‌شماری را به سخت‌افزار بسپاریم؛ یعنی <b>تایمر</b>. خودت امتحان کن!</div>
+      <div class="ct-sc">
+        <div class="ct-sc-h"><b data-talk="dly">🧪 آزمایش: LED چشمک‌زن + دکمه</b><label class="ct-ctl">delay (ms) ${sel('dlD', [200, 500, 1000], '')}</label></div>
+        <div class="hs-p">برنامه دو کار دارد: <b>LED را چشمک بزند</b> و <b>به دکمه جواب بدهد</b>. دکمه را چندبار بزن و ببین کدام روش آن را می‌بیند. (هر کلیک یک فشارِ کوتاه است.)</div>
+        ${ctCodeBlock('روش ۱: با delay', CT_CODE_DELAY, '#ff8a80')}
+        <div class="ll-row" id="ctDlm" style="margin:8px 0"><button type="button" class="sim-btn" data-dlm="2" aria-pressed="true">⏱️ روش ۲: شمارنده</button><button type="button" class="sim-btn sim-btn-ghost" data-dlm="3" aria-pressed="false">🔔 روش ۳: callback</button></div>
+        <div id="ctDlm2">
+          ${ctCodeBlock('روش ۲: با تایمر (شمارنده را خودت نگاه می‌کنی)', CT_CODE_TIMER, '#57d8a3')}
+        </div>
+        <div id="ctDlm3" hidden>
+        <div class="hs-p">در روش ۲ هنوز CPU باید مدام به شمارنده نگاه کند. <b>روش ۳ (callback)</b> این را هم برمی‌دارد: تایمر وقتی به Period رسید خودش یک «زنگ» (وقفه) می‌زند، CPU لحظه‌ای کارش را رها می‌کند، تابعِ ${ctInl('HAL_TIM_PeriodElapsedCallback')} را اجرا می‌کند و برمی‌گردد سرِ کارِ قبلی. برای ۵۰۰ میلی‌ثانیه: PSC = ۷۱۹۹۹ و Period = ۴۹۹ (چون Period+۱ خانه می‌شمارد). تابعِ callback را کوتاه نگه دار.</div>
+          ${ctCodeBlock('روش ۳: تایمر با callback (وقفه)', CT_CODE_CB, '#5db0ff')}
+        </div>
+        <canvas class="ct-cv" id="ctDl" data-dl></canvas>
+        <div class="hs-p" style="display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;margin:6px 0"><span><b style="color:#ff6b6b">■</b> CPU گیرِ delay است</span><span><b style="color:#57d8a3">■</b> سرک کشیدن به دکمه / CPU آزاد</span><span><b style="color:#d4af37">▮</b> شمارنده به ۵۰۰ رسید و LED عوض می‌شود</span></div>
+        <div class="ll-row"><button type="button" class="sim-btn" id="ctPress">🔘 دکمه را بزن</button><button type="button" class="sim-btn sim-btn-ghost" id="ctDlReset">↺ شمارنده را صفر کن</button></div>
+        <div class="ct-rel" id="ctDlR"></div>
+      </div>
+      <div class="ct-explain"><b>پس راه‌حل تایمر است.</b> ولی تایمر برای شمردن به یک ضربانِ ثابت نیاز دارد، و آن ضربان همان <b>کلاک</b> است. پس اول می‌بینیم کلاکِ چیپ چطور ساخته می‌شود (بخش ۲)، بعد سراغِ خودِ تایمر می‌رویم (بخش ۳).</div>
+
       <div class="ct-answer"><b>جوابِ کوتاه به سؤالِ همیشگی:</b> ۷۲ مگاهرتز کلاکِ خودِ چیپ است. ۳۶ مگاهرتز فقط کلاکِ «باس APB1» است (یک گیربکسِ کُندکننده داخل چیپ)، نه کلاکِ تایمر. تایمرهای روی APB1 دوباره ×۲ می‌شوند و ۷۲ می‌گیرند؛ TIM1 هم اصلاً روی APB1 نیست و بی‌هیچ ضربی ۷۲ می‌گیرد.</div>
       <details class="hs-det" open>
         <summary>⏱️ کلاک یعنی چی؟</summary>
@@ -284,9 +637,22 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
           <tr><td>Pulse (CCR)</td><td>اندازه‌ی کمانِ سبز</td><td>سرعتِ موتور (دیوتی)</td></tr>
         </table>
       </details>
-      <div class="ct-stage-t">⚙️ بخش ۱ — کلاکِ چیپ با چرخ‌دنده</div>
+      <div class="ct-stage-t">⚙️ بخش ۲ — کلاکِ چیپ با چرخ‌دنده</div>
       <div class="hs-p">⚙️ این چرخ‌دنده‌ها مفهوم فنی «درخت کلاک (Clock Tree)» را به زبان مکانیک نشان می‌دهند: در میکروکنترلر سرعت همه‌چیز یکسان نیست؛ بلکه فرکانس اصلی با کمک ضریب‌ها (ضرب و تقسیم)، به هر بخش با سرعت متناسب خودش می‌رسد.</div>
       <div class="hs-p">هر چرخ‌دنده‌ی بزرگ یک کلاک را با مقدارش نشان می‌دهد و چرخ‌دنده‌ی کوچکِ بینِ دو کلاک عملِ ضرب (×) یا تقسیم (÷) را انجام می‌دهد؛ عددِ داخلِ چرخ‌دنده‌ی کوچک ضریب است و زیرش خودِ حساب نوشته شده. چرخ‌دنده‌ها به هم درگیرند و با هم می‌چرخند. منوها را عوض کن و ببین عددها چه می‌شوند.</div>
+      <details class="hs-det" open>
+        <summary>📖 هر کلاک چه کاری می‌کند؟</summary>
+        <div class="ll-row" id="ctClkTabs" style="margin:8px 0;flex-wrap:wrap">${Object.keys(CT_CLK).filter(k => k !== 'apb').map((k, i) => `<button type="button" class="sim-btn${i ? ' sim-btn-ghost' : ''}" data-clk="${k}" aria-pressed="${!i}">${CT_CLK[k].mid[0]}</button>`).join('')}</div>
+        <div id="ctClkBox">${ctClkView('hse')}</div>
+      </details>
+      <details class="hs-det">
+        <summary>🚌 باس (Bus) چیست؟ AHB و APB</summary>
+        <div class="hs-p">⚠️ <b>APB کلاک نیست؛ یک «باس» (جاده) است.</b> کلاکِ این جاده‌ها همان <b>PCLK1</b> و <b>PCLK2</b> است که بالا دیدی.</div>
+        ${ctClkView('apb')}
+      </details>
+      ${block('ctG1', head('pll', '① PLL: ۸ مگاهرتز را تقویت کن', 'ضریب ' + sel('pll', CT_PLL_OPTS, '×')))}
+      ${block('ctG2', head('apb1', '② باسِ APB1 و تایمرهای TIM2/3/4', 'تقسیم ' + sel('a1', CT_DIV_OPTS, '÷')))}
+      ${block('ctG3', head('apb2', '③ باسِ APB2 و تایمرِ TIM1', 'تقسیم ' + sel('a2', CT_DIV_OPTS, '÷')))}
       <div class="ct-sc">
         <div class="ct-sc-h"><b>🧩 مسیرِ کاملِ کلاک: از کریستال تا تایمر</b></div>
         <div class="ct-sc-h" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px"><button type="button" class="sim-btn sim-btn-ghost st-reset" id="ctReset" style="margin:0;flex:0 0 auto">↺ از اول</button><label class="ct-ctl">PSC ${sel('psc', Array.from({ length: 12 }, (_, i) => i), '=')}</label><label class="ct-ctl">APB2 ${sel('a2', CT_DIV_OPTS, '÷')}</label><label class="ct-ctl">APB1 ${sel('a1', CT_DIV_OPTS, '÷')}</label><label class="ct-ctl">PLL ${sel('pll', CT_PLL_OPTS, '×')}</label></div>
@@ -294,9 +660,11 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
         <div class="ct-scroll" dir="ltr"><svg class="ct-svg ct-wide" id="ctGA" viewBox="0 0 720 300"></svg></div>
         <div class="ct-rel" id="ctGAR"></div>
       </div>
-      ${block('ctG1', head('pll', '① PLL: ۸ مگاهرتز را تقویت کن', 'ضریب ' + sel('pll', CT_PLL_OPTS, '×')))}
-      ${block('ctG2', head('apb1', '② باسِ APB1 و تایمرهای TIM2/3/4', 'تقسیم ' + sel('a1', CT_DIV_OPTS, '÷')))}
-      ${block('ctG3', head('apb2', '③ باسِ APB2 و تایمرِ TIM1', 'تقسیم ' + sel('a2', CT_DIV_OPTS, '÷')))}
+      <details class="hs-det">
+        <summary>🗺️ نقشه‌ی کاملِ درخت کلاک (بقیه‌ی بخش‌ها هم هست!)</summary>
+        <div class="hs-p">چرخ‌دنده‌های بالا فقط <b>مسیرِ اصلی</b> را نشان می‌دهند (جعبه‌های پررنگ). در چیپِ واقعی چند شاخه‌ی دیگر هم هست: <b>HSI</b> (کریستالِ داخلی)، <b>USB</b>، <b>ADC</b> (حداکثر ۱۴ مگاهرتز)، <b>SysTick</b> (مبنای HAL_Delay)، <b>MCO</b>، <b>RTC/IWDG</b> و <b>Flash Latency</b>. برای کارِ ما لازم نیست دستشان بزنی.</div>
+        <div class="ct-scroll" dir="ltr">${ctFullTree()}</div>
+      </details>
       <div class="sim-status" id="ctSt1" data-state="idle"></div>
       <div class="ct-quiz">
         <div class="hs-p"><b>🧠 سؤال:</b> فرض کن SYSCLK برابر ۷۲ باشد و APB1 را روی ÷۴ بگذاری. کلاکِ تایمرهای APB1 چند مگاهرتز می‌شود؟ اول حساب کن، بعد با منوی ② امتحانش کن.</div>
@@ -320,14 +688,23 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
         <div class="ct-devs" id="ctDevs"></div>
       </div>
 
-      <div class="ct-stage-t">⏲️ بخش ۲ — تایمر یعنی چی؟</div>
+      <div class="ct-stage-t">⏲️ بخش ۳ — تایمر یعنی چی؟</div>
       <div class="ct-explain"><b>تایمر یک عقربه روی یک صفحه‌ی گرد است.</b> هر ضربه‌ی کلاک، عقربه یک خانه جلو می‌رود؛ به آخرین خانه که رسید دوباره به ۰ برمی‌گردد. همین! خودِ سخت‌افزار می‌شمارد و CPU آزاد می‌ماند. دو تنظیم دارد: <b>Prescaler</b> (ضربه‌ها چقدر کُند شوند) و <b>Period</b> (صفحه چند خانه دارد).</div>
       ${ctAnimTimer()}
       <div class="hs-p" data-v="src"></div>
       ${block('ctG4', head('psc', '④ Prescaler: گیربکسِ ضربه‌ها'), row('psc', 'Prescaler (PSC)', 0, 11) + '<div class="ct-rel">❓ چرا PSC می‌تواند ۰ باشد؟ چون سخت‌افزار بر (PSC+۱) تقسیم می‌کند، پس هیچ‌وقت تقسیم بر صفر نمی‌شود: PSC=۰ یعنی ÷۱.</div>')}
       ${block('ctD1', head('arr', '⑤ شمارنده: صفحه‌ی گرد'), row('arr', 'Period (ARR)', 1, 1023) + '<div class="ct-rel">❓ چرا از ۱ شروع می‌شود؟ ARR=۰ یعنی فقط ۱ خانه؛ عقربه جایی برای حرکت ندارد و PWM فقط می‌تواند ۰٪ یا ۱۰۰٪ باشد.</div>' + pre([['۷', 'arr:7'], ['۱۵', 'arr:15'], ['۲۵۵', 'arr:255'], ['۱۰۲۳', 'arr:1023']]))}
 
-      <div class="ct-stage-t">💡 بخش ۳ — PWM یعنی چی؟</div>
+      <div class="ct-explain"><b>⚠️ معایب و نکته‌های تایمر (هیچ چیز رایگان نیست):</b><br>
+        ۱) <b>راه‌اندازی پیچیده‌تر است:</b> به‌جای یک خط delay باید Prescaler، Period، کلاکِ تایمر و گاهی وقفه (NVIC) را درست تنظیم کنی. یک خطا، مثلاً فراموش کردنِ «+۱» در PSC یا غلط گرفتنِ کلاکِ تایمر، زمان یا فرکانس را اشتباه می‌کند.<br>
+        ۲) <b>تعداد تایمرها محدود است:</b> STM32F103 فقط چند تایمرِ همه‌منظوره دارد (TIM1 تا TIM4). هر تایمر هم کانال‌های مشخصی دارد و هر پین فقط به بعضی کانال‌ها وصل می‌شود، پس همه‌چیز را نمی‌شود هر جا گذاشت.<br>
+        ۳) <b>کانال‌های یک تایمر یک Period مشترک دارند:</b> چند خروجیِ PWM روی یک تایمر هم‌فرکانس‌اند و فقط Pulseشان می‌تواند فرق کند.<br>
+        ۴) <b>شمارنده محدود است:</b> PSC و ARR هر دو ۱۶ بیتی‌اند (حداکثر ۶۵۵۳۶). با کلاکِ ۷۲ مگاهرتز بیشترین زمانِ یک دور حدود ۶۰ ثانیه است؛ برای زمان‌های بلندتر باید در وقفه شمرد.<br>
+        ۵) <b>فرکانس و دقت با هم معامله دارند:</b> دیوتی فقط به اندازه‌ی (ARR+۱) مرحله تقسیم می‌شود. فرکانسِ بالا یعنی ARR کوچک و پله‌های درشت‌تر؛ مثلاً با ARR=۱۵ فقط ۱۶ سطحِ سرعت داری.<br>
+        ۶) <b>کدِ وقفه باید کوتاه باشد:</b> اگر تایمر وقفه بدهد و داخلش کارِ سنگین بکنی، همان مشکلِ delay دوباره برمی‌گردد و بقیه‌ی برنامه گیر می‌کند.<br>
+        <b>جمع‌بندی:</b> برای یک تأخیرِ کوتاه و ساده در برنامه‌ی کوچک، delay کافی است. برای کارِ دقیق، هم‌زمان یا تکرارشونده مثل PWM و اندازه‌گیریِ زمان، تایمر مناسب‌تر است.</div>
+
+      <div class="ct-stage-t">💡 بخش ۴ — PWM یعنی چی؟</div>
       <div class="ct-explain"><b>PWM یعنی یک پین را خیلی سریع روشن و خاموش کنیم.</b> موتور آن‌قدر کُند است که تک‌تک چشمک‌ها را حس نمی‌کند و فقط «میانگین» را می‌بیند. مثلاً نیمی از دور روشن = نصفِ ولتاژ = نصفِ سرعت. روشن‌ماندن را همان عقربه تعیین می‌کند: <b>روی کمانِ سبز (Pulse) پین روشن است و روی بقیه خاموش.</b></div>
       ${ctAnimPwm()}
       ${block('ctD2', head('pulse', '⑥ کمانِ سبز = بالا بودنِ موجِ PWM'), row('pulse', 'Pulse (CCR)', 0, 16) + pre([['۲۵٪', 'duty:25'], ['۵۰٪', 'duty:50'], ['۷۵٪', 'duty:75'], ['۱۰۰٪', 'duty:100']]), '<canvas class="ct-cv ct-pw" id="ctPw" data-talk="wave"></canvas>')}
@@ -344,6 +721,20 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
         <div class="ct-fl2">دیوتی = Pulse ÷ (ARR+۱)</div>
         <div class="ct-eq" id="ctEq2"></div>
       </div>
+      <div class="ct-sc">
+        <div class="ct-sc-h"><b data-talk="car">🚗 PWM را با کد بساز و موتور را بچرخان</b></div>
+        <div class="ct-explain"><b>برای اینکه موتور بچرخد سه کار لازم است:</b><br>
+          ۱) در CubeMX پایه‌ی PA8 را <b dir="ltr">TIM1_CH1</b> بگذار و Prescaler و Period را بنویس؛ خطِ ${ctInl('MX_TIM1_Init();')} را CubeMX خودش می‌سازد.<br>
+          ۲) در کد یک‌بار ${ctInl('HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);')} را صدا بزن تا تایمر روی PA8 موج بفرستد.<br>
+          ۳) با ${ctInl('__HAL_TIM_SET_COMPARE(...)')} عددِ Pulse را بنویس؛ هرچه بزرگ‌تر، موتور تندتر.<br>
+          <b>نکته:</b> بعد از این‌ها حلقه‌ی while می‌تواند خالی بماند، چون PWM را سخت‌افزار می‌سازد و CPU آزاد است؛ همان فایده‌ی تایمر نسبت به delay.<br>
+          <b>امتحان کن:</b> روی هر خطِ طلایی بزن تا کامنت شود و ببین ماشین چه می‌کند؛ Pulse را هم عوض کن و عددِ داخلِ کد را تماشا کن.</div>
+        ${row('pulse', 'Pulse (CCR) = عددِ داخلِ کد', 0, 16)}
+        ${pre([['۰٪', 'duty:0'], ['۲۵٪', 'duty:25'], ['۵۰٪', 'duty:50'], ['۷۵٪', 'duty:75'], ['۱۰۰٪', 'duty:100']])}
+        <div id="ctPmCode"></div>
+        <canvas class="ct-cv" id="ctCar" data-talk="car"></canvas>
+        <div class="ct-rel" id="ctPmR"></div>
+      </div>
       <div class="sim-status" id="ctSt2" data-state="idle"></div>
       <div class="ll-row"><button type="button" class="sim-btn sim-btn-ghost" id="ctHint">💡 راهنما</button></div>
     </div>`;
@@ -351,18 +742,20 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   const q = s => container.querySelector(s), qa = s => container.querySelectorAll(s);
   const ac = new AbortController(), sig = { signal: ac.signal };
   const listen = (t, f) => container.addEventListener(t, f, sig);
-  const cv = q('#ctCv'), g = cv.getContext('2d'), cvBus = q('#ctBus'), cvPw = q('#ctPw');
+  const cv = q('#ctCv'), g = cv.getContext('2d'), cvBus = q('#ctBus'), cvPw = q('#ctPw'), cvDl = q('#ctDl'), cvCar = q('#ctCar');
   const vis = new Map(), sizes = new Map();
   const io = typeof IntersectionObserver === 'function' ? new IntersectionObserver(es => es.forEach(e => vis.set(e.target, e.isIntersecting)), { rootMargin: '150px' }) : null;
   const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(es => es.forEach(e => sizes.set(e.target, e.contentRect.width))) : null;
   const seen = el => !io || vis.get(el) !== false;
   const widthOf = el => sizes.get(el) || el.clientWidth;
   qa('svg.ct-svg').forEach(el => io && io.observe(el));
-  [cv, cvBus, cvPw].forEach(el => { io && io.observe(el); ro && ro.observe(el); });
+  [cv, cvBus, cvPw, cvDl, cvCar].forEach(el => { io && io.observe(el); ro && ro.observe(el); });
   const st = { ...CT_INIT };
   const done = { pll: false, apb: false, quiz: false, pwm: false };
   let succeeded = !!alreadyDone, raf = 0, last = 0, tp = 0, revT = 3.2, scenes = [], dials = [];
   const angs = {};
+  const dl = { D: CT_INIT.dlD, C: 40, t: 0, press: 0, a: 0, evs: [] };
+  const pm = { cube: true, start: true, cmp: true, v: 0, x: 0 };   // سه خطِ برنامه‌ی PWM + سرعت و جای ماشین
 
   const say = (n, state, text) => { const el = q('#ctSt' + n); el.dataset.state = state; el.textContent = text; };
   const knight = k => { if(typeof showKnightLine === 'function') showKnightLine(CT_TALK[k], 'happy', 'knight'); };
@@ -401,7 +794,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
       ctFlow(q('#ctG2'), [sys, apb1, p1, mul1, fin(t1)]),
       ctFlow(q('#ctG3'), [sys, apb2, p2, mul2, fin(t2)]),
       ctFlow(q('#ctG4'), [t2, psc, fin(cnt)]),
-      ctFlow(q('#ctGA'), [hse, pll, sys, ahb, hclk], [[apb1, p1, mul1, fin(t1)], [apb2, p2, mul2, fin(t2), psc, fin(cnt)]], true)
+      ctFlow(q('#ctGA'), [hse, pll, { ...sys, uses: [] }, ahb, { ...hclk, uses: ['CPU \xb7 Flash \xb7 RAM'] }], [[apb1, p1, mul1, fin(t1), { ...psc, inM: c.t1, outM: c.t1 / (st.psc + 1) }, fin({ ...cnt, mhz: c.t1 / (st.psc + 1) })], [apb2, p2, mul2, fin(t2), psc, fin(cnt)]], true)
     ];
     [c.sys, c.p1, c.p2, tick, (c.p1 + c.p2 + tick) / 3].forEach((v, i) => { scenes[i].mhz = v; });
     q('#ctG1R').innerHTML = `<div>چرخ‌دنده‌ی PLL ورودی را ${ctFa(st.pll)} برابر می‌کند: ${fa(CT_HSE)} × ${ctFa(st.pll)} = <b>${ctHz(c.sys * 1e6)}</b></div>`;
@@ -428,6 +821,9 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
 
   function spin(dt){
     tp += dt;
+    dl.t += dt * 1000;
+    pm.v += (pmDuty() - pm.v) * Math.min(1, dt * 4);   // موتور کم‌کم تند و کُند می‌شود
+    pm.x += dt * pm.v * 180;
     scenes.forEach(sc => {
       angs[sc.id] = (angs[sc.id] || 0) + CT_W * 2 * Math.sqrt(sc.mhz / CT_HSE) * dt;
       if(!seen(sc.svg)) return;
@@ -457,7 +853,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
 
   function paintTimer(){
     const m = pwm(), out = (k, t) => { q(`[data-o="${k}"]`).textContent = t; };
-    q('[data-v="src"]').textContent = `ورودیِ این بخش: کلاکِ تایمرِ TIM1 = ${ctHz(m.tclk)} (از بخش ۱)`;
+    q('[data-v="src"]').textContent = `ورودیِ این بخش: کلاکِ تایمرِ TIM1 = ${ctHz(m.tclk)} (از بخش ۲)`;
     q('[data-h="psc"]').textContent = `تقسیم بر ${ctFa(st.psc + 1)} ⇒ شمارش با ${ctHz(m.tick)}`;
     q('[data-h="arr"]').textContent = `${ctFa(m.steps)} خانه، از ۰ تا ${ctFa(st.arr)}`;
     q('[data-h="pulse"]').textContent = `روشن تا خانه‌ی ${ctFa(st.pulse)} از ${ctFa(m.steps)}`;
@@ -486,10 +882,10 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
 
   function sayTimer(){
     const m = pwm(), f = m.freq;
-    const note = m.tclk === 72e6 ? '' : ` (کلاکِ ورودیِ تایمر الان ${ctHz(m.tclk)} است؛ بخش ۱ را کامل کن.)`;
+    const note = m.tclk === 72e6 ? '' : ` (کلاکِ ورودیِ تایمر الان ${ctHz(m.tclk)} است؛ بخش ۲ را کامل کن.)`;
     if(pwmOk()){
       const exact = st.psc === 8 && st.arr === 255 ? ' دقیقاً همان تنظیمِ CubeMX: Prescaler = ۸ و Period = ۲۵۵.' : '';
-      const rest = done.apb && done.quiz ? '' : ' بخش ۱ هم هنوز مانده است.';
+      const rest = done.apb && done.quiz ? '' : ' بخش ۲ هم هنوز مانده است.';
       return say('2', 'success', `✅ PWM ${ctHz(f)} با دیوتیِ ${ctNum(m.duty * 100)}٪ ⇒ موتور با نصفِ سرعت می‌چرخد.${exact}${rest}`);
     }
     if(f > 32500) return say('2', 'running', `فرکانسِ PWM ${ctHz(f)} است و بالاتر از هدف (حدود ۳۱٫۲۵ کیلوهرتز). Prescaler یا Period را بزرگ‌تر کن؛ یعنی خانه‌های بیشتر یا ضربه‌های کُندتر.${note}`);
@@ -511,6 +907,8 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
 
   function refresh(){
     qa('.ct-sel').forEach(s => { s.value = st[s.dataset.k]; }); buildScenes(); const fin = checkDone(); paintTimer(); paintLab(); say1(); sayTimer();
+    if(dl.D !== st.dlD){ dl.D = st.dlD; dlReset(); }
+    paintDl(); paintPm();
     if(fin) say('2', 'success', CT_FINISH);
   }
 
@@ -540,6 +938,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
 
   function reset(){
     Object.assign(st, CT_INIT);
+    Object.assign(pm, { cube: true, start: true, cmp: true });
     Object.keys(done).forEach(k => { done[k] = false; });
     qa('.ct-sel').forEach(s => { s.value = st[s.dataset.k]; });
     syncInputs(null);
@@ -613,6 +1012,28 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     if(qb){ answer(+qb.dataset.q); return; }
     if(e.target.closest('#ctHint')){ hint(); return; }
     if(e.target.closest('#ctReset')){ reset(); return; }
+    const pk = e.target.closest('[data-pm]');
+    if(pk){ pm[pk.dataset.pm] = !pm[pk.dataset.pm]; paintPm(); return; }
+    const ck = e.target.closest('[data-clk]');
+    if(ck){
+      container.querySelectorAll('[data-clk]').forEach(b => { const on = b === ck; b.classList.toggle('sim-btn-ghost', !on); b.setAttribute('aria-pressed', on); });
+      q('#ctClkBox').innerHTML = ctClkView(ck.dataset.clk);
+      return;
+    }
+    const dm = e.target.closest('[data-dlm]');
+    if(dm){
+      container.querySelectorAll('[data-dlm]').forEach(b => {
+        const on = b === dm;
+        b.classList.toggle('sim-btn-ghost', !on);
+        b.setAttribute('aria-pressed', on);
+      });
+      q('#ctDlm2').hidden = dm.dataset.dlm !== '2';
+      q('#ctDlm3').hidden = dm.dataset.dlm !== '3';
+      return;
+    }
+    if(e.target.closest('#ctPress')){ press(); return; }
+    if(e.target.closest('#ctDlReset')){ dlReset(); paintDl(); return; }
+    if(e.target.closest('#ctDl')){ knight(e.clientY - cvDl.getBoundingClientRect().top < 85 ? 'dly' : 'dlt'); return; }
     const t = e.target.closest('[data-talk]');
     if(t && !e.target.closest('select, input')) knight(t.dataset.talk);
   });
@@ -737,11 +1158,149 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     });
   }
 
+  /* آزمایشِ delay در برابر تایمر: هر دور = D میلی‌ثانیه گیر کردن + C میلی‌ثانیه نگاه به دکمه؛ تایمر همان دوره را بدون گیر کردن اجرا می‌کند */
+  function dlReset(){ dl.press = 0; dl.a = 0; dl.evs = []; }
+
+  function press(){
+    const T = dl.D + dl.C, ok = dl.t % T >= dl.D;
+    dl.press++;
+    if(ok) dl.a++;
+    dl.evs = dl.evs.filter(ev => ev.t > dl.t - 60000);
+    dl.evs.push({ t: dl.t, ok });
+    paintDl();
+  }
+
+  function paintDl(){
+    const T = dl.D + dl.C, N = dl.press, A = dl.a, el = q('#ctDlR');
+    if(!el) return;
+    el.innerHTML = N
+      ? `<div>روش delay: <b style="color:${A === N ? '#57d8a3' : '#ff6b6b'}">${ctFa(A)} از ${ctFa(N)}</b> دکمه را دید${A === N ? '' : '؛ بقیه گم شدند ✖'}</div>`
+        + `<div>روش تایمر: <b style="color:#57d8a3">${ctFa(N)} از ${ctFa(N)}</b> دکمه را دید ✔ (CPU آزاد بود)</div>`
+        + `<div>delay فقط ${ctFa(dl.C)} میلی‌ثانیه از هر ${ctFa(T)} میلی‌ثانیه به دکمه نگاه می‌کند، یعنی ${ctNum(dl.C / T * 100)}٪ از وقت.</div>`
+        + (dl.D > 200 ? '<div>نکته: delay را کوچک‌تر کنی شانس بیشتر می‌شود، ولی LED تندتر چشمک می‌زند و هنوز هم دکمه‌ها گم می‌شوند.</div>' : '')
+      : `<div>هنوز دکمه نزده‌ای. چند بار «🔘 دکمه را بزن» را بزن، یک بار وسطِ نوارِ قرمز و یک بار هر وقت خواستی.</div><div>delay الان ${ctFa(dl.D)} میلی‌ثانیه گیر می‌کند و ${ctFa(dl.C)} میلی‌ثانیه به دکمه نگاه می‌کند.</div>`;
+  }
+
+  function drawDl(){
+    const cb = cvDl, w = widthOf(cb), h = 170;
+    if(!w) return;
+    const dpr = window.devicePixelRatio || 1, gx = cb.getContext('2d');
+    if(cb.width !== Math.round(w * dpr) || cb.height !== Math.round(h * dpr)){ cb.width = Math.round(w * dpr); cb.height = Math.round(h * dpr); }
+    gx.setTransform(dpr, 0, 0, dpr, 0, 0); gx.clearRect(0, 0, w, h);
+    const T = dl.D + dl.C, x0 = 50, x1 = w - 40, span = 3.2 * T, now = dl.t, t0 = now - span * .72;
+    const X = t => x0 + (t - t0) / span * (x1 - x0), bh = 28, yA = 34, yB = 112;
+    const box = (a, b, y, fill, stroke, minW) => {
+      const l = Math.max(x0, a); let r = Math.min(x1, b);
+      if(r <= l) return null;
+      if(r - l < minW) r = Math.min(x1, l + minW);
+      gx.fillStyle = fill; gx.fillRect(l, y, r - l, bh);
+      gx.lineWidth = 1.2; gx.strokeStyle = stroke; gx.strokeRect(l + .5, y + .5, r - l - 1, bh - 1);
+      return [l, r];
+    };
+    gx.font = '10px JetBrains Mono, monospace'; gx.textAlign = 'center';
+    const k0 = Math.floor(t0 / T) - 1, k1 = Math.ceil((t0 + span) / T);
+    for(let k = k0; k <= k1; k++){
+      const s = k * T;
+      const d = box(X(s), X(s + dl.D), yA, 'rgba(255,107,107,.28)', '#ff6b6b', 0);
+      if(d && d[1] - d[0] > 54){ gx.fillStyle = '#ff8a80'; gx.fillText('blocked', (d[0] + d[1]) / 2, yA + 18); }
+      box(X(s + dl.D), X(s + T), yA, 'rgba(87,216,163,.9)', '#57d8a3', 3);
+      const f = box(X(s), X(s + T), yB, 'rgba(87,216,163,.16)', '#57d8a3', 0);
+      if(f && f[1] - f[0] > 54){ gx.fillStyle = '#57d8a3'; gx.fillText('free', (f[0] + f[1]) / 2, yB + 18); }
+      const tx = X(s);
+      if(tx >= x0 && tx <= x1){ gx.fillStyle = '#d4af37'; gx.fillRect(tx - 1.5, yB - 3, 3, bh + 6); }
+    }
+    gx.font = '11px JetBrains Mono, monospace'; gx.textAlign = 'left'; gx.fillStyle = '#6b7280';
+    gx.fillText('delay', 4, yA + 18); gx.fillText('Timer', 4, yB + 18);
+    const on = Math.floor(now / T) % 2 === 0;
+    [yA, yB].forEach(y => {
+      gx.beginPath(); gx.arc(w - 20, y + bh / 2, 9, 0, 6.2832);
+      gx.fillStyle = on ? '#57d8a3' : '#1d2330'; gx.fill();
+      gx.lineWidth = 2; gx.strokeStyle = on ? '#9ff0cf' : '#3a4050'; gx.stroke();
+    });
+    gx.fillStyle = '#6b7280'; gx.textAlign = 'center'; gx.fillText('LED', w - 20, yA - 6); gx.fillText('LED', w - 20, yB - 6);
+    const xn = X(now);
+    gx.setLineDash([4, 4]); gx.lineWidth = 1; gx.strokeStyle = 'rgba(232,226,208,.45)';
+    gx.beginPath(); gx.moveTo(xn, 14); gx.lineTo(xn, yB + bh + 10); gx.stroke(); gx.setLineDash([]);
+    gx.fillStyle = '#8b93a5'; gx.fillText('now', xn, 10);
+    dl.evs.forEach(ev => {
+      const x = X(ev.t);
+      if(x < x0 - 6) return;
+      gx.globalAlpha = .5; gx.lineWidth = 1; gx.strokeStyle = '#e8e2d0';
+      gx.beginPath(); gx.moveTo(x, yA - 4); gx.lineTo(x, yA); gx.moveTo(x, yB - 4); gx.lineTo(x, yB); gx.stroke(); gx.globalAlpha = 1;
+      gx.font = '15px sans-serif'; gx.textAlign = 'center';
+      gx.fillStyle = ev.ok ? '#57d8a3' : '#ff6b6b'; gx.fillText(ev.ok ? '✔' : '✖', x, yA - 8);
+      gx.fillStyle = '#57d8a3'; gx.fillText('✔', x, yB - 8);
+    });
+  }
+
+  /* ساختنِ PWM با کد: سه خطِ لازم (CubeMX، Start، SET_COMPARE)؛ هر کدام را کامنت کنی موتور نمی‌چرخد (مثلِ هشدارهای ادیتورِ HAL) */
+  const pmDuty = () => (pm.cube && pm.start && pm.cmp) ? pwm().duty : 0;
+  function pmLines(){
+    const row = (k, t, c) => (pm[k] ? '  ' : '  // ') + t + (c ? '   // ' + c : '');
+    return [
+      'int main(void)', '{', '  HAL_Init();', '  SystemClock_Config();', '  MX_GPIO_Init();',
+      row('cube', 'MX_TIM1_Init();', `CubeMX: PSC = ${st.psc}, Period = ${st.arr}`),
+      '',
+      row('start', 'HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);', 'شروع PWM روی PA8'),
+      row('cmp', `__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, ${st.pulse});`, 'Pulse = سرعتِ موتور'),
+      '', '  while (1)', '  {', '    // CPU آزاد است؛ PWM را سخت‌افزار می‌سازد', '  }', '}'
+    ].join('\n');
+  }
+
+  function paintPm(){
+    const el = q('#ctPmCode');
+    if(!el) return;
+    const m = pwm();
+    el.innerHTML = ctCodeBlock('main.c — روی هر خطِ طلایی بزن تا کامنت شود', pmLines(), '#d4af37', { 5: 'cube', 7: 'start', 8: 'cmp' });
+    const msg = !pm.cube ? `⚠️ ${ctInl('MX_TIM1_Init();')} صدا زده نمی‌شود؛ تایمر هیچ‌وقت تنظیم نشده و PA8 هنوز PWM نیست ⇒ خروجی ندارد و موتور نمی‌چرخد.`
+      : !pm.start ? `⚠️ هنوز ${ctInl('HAL_TIM_PWM_Start')} صدا زده نشده؛ تا آن موقع خروجیِ PWM صفر است ⇒ موتور نمی‌چرخد.`
+      : !pm.cmp ? `⚠️ بدونِ ${ctInl('__HAL_TIM_SET_COMPARE')} عددِ Pulse همان مقدارِ پیش‌فرضِ CubeMX (۰) می‌ماند ⇒ دیوتیِ ۰٪ و موتور نمی‌چرخد.`
+      : `✅ PWM ${ctHz(m.freq)} با دیوتیِ <b>${ctNum(m.duty * 100)}٪</b> ⇒ ولتاژِ میانگین ≈ ${ctNum(CT_BATT * m.duty)} ولت ⇒ موتور با ${ctNum(m.duty * 100)}٪ سرعت می‌چرخد.`;
+    q('#ctPmR').innerHTML = `<div>${msg}</div>` + (pmDuty() > 0 || (pm.cube && pm.start && pm.cmp) ? '<div>بعد از Start حلقه‌ی while خالی است: PWM را سخت‌افزار می‌سازد و CPU آزاد است.</div>' : '');
+  }
+
+  function drawCar(){
+    const cb = cvCar, w = widthOf(cb), h = 150;
+    if(!w) return;
+    const dpr = window.devicePixelRatio || 1, gx = cb.getContext('2d');
+    if(cb.width !== Math.round(w * dpr) || cb.height !== Math.round(h * dpr)){ cb.width = Math.round(w * dpr); cb.height = Math.round(h * dpr); }
+    gx.setTransform(dpr, 0, 0, dpr, 0, 0); gx.clearRect(0, 0, w, h);
+    const duty = pmDuty(), v = pm.v, powered = pm.cube && pm.start, roadY = 112;
+    const cx = w / 2, bx = cx - 46, by = 62, r = 12, ang = pm.x / r;
+    gx.fillStyle = '#1b212d'; gx.fillRect(0, roadY, w, h - roadY);
+    gx.fillStyle = '#6b7280';
+    const per = 40, off = pm.x % per;
+    for(let x = -off; x < w; x += per) gx.fillRect(x, roadY + 16, 20, 3);
+    if(v > .35){
+      gx.strokeStyle = 'rgba(232,226,208,' + (v * .5).toFixed(2) + ')'; gx.lineWidth = 2;
+      for(let i = 0; i < 3; i++){ const y = by + 12 + i * 10, L = 14 + v * 30 + i * 6; gx.beginPath(); gx.moveTo(bx - 8, y); gx.lineTo(bx - 8 - L, y); gx.stroke(); }
+    }
+    gx.fillStyle = v > .02 ? '#2b6cb0' : '#4b5563';
+    gx.fillRect(bx, by + 14, 92, 22);
+    gx.beginPath(); gx.moveTo(bx + 16, by + 14); gx.lineTo(bx + 28, by); gx.lineTo(bx + 64, by); gx.lineTo(bx + 78, by + 14); gx.closePath(); gx.fill();
+    gx.fillStyle = 'rgba(143,192,245,.55)'; gx.fillRect(bx + 32, by + 4, 14, 10); gx.fillRect(bx + 50, by + 4, 14, 10);
+    [bx + 22, bx + 70].forEach(wx => {
+      const wy = by + 36;
+      gx.fillStyle = '#15171c'; gx.beginPath(); gx.arc(wx, wy, r, 0, 6.2832); gx.fill();
+      gx.strokeStyle = '#c9ced8'; gx.lineWidth = 2;
+      for(let k = 0; k < 4; k++){ const a = ang + k * Math.PI / 2; gx.beginPath(); gx.moveTo(wx, wy); gx.lineTo(wx + (r - 2) * Math.cos(a), wy + (r - 2) * Math.sin(a)); gx.stroke(); }
+      gx.fillStyle = '#d4af37'; gx.beginPath(); gx.arc(wx, wy, 3, 0, 6.2832); gx.fill();
+    });
+    gx.font = '11px JetBrains Mono, monospace'; gx.textAlign = 'left'; gx.fillStyle = '#8b93a5';
+    gx.fillText('PWM ' + (powered ? Math.round(duty * 100) + '%' : 'OFF'), 8, 18);
+    gx.fillText('speed ' + Math.round(v * 100) + '%', 8, 34);
+    gx.fillStyle = '#1d2330'; gx.beginPath(); gx.arc(w - 22, 20, 9, 0, 6.2832); gx.fill();
+    gx.globalAlpha = Math.max(.12, duty); gx.fillStyle = '#57d8a3'; gx.beginPath(); gx.arc(w - 22, 20, 9, 0, 6.2832); gx.fill(); gx.globalAlpha = 1;
+    gx.textAlign = 'center'; gx.fillStyle = '#6b7280'; gx.fillText('PA8', w - 22, 42);
+  }
+
   function frame(ts){
     raf = requestAnimationFrame(frame);
     const dt = last ? Math.min(.05, (ts - last) / 1000) : 0;
     last = ts;
     spin(dt);
+    if(seen(cvDl)) drawDl();
+    if(seen(cvCar)) drawCar();
     if(seen(cv)) drawWave();
     if(seen(cvBus)) drawBus();
     if(seen(cvPw)) drawPw();
