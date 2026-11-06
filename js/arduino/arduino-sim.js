@@ -24,7 +24,10 @@ const ArduinoSim = (() => {
   // آدرسِ iframe ادیتورِ بلوکی. هر وقت blockly-editor.html (یا فایل‌هایی که
   // خودش لود می‌کند) عوض شد، عددِ v را بالا ببر تا مرورگرِ کاربرانِ قبلی نسخه‌ی
   // کش‌شده را استفاده نکند.
-  const BLOCKLY_EDITOR_URL = 'blockly-editor.html?v=6';
+  const BLOCKLY_EDITOR_URL = 'blockly-editor.html?v=7';
+  // مأموریت‌هایی که بلوک‌هایشان هنوز در ادیتورِ جدید نیست (STM32/HAL، سروو، Wi-Fi) با ادیتورِ Blockly قدیمی باز می‌شوند.
+  const BLOCKLY_LEGACY_URL = 'blockly-editor-legacy.html?v=6';
+  const LEGACY_BLOCK_TASKS = ['servo', 'esp32wifi'];
   const MODE_STORAGE_KEY = 'shovalie-madar-arduino-mode-v1';
   const MODE_CHANGE_EVENT = 'shovalie-madar-arduino-mode-change';
   const RUN_SPEED = 2.2;
@@ -1159,6 +1162,7 @@ void loop() {
     const task = halOpts ? makeHalTask(halOpts) : (TASKS[opts.task] || TASKS.blink);
     const isStm = !!task.halMain;
     const blocksTask = task.blocksTask || opts.task;
+    const editorUrl = () => ((isStm || LEGACY_BLOCK_TASKS.includes(blocksTask)) ? BLOCKLY_LEGACY_URL : BLOCKLY_EDITOR_URL);
     const toBlockCode = (t) => (isStm ? halMainToBlockCode(t) : t);
     const fromBlockCode = (c) => (isStm ? halBlockCodeToMain(c, task.halInit) : c);
     const startText = () => (halOpts ? halOpts.starter : starterCode(opts.task, pins));
@@ -2530,7 +2534,7 @@ function setSerialScreenText(text) {
       blocklyFrame = document.createElement('iframe');
       blocklyFrame.title = 'ادیتورِ بلوکی';
       blocklyFrame.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0;background:#0d1117;';
-      blocklyFrame.src = BLOCKLY_EDITOR_URL;
+      blocklyFrame.src = editorUrl();
       el.blocklyDiv.appendChild(blocklyFrame);
     }
     // iframe را از نو بارگذاری می‌کند تا دوباره «ready» بفرستد و با کدِ متنیِ
@@ -2538,7 +2542,7 @@ function setSerialScreenText(text) {
     function reloadBlockEditor() {
       if (!blocklyFrame) return;
       blocklyFrameReady = false;
-      blocklyFrame.src = BLOCKLY_EDITOR_URL;
+      blocklyFrame.src = editorUrl();
     }
     function closeBlockEditor() {
       window.removeEventListener('message', onBlocklyFrameMessage);
