@@ -223,10 +223,15 @@ const ctAnimSvg = (h, body) => `<svg class="ct-anim" viewBox="0 0 320 ${h}" styl
 const ctAnimTx = (x, y, s, fill = '#e8e2d0', fs = 10.5, anchor = 'middle') => `<text x="${x}" y="${y}" text-anchor="${anchor}" font-size="${fs}" font-weight="700" style="fill:${fill};direction:rtl;unicode-bidi:embed">${s}</text>`;
 const ctAnimLat = (x, y, s, anchor = 'start') => `<text x="${x}" y="${y}" text-anchor="${anchor}" font-size="10" style="fill:#8b93a3;font-family:JetBrains Mono,monospace;direction:ltr;unicode-bidi:bidi-override">${s}</text>`;
 const ctSeq = (n, f) => Array.from({ length: n }, (_, i) => f(i)).join(';');
-const ctSquare = (x0, pw, n, yH, yL) => {
-  let d = `M${x0} ${yL}`;
-  for(let i = 0; i < n; i++){ const x = x0 + i * pw; d += `L${x} ${yH}L${x + pw / 2} ${yH}L${x + pw / 2} ${yL}L${x + pw} ${yL}`; }
-  return d;
+const ctSquare = (x0, pw, n, yH, yL, d = .5) => {
+  let d_ = `M${x0} ${yL}`;
+  for(let i = 0; i < n; i++){
+    const x = x0 + i * pw;
+    if(d >= 1) d_ += `L${x} ${yH}L${x + pw} ${yH}`;
+    else if(d <= 0) d_ += `L${x + pw} ${yL}`;
+    else d_ += `L${x} ${yH}L${x + pw * d} ${yH}L${x + pw * d} ${yL}L${x + pw} ${yL}`;
+  }
+  return d_;
 };
 const ctSweep = (x0, y1, y2, dist, dur) => `<g><line x1="${x0}" y1="${y1}" x2="${x0}" y2="${y2}" stroke="#e8e2d0" stroke-opacity=".55"/><animateTransform attributeName="transform" type="translate" values="0 0;${dist} 0" dur="${dur}s" repeatCount="indefinite"/></g>`;
 
@@ -263,17 +268,119 @@ function ctAnimTimer(){
 }
 
 /* PWM: پین بالا/پایین می‌شود، چراغ هم‌زمان روشن/خاموش، و میانگین = نصف */
-function ctAnimPwm(){
-  const x0 = 100, pw = 68, n = 3, yH = 26, yL = 62, dur = 6;
+function ctAnimPwm(d = .5){
+  const x0 = 100, pw = 68, n = 3, yH = 26, yL = 62, dur = 6, pct = Math.round(d * 100);
+  let vals, keys;
+  if(d >= 1){ vals = '1;1'; keys = '0;1'; }
+  else if(d <= 0){ vals = '.12;.12'; keys = '0;1'; }
+  else {
+    vals = Array.from({ length: n }, () => '1;.12').join(';');
+    keys = Array.from({ length: n }, (_, i) => `${(i / n).toFixed(4)};${((i + d) / n).toFixed(4)}`).join(';');
+  }
   return ctAnimSvg(128,
     `<circle cx="44" cy="44" r="16" fill="#1d2330" stroke="#3a4050" stroke-width="2"/>`
-    + `<circle cx="44" cy="44" r="16" fill="${CT_COL.sys}" opacity="1"><animate attributeName="opacity" values="${ctSeq(6, i => i % 2 ? .12 : 1)}" dur="${dur}s" calcMode="discrete" repeatCount="indefinite"/></circle>`
+    + `<circle cx="44" cy="44" r="16" fill="${CT_COL.sys}" opacity="1"><animate attributeName="opacity" values="${vals}" keyTimes="${keys}" dur="${dur}s" calcMode="discrete" repeatCount="indefinite"/></circle>`
     + ctAnimLat(44, 76, 'PA8', 'middle')
     + ctAnimLat(x0 - 8, yH + 4, 'HIGH', 'end') + ctAnimLat(x0 - 8, yL + 4, 'LOW', 'end')
-    + `<path d="${ctSquare(x0, pw, n, yH, yL)}" fill="none" stroke="${CT_COL.sys}" stroke-width="2.4" stroke-linejoin="round"/>`
+    + `<path d="${ctSquare(x0, pw, n, yH, yL, d)}" fill="none" stroke="${CT_COL.sys}" stroke-width="2.4" stroke-linejoin="round"/>`
     + ctSweep(x0, yH - 10, yL + 10, n * pw, dur)
-    + ctAnimTx(160, 100, 'میانگین ۵۰٪', '#e8e2d0', 11)
+    + ctAnimTx(160, 100, `میانگین ${ctFa(pct)}٪`, '#e8e2d0', 11)
     + ctAnimTx(160, 120, 'روشن و خاموشِ خیلی سریع ⇒ موتور فقط «میانگین» را حس می‌کند', '#8b93a3', 10));
+}
+/* PWM با لغزنده: دیوتی را کم و زیاد کن */
+function ctAnimPwmBox(){
+  return `<div id="ctPwmA">${ctAnimPwm(.5)}</div>`
+    + `<div class="ll-row" style="align-items:center;justify-content:center;gap:10px;margin:0 0 10px"><span style="font-size:12px;color:#8b93a3">زیاد</span>`
+    + `<input type="range" dir="ltr" id="ctPwmS" min="0" max="100" step="5" value="50" style="width:200px"><span style="font-size:12px;color:#8b93a3">کم</span></div>`;
+}
+
+/* ===== UART و I2C و CAN: سه انیمیشنِ کوچکِ SMIL + کارتِ توضیح (برای قطعه‌های روی APB1) ===== */
+/* نقطه‌ای که فقط در بازه‌ی [a,b] از چرخه روی مسیر حرکت می‌کند و بقیه‌ی وقت پنهان است */
+const ctPulse = (path, col, dur, a, b, r = 3.6) => `<circle r="${r}" fill="${col}" opacity="0"><animateMotion dur="${dur}s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;${a};${b};1" path="${path}"/>`
+  + `<animate attributeName="opacity" values="0;1;0;0" keyTimes="0;${a};${b};1" calcMode="discrete" dur="${dur}s" repeatCount="indefinite"/></circle>`;
+/* محتوا فقط وقتی دیده می‌شود که چرخه در یکی از بازه‌ها باشد؛ vals مثلِ «visible;hidden;hidden» و keys مثلِ «0;.5;1» */
+const ctShowWhen = (body, vals, keys, dur) => `<g visibility="hidden">${body}<animate attributeName="visibility" values="${vals}" keyTimes="${keys}" dur="${dur}s" calcMode="discrete" repeatCount="indefinite"/></g>`;
+const ctGlow = (x, y, w, h, col, vals, keys, dur) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="none" stroke="${col}" stroke-width="3" opacity="0"><animate attributeName="opacity" values="${vals}" keyTimes="${keys}" calcMode="discrete" dur="${dur}s" repeatCount="indefinite"/></rect>`;
+const ctWire = (d, col, o = '') => `<path d="${d}" fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${o}/>`;
+
+/* UART: دو سیمِ جدا (TX و RX) بدونِ سیمِ کلاک؛ هر بایت = بیتِ شروع + ۸ بیتِ داده + بیتِ پایان */
+function ctAnimUart(){
+  const C = CT_COL, x0 = 14, bw = 28, yH = 96, yL = 124, seq = [0, 0, 0, 0, 1, 0, 0, 1, 0, 1];   // Start + حرفِ H (0x48، اول کم‌ارزش‌ترین بیت) + Stop
+  let d = `M4 ${yH}H${x0}`, cur = 1;
+  seq.forEach((b, i) => { const x = x0 + i * bw; if(b !== cur) d += `V${b ? yH : yL}`; d += `H${x + bw}`; cur = b; });
+  d += `H${x0 + seq.length * bw + 14}`;
+  const labels = seq.map((b, i) => ctLatTx(x0 + i * bw + bw / 2, 142, i === 0 ? 'Start' : i === 9 ? 'Stop' : String(b), i === 0 || i === 9 ? 8 : 10.5, i === 0 || i === 9 ? C.hse : '#8b93a3')).join('');
+  return ctAnimSvg(180,
+    ctClkChip(4, 8, 74, 48, ['STM32', 'UART2'], C.sys, 1) + ctClkChip(242, 8, 74, 48, ['PC', 'USB-Serial'], C.pclk, 1)
+    + ctWire('M78 22H242', '#4a5163') + ctWire('M242 36H78', '#4a5163') + ctWire('M78 50H242', '#3a4050', 'stroke-dasharray="4 4"')
+    + ctAnimLat(84, 19, 'TX') + ctAnimLat(236, 19, 'RX', 'end') + ctAnimLat(84, 33, 'RX') + ctAnimLat(236, 33, 'TX', 'end') + ctLatTx(160, 47, 'GND', 8, '#6b7280')
+    + ctClkDots('M80 22H240', 3, 2.4, C.sys) + ctClkDots('M240 36H80', 2, 3.4, C.tim)
+    + ctAnimLat(4, yH - 14, 'TX')
+    + `<path d="${d}" fill="none" stroke="${C.sys}" stroke-width="2.4" stroke-linejoin="round"/>` + ctSweep(x0, yH - 10, yL + 10, seq.length * bw, 3.6)
+    + labels
+    + `<path d="M${x0 + bw + 2} 153H${x0 + 9 * bw - 2}" stroke="#4a5163" stroke-width="1.4"/>` + ctAnimTx(x0 + 5 * bw, 166, '۸ بیتِ داده (اینجا حرفِ H)', '#e8e2d0', 9.5)
+    + ctAnimTx(160, 78, 'سیمِ کلاک ندارد؛ دو طرف از قبل روی یک سرعت (Baud) توافق کرده‌اند', '#8b93a3', 9));
+}
+
+/* I2C: دو سیمِ مشترکِ SDA و SCL برای همه؛ مستر آدرس می‌فرستد و فقط قطعه‌ی صاحبِ آدرس ACK می‌دهد */
+function ctAnimI2c(){
+  const C = CT_COL, T = 4, rev = 'M156 96V50H64';
+  const stub = (x, y1, y2, col) => ctWire(`M${x} ${y1}V${y2}`, col) + `<circle cx="${x}" cy="${y1}" r="2.4" fill="${col}"/>`;
+  return ctAnimSvg(184,
+    `<path d="M64 34H296" fill="none" stroke="${C.hse}" stroke-width="2" stroke-dasharray="6 6" stroke-linecap="round"><animate attributeName="stroke-dashoffset" values="12;0" dur=".7s" repeatCount="indefinite"/></path>`
+    + ctWire('M64 50H308', C.pclk)
+    + ctWire('M296 34V22', C.hse) + ctWire('M308 50V22', C.pclk)
+    + `<rect x="292.5" y="13" width="7" height="11" rx="1.5" fill="#161c28" stroke="#8b93a3"/><rect x="304.5" y="13" width="7" height="11" rx="1.5" fill="#161c28" stroke="#8b93a3"/>`
+    + `<path d="M288 9H316" stroke="#8b93a3" stroke-width="2"/>` + ctLatTx(274, 12, 'VCC', 8, '#8b93a3')
+    + ctClkChip(4, 18, 60, 44, ['MCU', 'Master'], C.sys, 1)
+    + ctAnimLat(70, 30, 'SCL') + ctAnimLat(70, 46, 'SDA')
+    + stub(116, 34, 96, C.hse) + stub(156, 50, 96, C.pclk) + stub(224, 34, 96, C.hse) + stub(264, 50, 96, C.pclk)
+    + ctClkChip(96, 96, 80, 34, ['Sensor', '0x48'], C.pclk, 1) + ctClkChip(204, 96, 80, 34, ['OLED', '0x3C'], '#3a4050')
+    + ctGlow(96, 96, 80, 34, C.sys, '0;1;1', '0;.5;1', T)
+    + ctPulse('M64 50H156V96', C.tim, T, .02, .46, 4) + ctPulse(rev, C.sys, T, .54, .98, 4)
+    + ctShowWhen(ctAnimTx(160, 152, 'مستر: «چه کسی آدرس 0x48 دارد؟»', C.tim, 10.5), 'visible;hidden;hidden', '0;.5;1', T)
+    + ctShowWhen(ctAnimTx(160, 152, 'سنسور: «منم!» (ACK) ← فقط همین قطعه جواب می‌دهد', C.sys, 10.5), 'hidden;visible;visible', '0;.5;1', T)
+    + ctAnimTx(160, 172, 'همه روی همان دو سیم‌اند؛ هر قطعه یک آدرس دارد', '#8b93a3', 9.5));
+}
+
+/* CAN: جفت‌سیمِ پیچ‌خورده (CAN_H و CAN_L)؛ پیام شناسه دارد، آدرسِ مقصد ندارد و همه می‌شنوند */
+function ctAnimCan(){
+  const C = CT_COL, T = 3, sx = 160;
+  const node = (cx, name) => ctClkChip(cx - 40, 92, 80, 38, [name, 'ECU'], '#3a4050');
+  const stubs = cx => ctWire(`M${cx - 6} 92V46`, C.hse) + ctWire(`M${cx + 6} 92V58`, C.pclk) + `<circle cx="${cx - 6}" cy="46" r="2.4" fill="${C.hse}"/><circle cx="${cx + 6}" cy="58" r="2.4" fill="${C.pclk}"/>`;
+  const term = x => `<rect x="${x - 4}" y="47" width="8" height="10" rx="1.5" fill="#161c28" stroke="#8b93a3"/>` + ctWire(`M${x} 46V47`, C.hse) + ctWire(`M${x} 57V58`, C.pclk) + ctLatTx(x, 78, '120Ω', 8.5, '#8b93a3');
+  return ctAnimSvg(180,
+    ctWire('M24 46H296', C.hse) + ctWire('M24 58H296', C.pclk) + term(24) + term(296)
+    + ctLatTx(112, 41, 'CAN_H', 8.5, C.hse) + ctLatTx(112, 70, 'CAN_L', 8.5, C.pclk)
+    + stubs(70) + stubs(sx) + stubs(250)
+    + node(70, 'موتور') + node(sx, 'ترمز') + node(250, 'داشبورد')
+    + ctGlow(sx - 40, 92, 80, 38, C.tim, '1;0;0', '0;.45;1', T) + ctGlow(30, 92, 80, 38, C.sys, '0;1;1', '0;.45;1', T) + ctGlow(210, 92, 80, 38, C.sys, '0;1;1', '0;.45;1', T)
+    + ctPulse(`M${sx - 6} 92V46H24`, C.hse, T, .02, .46) + ctPulse(`M${sx - 6} 92V46H296`, C.hse, T, .02, .46)
+    + ctPulse(`M${sx + 6} 92V58H24`, C.pclk, T, .02, .46) + ctPulse(`M${sx + 6} 92V58H296`, C.pclk, T, .02, .46)
+    + ctLatTx(sx, 33, 'ID = 0x100', 9.5, C.tim)
+    + ctAnimTx(160, 150, 'پیام «برای همه» پخش می‌شود؛ هر ECU خودش فیلتر می‌کند', '#e8e2d0', 10)
+    + ctAnimTx(160, 168, 'دو نفر هم‌زمان؟ شناسه‌ی کوچک‌تر (اولویتِ بیشتر) برنده می‌شود', '#8b93a3', 9.5));
+}
+
+const ctTerm = (a, e, fa) => `<b>${a}</b> = <span dir="ltr" style="font-family:JetBrains Mono,monospace;font-size:12px;color:#d4af37">${e}</span> — ${fa}`;
+function ctProtoView(){
+  const blk = (title, svg, txt, terms, real) => `<div class="ct-explain"><b>${title}</b></div>${svg}<div class="hs-p">${txt}</div>`
+    + `<div class="ct-explain"><b>📚 اسمِ کامل:</b><br>${terms.map(t => ctTerm(...t)).join('<br>')}</div><div class="ct-explain"><b>🌍 مثال در دنیای واقعی:</b> ${real}</div>`;
+  return `<details class="hs-det"><summary>📡 UART و I2C و CAN چه هستند؟ (قطعه‌های روی APB1)</summary>`
+    + `<div class="hs-p">این سه، «زبان‌های حرف زدنِ» چیپ با دنیای بیرون‌اند. هر سه روی باسِ APB1 نشسته‌اند و سرعتِ ارتباطشان را از کلاکِ همان باس می‌سازند؛ برای همین اگر PCLK1 را عوض کنی، سرعتِ ارتباط هم عوض می‌شود مگر اینکه دوباره تنظیمش کنی.</div>`
+    + blk('① UART: دو نفر، دو سیم، بدونِ کلاک', ctAnimUart(),
+      'UART ساده‌ترین راهِ فرستادنِ متن است: یک سیم برای فرستادن (TX) و یک سیم برای گرفتن (RX)، به‌علاوه‌ی زمینِ مشترک. سیمِ کلاک ندارد، پس هیچ‌کس ضربان را به دیگری نمی‌دهد؛ هر دو طرف از قبل روی یک سرعت (Baud rate، مثلاً ۱۱۵۲۰۰) توافق کرده‌اند. سیم در حالتِ استراحت بالاست. هر بایت با یک بیتِ شروع (پایین) شروع می‌شود، بعد ۸ بیتِ داده می‌آید و با یک بیتِ پایان (بالا) تمام می‌شود. اگر سرعت‌ها یکی نباشند، گیرنده بیت‌ها را جابه‌جا می‌خواند و علامت‌های بی‌معنی می‌بیند. UART فقط بینِ دو دستگاه کار می‌کند (نقطه به نقطه).',
+      [['UART', 'Universal Asynchronous Receiver/Transmitter', 'فرستنده/گیرنده‌ی سریالِ ناهمگام (ناهمگام یعنی بدونِ سیمِ کلاک)'], ['TX / RX', 'Transmit / Receive', 'سیمِ فرستادن / سیمِ گرفتن؛ TX هر طرف به RXِ طرفِ دیگر می‌رود'], ['Baud rate', 'Baud rate', 'تعدادِ بیت در ثانیه؛ باید در دو طرف یکی باشد']],
+      'مثل دو نفر که با واکی‌تاکی حرف می‌زنند و از قبل قرار گذاشته‌اند هر کلمه را با «سلام» شروع کنند و با «تمام» ببندند. در عمل: فرستادنِ متن به کامپیوتر (Serial Monitor)، ماژولِ GPS و بلوتوثِ HC-05.')
+    + blk('② I2C: یک مستر، چند قطعه، فقط دو سیمِ مشترک', ctAnimI2c(),
+      'در I2C همه‌ی قطعه‌ها روی همان دو سیم نشسته‌اند: SDA (داده) و SCL (کلاک). یک «مستر» (مثلِ STM32) کلاک را می‌دهد و هر قطعه یک آدرسِ ثابت دارد. مستر اول آدرس را می‌فرستد؛ همه می‌شنوند ولی فقط قطعه‌ی صاحبِ آدرس با یک بیتِ «ACK» جواب می‌دهد و بعد داده رد و بدل می‌شود. هر دو سیم با مقاومتِ Pull-up (حدود ۴٫۷ کیلواهم) به برق وصل‌اند و قطعه‌ها فقط آن‌ها را پایین می‌کشند؛ اگر Pull-up نباشد I2C کار نمی‌کند. سرعتِ معمول ۱۰۰ یا ۴۰۰ کیلوهرتز است. چون با دو سیم کلی قطعه را وصل می‌کند، برای سنسور و نمایشگر عالی است.',
+      [['I2C', 'Inter-Integrated Circuit', 'ارتباطِ دوسیمه بینِ چیپ‌ها'], ['SDA / SCL', 'Serial Data / Serial Clock', 'سیمِ داده / سیمِ کلاک'], ['ACK', 'Acknowledge', 'تأیید؛ قطعه با آن می‌گوید «شنیدم و منم»'], ['Pull-up', 'Pull-up resistor', 'مقاومتی که سیم را وقتی کسی پایینش نکشیده بالا نگه می‌دارد']],
+      'مثل یک خطِ تلفنِ مشترکِ محله: مستر می‌گوید «شماره‌ی ۴۸؟» همه‌ی خانه‌ها می‌شنوند، ولی فقط خانه‌ی ۴۸ گوشی را برمی‌دارد. در عمل: سنسورِ دما و رطوبت، نمایشگرِ OLED، ساعتِ RTC.')
+    + blk('③ CAN: شبکه‌ی خودرو، پیام برای همه', ctAnimCan(),
+      'CAN یک شبکه‌ی چند نفره روی یک جفت‌سیمِ پیچ‌خورده است: CAN_H و CAN_L. سیگنال «اختلافِ ولتاژِ» این دو سیم است، پس نویزِ موتور و جرقه روی هر دو یک‌جور می‌افتد و خنثی می‌شود؛ برای همین در خودرو و کارخانه محبوب است. پیام‌ها «آدرسِ مقصد» ندارند، «شناسه (ID)» دارند: فرستنده برای همه پخش می‌کند و هر دستگاه خودش تصمیم می‌گیرد این شناسه به کارش می‌آید یا نه. اگر دو دستگاه هم‌زمان بفرستند، شناسه‌ی کوچک‌تر برنده است و پیامِ مهم‌تر بدونِ از دست رفتن می‌رود. دو سرِ باس مقاومتِ ۱۲۰ اهم می‌گذارند تا موج برنگردد. پایه‌های چیپ فقط سطحِ منطقی دارند، پس بینِ چیپ و باس یک تراشه‌ی فرستنده/گیرنده (Transceiver) لازم است.',
+      [['CAN', 'Controller Area Network', 'شبکه‌ی ارتباطیِ خودرو و صنعت'], ['ECU', 'Electronic Control Unit', 'واحدِ کنترلِ الکترونیکی؛ هر «مغزِ کوچک» روی باس'], ['ID', 'Identifier', 'شناسه‌ی پیام؛ هرچه کوچک‌تر اولویتش بیشتر'], ['CRC', 'Cyclic Redundancy Check', 'کدِ بررسیِ خطا؛ پیامِ خراب با آن شناسایی و دور ریخته می‌شود']],
+      'مثل اتاقِ جلسه: هر کس که حرف می‌زند همه می‌شنوند و هر کس فقط به حرف‌های مربوط به خودش گوش می‌دهد؛ اگر دو نفر هم‌زمان شروع کنند، آن‌که مهم‌تر است ادامه می‌دهد. در عمل: ارتباطِ بینِ موتور، ترمز و داشبوردِ ماشین.')
+    + `</details>`;
 }
 
 /* رنگ‌آمیزیِ کد: هم‌ایده با halHighlight در ادیتورِ HAL. کد را (مثل halTokenize) به توکن می‌شکند و هر توکن را بر اساسِ نوعش رنگ می‌کند:
@@ -587,12 +694,41 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   const sel = (k, opts, sign) => `<select class="ct-sel" data-k="${k}">${opts.map(o => `<option value="${o}">${sign}${ctFa(o)}</option>`).join('')}</select>`;
   const row = (k, title, min, max) => `<div class="ct-row"><div class="ct-rn" data-talk="${k}"><b>${title}</b><span data-h="${k}"></span></div><input type="range" dir="ltr" data-k="${k}" min="${min}" max="${max}"><input type="number" class="ct-num" data-k="${k}" min="${min}" max="${max}" inputmode="numeric"></div>`;
   const pre = (list) => `<div class="ct-pre">${list.map(([l, v]) => `<button type="button" class="sim-btn sim-btn-ghost" data-preset="${v}">${l}</button>`).join('')}</div>`;
-  const head = (talk, title, ctl) => `<div class="ct-sc-h"><b data-talk="${talk}">${title}</b>${ctl ? `<label class="ct-ctl">${ctl}</label>` : ''}</div>`;
+  const head = (talk, title, ctl) => `<div class="ct-sc-h" data-talk="${talk}" style="cursor:pointer;padding:12px 4px"><b>${title}</b>${ctl ? `<label class="ct-ctl">${ctl}</label>` : ''}</div>`;
   const block = (id, headHtml, ctrl = '', extra = '') => `<div class="ct-sc">${headHtml}${ctrl}${extra ? '<div class="ct-pair">' : ''}<svg class="ct-svg" id="${id}" viewBox="0 0 320 200"></svg>${extra}${extra ? '</div>' : ''}<div class="ct-rel" id="${id}R"></div></div>`;
 
   container.innerHTML = `
     <div class="sim-wrap ct-wrap">
       <div class="sim-hw-note">هدف: اول ببین delay چرا مشکل دارد، بعد با چرخ‌دنده‌ها ببین ضریب‌های کلاک چطور ساخته می‌شوند، تایمر و PWM را قدم‌به‌قدم بفهم، و اگر دوست داشتی آخرش یک PWM ۳۱٫۲۵ کیلوهرتزیِ ۵۰٪ هم بساز. امتحان کردنِ شبیه‌ساز اختیاری است؛ اگر فقط مطالعه کردی، پایینِ صفحه «مطالعه کردم ✓» را بزن تا مأموریت کامل شود. روی هر چرخ‌دنده یا صفحه بزن تا شوالیه توضیحش بدهد.</div>
+      <details class="hs-det" open>
+        <summary>⏱️ کلاک یعنی چی؟</summary>
+        <div class="hs-p">کلاک یک ضربانِ ثابت است، مثل چرخیدنِ یک چرخ‌دنده. چیپ با هر ضربه فقط یک قدمِ خیلی کوچک برمی‌دارد. «۷۲ مگاهرتز» یعنی ۷۲ میلیون ضربه در هر ثانیه؛ هرچه چرخ‌دنده تندتر بچرخد، چیپ سریع‌تر است.</div>
+        <div class="hs-p">Blue Pill از یک کریستالِ ۸ مگاهرتزی شروع می‌کند. این برای یک ARM کُند است، پس PLL آن را ×۹ می‌کند و می‌شود ۷۲ مگاهرتز. این «کلاکِ خودِ چیپ» (SYSCLK) است و CPU با همین کار می‌کند.</div>
+        ${ctAnimClock()}
+      </details>
+      <details class="hs-det" open>
+        <summary>⏲️ تایمر یعنی چی؟</summary>
+        <div class="hs-p">تایمر یک عقربه روی یک صفحه‌ی گرد است. هر ضربه‌ی کلاک، عقربه یک خانه جلو می‌رود؛ به آخرین خانه که رسید دوباره به ۰ برمی‌گردد. خودِ سخت‌افزار می‌شمارد و CPU آزاد می‌ماند.</div>
+        <div class="hs-p">تایمر دو تنظیم دارد: <b>Prescaler</b> (ضربه‌ها چقدر کُند شوند) و <b>Period</b> (صفحه چند خانه دارد). کلاک ضربان می‌دهد، تایمر آن ضربان را می‌شمارد.</div>
+        ${ctAnimTimer()}
+      </details>
+      <details class="hs-det">
+        <summary>🧰 تایمر به چه کارهایی می‌آید؟ (همه‌ی کاربردها)</summary>
+        <div class="hs-p">تایمر فقط «شمارنده» است؛ اما با تنظیم‌های مختلف کارهای زیادی می‌کند. این صفحه فقط دو کارِ اول را شبیه‌سازی می‌کند و بقیه را برای آشنایی اینجا آورده‌ایم.</div>
+        <table class="hs-table">
+          <tr><th>کاربرد</th><th>یعنی چی؟</th><th>مثال در ربات</th></tr>
+          <tr><td>⏳ زمان‌سنج / وقفه‌ی تناوبی</td><td>هر مدتِ ثابت یک «زنگ» می‌زند (جایگزینِ delay)</td><td>اجرای حلقه‌ی PID هر ۵ میلی‌ثانیه</td></tr>
+          <tr><td>💡 PWM (خروجی)</td><td>پین را با دیوتیِ دلخواه روشن و خاموش می‌کند</td><td>سرعتِ موتور، روشنایی LED، زاویه‌ی سروو</td></tr>
+          <tr><td>📏 Input Capture</td><td>لحظه‌ی رسیدنِ لبه‌ی سیگنال را ثبت می‌کند و طولِ پالس یا فرکانس را می‌دهد</td><td>سنسور اولتراسونیک: طولِ پالسِ Echo = فاصله</td></tr>
+          <tr><td>📥 PWM Input</td><td>فرکانس و دیوتیِ یک سیگنالِ ورودی را هم‌زمان می‌خواند</td><td>خواندنِ خروجیِ PWMِ گیرنده‌ی کنترل</td></tr>
+          <tr><td>🎯 Output Compare</td><td>وقتی شمارنده به عددِ مشخصی رسید، پین را عوض می‌کند</td><td>ساختنِ پالسِ Trigger با طولِ دقیق</td></tr>
+          <tr><td>🔁 حالتِ Encoder</td><td>پالس‌های دو کانالِ انکودر را بالا/پایین می‌شمارد و جهت را هم می‌فهمد</td><td>سرعت و مسافتِ چرخِ موتور</td></tr>
+          <tr><td>1️⃣ One Pulse</td><td>بعد از یک ماشه فقط یک پالس با طولِ دقیق می‌سازد</td><td>یک پالسِ کوتاه برای درایور یا سنسور</td></tr>
+          <tr><td>🔔 ماشه‌ی ADC / DMA</td><td>تایمر در فاصله‌های ثابت ADC یا DMA را راه می‌اندازد</td><td>نمونه‌برداریِ منظم از سنسورهای خط</td></tr>
+          <tr><td>🔢 شمارشِ رویدادِ بیرونی</td><td>به‌جای کلاک، پالس‌های یک پین را می‌شمارد</td><td>شمردنِ تعدادِ خط‌هایی که ربات رد کرد</td></tr>
+          <tr><td>🛡️ Dead-time و خروجیِ مکمل (TIM1)</td><td>دو خروجیِ مخالف می‌سازد و بینشان یک وقفه‌ی کوتاه می‌گذارد</td><td>پلِ H: جلوگیری از اتصال‌کوتاهِ درایور موتور</td></tr>
+        </table>
+      </details>
       <div class="ct-stage-t">⏳ بخش ۱ — delay یعنی چی؟</div>
       <div class="ct-explain"><b>delay یعنی «همین‌جا بایست و صبر کن».</b> مثلاً ${ctInl('HAL_Delay(500)')} یعنی ۵۰۰ میلی‌ثانیه صبر کن. ساده است و فقط یک خط کد؛ اما در این مدت CPU مثل کسی است که به ساعت زل زده: <b>هیچ کارِ دیگری نمی‌کند</b>. به این حالت <b>مسدودکننده (Blocking)</b> می‌گویند.<br><br>
         <b>معایبِ delay:</b><br>
@@ -601,7 +737,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
         ۳) <b>دقتش کامل نیست:</b> delayِ نرم‌افزاری به وقفه‌ها وابسته است و اگر وقفه‌ی دیگری وسط بیاید، زمان کمی بیشتر می‌شود.<br>
         <b>ایده:</b> زمان‌شماری را به سخت‌افزار بسپاریم؛ یعنی <b>تایمر</b>. خودت امتحان کن!</div>
       <div class="ct-sc">
-        <div class="ct-sc-h"><b data-talk="dly">🧪 آزمایش: LED چشمک‌زن + دکمه</b><label class="ct-ctl">delay (ms) ${sel('dlD', [200, 500, 1000], '')}</label></div>
+        <div class="ct-sc-h"><b data-talk="dly">🧪 آزمایش: LED چشمک‌زن + دکمه</b><label class="ct-ctl">delay (ms) ${sel('dlD', [200, 500, 1000, 1500, 2000], '')}</label></div>
         <div class="hs-p">برنامه دو کار دارد: <b>LED را چشمک بزند</b> و <b>به دکمه جواب بدهد</b>. دکمه را چندبار بزن و ببین کدام روش آن را می‌بیند. (هر کلیک یک فشارِ کوتاه است.)</div>
         <div class="ll-row" id="ctDlm" style="margin:8px 0"><button type="button" class="sim-btn" data-dlm="1" aria-pressed="true">⏳ روش ۱: delay</button><button type="button" class="sim-btn sim-btn-ghost" data-dlm="2" aria-pressed="false">⏱️ روش ۲: شمارنده</button><button type="button" class="sim-btn sim-btn-ghost" data-dlm="3" aria-pressed="false">🔔 روش ۳: callback</button></div>
         <div id="ctDlm1">
@@ -622,12 +758,6 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
       <div class="ct-explain"><b>پس راه‌حل تایمر است.</b> ولی تایمر برای شمردن به یک ضربانِ ثابت نیاز دارد، و آن ضربان همان <b>کلاک</b> است. پس اول می‌بینیم کلاکِ چیپ چطور ساخته می‌شود (بخش ۲)، بعد سراغِ خودِ تایمر می‌رویم (بخش ۳).</div>
 
       <div class="ct-answer"><b>جوابِ کوتاه به سؤالِ همیشگی:</b> ۷۲ مگاهرتز کلاکِ خودِ چیپ است. ۳۶ مگاهرتز فقط کلاکِ «باس APB1» است (یک گیربکسِ کُندکننده داخل چیپ)، نه کلاکِ تایمر. تایمرهای روی APB1 دوباره ×۲ می‌شوند و ۷۲ می‌گیرند؛ TIM1 هم اصلاً روی APB1 نیست و بی‌هیچ ضربی ۷۲ می‌گیرد.</div>
-      <details class="hs-det" open>
-        <summary>⏱️ کلاک یعنی چی؟</summary>
-        <div class="hs-p">کلاک یک ضربانِ ثابت است، مثل چرخیدنِ یک چرخ‌دنده. چیپ با هر ضربه فقط یک قدمِ خیلی کوچک برمی‌دارد. «۷۲ مگاهرتز» یعنی ۷۲ میلیون ضربه در هر ثانیه؛ هرچه چرخ‌دنده تندتر بچرخد، چیپ سریع‌تر است.</div>
-        <div class="hs-p">Blue Pill از یک کریستالِ ۸ مگاهرتزی شروع می‌کند. این برای یک ARM کُند است، پس PLL آن را ×۹ می‌کند و می‌شود ۷۲ مگاهرتز. این «کلاکِ خودِ چیپ» (SYSCLK) است و CPU با همین کار می‌کند.</div>
-        ${ctAnimClock()}
-      </details>
       <details class="hs-det">
         <summary>🔧 قانونِ چرخ‌دنده (همه‌ی ضریب‌ها همین است)</summary>
         <div class="hs-p">دو چرخ‌دنده‌ی درگیر با هم: <b>نسبتِ دنده‌ها = نسبتِ سرعت</b>. چرخ‌دنده‌ی کوچک‌تر تندتر می‌چرخد و بزرگ‌تر کُندتر.</div>
@@ -687,9 +817,8 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
         <div class="ct-devs" id="ctDevs"></div>
       </div>
 
-      <div class="ct-stage-t">⏲️ بخش ۳ — تایمر یعنی چی؟</div>
-      <div class="ct-explain"><b>تایمر یک عقربه روی یک صفحه‌ی گرد است.</b> هر ضربه‌ی کلاک، عقربه یک خانه جلو می‌رود؛ به آخرین خانه که رسید دوباره به ۰ برمی‌گردد. همین! خودِ سخت‌افزار می‌شمارد و CPU آزاد می‌ماند. دو تنظیم دارد: <b>Prescaler</b> (ضربه‌ها چقدر کُند شوند) و <b>Period</b> (صفحه چند خانه دارد).</div>
-      ${ctAnimTimer()}
+      ${ctProtoView()}
+      <div class="ct-stage-t">⏲️ بخش ۳ — تایمر را تنظیم کن</div>
       <div class="hs-p" data-v="src"></div>
       ${block('ctG4', head('psc', '④ Prescaler: گیربکسِ ضربه‌ها'), row('psc', 'Prescaler (PSC)', 0, 11) + '<div class="ct-rel">❓ چرا PSC می‌تواند ۰ باشد؟ چون سخت‌افزار بر (PSC+۱) تقسیم می‌کند، پس هیچ‌وقت تقسیم بر صفر نمی‌شود: PSC=۰ یعنی ÷۱.</div>')}
       ${block('ctD1', head('arr', '⑤ شمارنده: صفحه‌ی گرد'), row('arr', 'Period (ARR)', 1, 1023) + '<div class="ct-rel">❓ چرا از ۱ شروع می‌شود؟ ARR=۰ یعنی فقط ۱ خانه؛ عقربه جایی برای حرکت ندارد و PWM فقط می‌تواند ۰٪ یا ۱۰۰٪ باشد.</div>' + pre([['۷', 'arr:7'], ['۱۵', 'arr:15'], ['۲۵۵', 'arr:255'], ['۱۰۲۳', 'arr:1023']]))}
@@ -705,7 +834,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
 
       <div class="ct-stage-t">💡 بخش ۴ — PWM یعنی چی؟</div>
       <div class="ct-explain"><b>PWM یعنی یک پین را خیلی سریع روشن و خاموش کنیم.</b> موتور آن‌قدر کُند است که تک‌تک چشمک‌ها را حس نمی‌کند و فقط «میانگین» را می‌بیند. مثلاً نیمی از دور روشن = نصفِ ولتاژ = نصفِ سرعت. روشن‌ماندن را همان عقربه تعیین می‌کند: <b>روی کمانِ سبز (Pulse) پین روشن است و روی بقیه خاموش.</b></div>
-      ${ctAnimPwm()}
+      ${ctAnimPwmBox()}
       ${block('ctD2', head('pulse', '⑥ ناحیه‌ی سبز = بالا بودنِ موجِ PWM'), row('pulse', 'Pulse (CCR)', 0, 16) + pre([['۲۵٪', 'duty:25'], ['۵۰٪', 'duty:50'], ['۷۵٪', 'duty:75'], ['۱۰۰٪', 'duty:100']]), '<canvas class="ct-cv ct-pw" id="ctPw" data-talk="wave"></canvas>')}
       <div class="ct-sc">
         <div class="ct-sc-h"><b>موجِ خروجی (سه دور پشت‌سرهم)</b></div>
@@ -961,6 +1090,8 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
   document.addEventListener('keydown', onKey, sig);
 
   listen('input', e => {
+    const ps = e.target.closest('#ctPwmS');
+    if(ps){ q('#ctPwmA').innerHTML = ctAnimPwm(+ps.value / 100); return; }
     const el = e.target.closest('input[data-k]');
     if(!el) return;
     const k = el.dataset.k, v = parseInt(el.value, 10);
@@ -979,6 +1110,15 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     refresh();
   });
 
+  /* دکمه‌ی انتخاب‌شده همیشه پررنگ می‌ماند (مستقل از hover و focus) */
+  const selBtn = (b, on) => {
+    b.classList.toggle('sim-btn-ghost', !on); b.setAttribute('aria-pressed', on);
+    b.style.background = on ? '#d4af37' : ''; b.style.color = on ? '#14161c' : '';
+    b.style.borderColor = on ? '#d4af37' : ''; b.style.fontWeight = on ? '700' : '';
+    b.blur();
+  };
+  container.querySelectorAll('[data-dlm], [data-clk]').forEach(b => selBtn(b, b.getAttribute('aria-pressed') === 'true'));
+
   listen('click', e => {
     const ed = e.target.closest('[data-edit]');
     if(ed){ if(ed.dataset.warn) knight(ed.dataset.warn); openPop(ed); return; }
@@ -994,17 +1134,13 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     if(pk){ pm[pk.dataset.pm] = !pm[pk.dataset.pm]; paintPm(); return; }
     const ck = e.target.closest('[data-clk]');
     if(ck){
-      container.querySelectorAll('[data-clk]').forEach(b => { const on = b === ck; b.classList.toggle('sim-btn-ghost', !on); b.setAttribute('aria-pressed', on); });
+      container.querySelectorAll('[data-clk]').forEach(b => selBtn(b, b === ck));
       q('#ctClkBox').innerHTML = ctClkView(ck.dataset.clk);
       return;
     }
     const dm = e.target.closest('[data-dlm]');
     if(dm){
-      container.querySelectorAll('[data-dlm]').forEach(b => {
-        const on = b === dm;
-        b.classList.toggle('sim-btn-ghost', !on);
-        b.setAttribute('aria-pressed', on);
-      });
+      container.querySelectorAll('[data-dlm]').forEach(b => selBtn(b, b === dm));
       q('#ctDlm1').hidden = dm.dataset.dlm !== '1';
       q('#ctDlm2').hidden = dm.dataset.dlm !== '2';
       q('#ctDlm3').hidden = dm.dataset.dlm !== '3';
@@ -1014,7 +1150,7 @@ function mountClockTimerSim(container, { onSuccess, alreadyDone } = {}){
     if(e.target.closest('#ctDlReset')){ dlReset(); paintDl(); return; }
     if(e.target.closest('#ctDl')){ knight(e.clientY - cvDl.getBoundingClientRect().top < 85 ? 'dly' : 'dlt'); return; }
     const t = e.target.closest('[data-talk]');
-    if(t && !e.target.closest('select, input')) knight(t.dataset.talk);
+    if(t && !e.target.closest('select, input, label')) knight(t.dataset.talk);
   });
 
   function drawWave(){
