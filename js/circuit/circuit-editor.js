@@ -22,21 +22,28 @@ const bjt = pnp => '<circle class="b t" cx="4" cy="0" r="30"/>' +
   (pnp ? arrow(-4.6,9.9,-28,-16) : arrow(17.2,22.4,28,16));
 
 const LED_DRAW = '<path class="b" d="M-40 0H-10M10 0H40M10 -12V12"/><path class="b" d="M-10 -12L10 0L-10 12Z"/>' +
-  '<path class="b t" d="M-4 -16L6 -28M4 -12L14 -24"/>' + arrow(6,-28,10,-12,6,3) + arrow(14,-24,10,-12,6,3);
+  '<path class="b t" d="M-4 -16L6 -28M4 -12L14 -24"/>' + arrow(6,-28,10,-12,6,3) + arrow(14,-24,10,-12,6,3) +
+  '<text x="-27" y="-6" text-anchor="middle" font-size="13" font-weight="700" font-family="monospace" fill="#ff8a80" stroke="#0b1426" stroke-width="2.6" paint-order="stroke">+</text><text x="27" y="-6" text-anchor="middle" font-size="13" font-weight="700" font-family="monospace" fill="#8ec5ff" stroke="#0b1426" stroke-width="2.6" paint-order="stroke">&#8722;</text>';
 const LED_LIT = col => `<path d="M-10 -12L10 0L-10 12Z" fill="${col}" opacity=".95"/>`;
 const ledDef = (fa,val,col) => ({fa,pre:'D',val,lab:'two',pins:[[-40,0,'A'],[40,0,'K']],box:[-40,-32,40,14],
   draw:LED_DRAW, lit:LED_LIT(col), glow:col, pv:LED_LIT(col), edge:'led'});
 
-/* آردوینو Nano: برنامهٔ چراغ راهنما — سبز D10 (۳ ثانیه) ← زرد D11 (۱ ثانیه) ← قرمز D12 (۳ ثانیه) */
+/* آردوینو Uno: برنامهٔ چراغ راهنما — سبز D10 (۳ ثانیه) ← زرد D11 (۱ ثانیه) ← قرمز D12 (۳ ثانیه) */
 const UNO_PROG = [{hi:['D10'], ms:3000}, {hi:['D11'], ms:1000}, {hi:['D12'], ms:3000}];
 const UNO_TOTAL = UNO_PROG.reduce((a, p) => a + p.ms, 0);
 const unoPhase = () => { let t = Date.now() % UNO_TOTAL; for(let i = 0; i < UNO_PROG.length; i++){ if(t < UNO_PROG[i].ms) return i; t -= UNO_PROG[i].ms; } return 0; };
-const UNO_PINS = ['D12','D11','D10','GND'];
+/* همهٔ پایه‌های Uno (USB بالا): ستون راست = هدر دیجیتال، ستون چپ = هدر برق + آنالوگ؛ فاصلهٔ پایه‌ها ۲۰ و روی شبکه */
+const UNO_LAYOUT = [['SCL',100,-160],['SDA',100,-140],['AREF',100,-120],['GND',100,-100],['D13',100,-80],['D12',100,-60],['D11',100,-40],['D10',100,-20],['D9',100,0],['D8',100,20],
+  ['D7',100,60],['D6',100,80],['D5',100,100],['D4',100,120],['D3',100,140],['D2',100,160],['D1',100,180],['D0',100,200],
+  ['NC',-280,-120],['IOREF',-280,-100],['RESET',-280,-80],['3V3',-280,-60],['5V',-280,-40],['GND',-280,-20],['GND',-280,0],['VIN',-280,20],
+  ['A0',-280,60],['A1',-280,80],['A2',-280,100],['A3',-280,120],['A4',-280,140],['A5',-280,160]];
+const UNO_PINS = UNO_LAYOUT.map(p => p[0]), UNO_XY = UNO_LAYOUT.map(p => [p[1], p[2]]);
+const UNO_OUT = (n, hi) => /^(D\d+|A\d)$/.test(n) ? ((hi && hi.has(n)) ? 5 : 0) : n === '5V' ? 5 : n === '3V3' ? 3.3 : null;   // خروجی‌ها: پایه‌های دیجیتال/آنالوگ، 5V و 3.3V؛ بقیه آزاد
 const svgTx = (x, y, s, sz, anchor, bold) => `<text x="${x}" y="${y}" fill="#e8e2d0" font-family="monospace" font-size="${sz}" text-anchor="${anchor}"${bold ? ' font-weight="700"' : ''}>${s}</text>`;
 let unoHiNow = null;   // پایه‌های HIGH در آخرین رندر (وقتی کدِ دانش‌آموز آردوینو را می‌راند)
 let unoChipNow = null; // null = بدون ادیتور کد؛ 'idle' / 'run' = نشان «</> code» روی آردوینو
-const UNO_CHIP = [-64, -76, 2, -58];   // جعبهٔ نشان روی آردوینو (مختصات محلی قطعه)
-const UNO_CHIP_REAL = [-106, -146, -54, -128];   // همان نشان در نمای واقعی (کنارِ بردِ آبی)
+const UNO_CHIP = [-150, -168, -84, -150];   // جعبهٔ نشان روی آردوینو (مختصات محلی قطعه)
+const UNO_CHIP_REAL = [-125, -300, -59, -282];   // همان نشان در نمای واقعی (کنارِ بردِ آبی)
 const chipSvg = b => {
   if(!unoChipNow) return '';
   const run = unoChipNow === 'run', col = run ? '#3ddc84' : '#e79a54';
@@ -45,13 +52,13 @@ const chipSvg = b => {
 };
 const unoDraw = c => {
   const hi = new Set(c && c.t ? (unoHiNow || UNO_PROG[unoPhase()].hi) : []);
-  let h = '<rect class="b" x="-70" y="-80" width="130" height="100" rx="8"/><rect class="b t" x="-86" y="-44" width="16" height="30" rx="2"/>' +
-    svgTx(-78, -26, 'USB', 7, 'middle') + svgTx(-5, -42, 'ARDUINO', 12, 'middle', true) + svgTx(-5, -14, 'NANO', 20, 'middle', true);
+  let h = '<rect class="b" x="-240" y="-180" width="300" height="430" rx="8"/><rect class="b t" x="-130" y="-196" width="80" height="16" rx="2"/>' +
+    svgTx(-90, -184, 'USB', 8, 'middle') + svgTx(-90, 40, 'ARDUINO', 16, 'middle', true) + svgTx(-90, 74, 'UNO', 34, 'middle', true);
   if(c && c.t) h += chipSvg(UNO_CHIP);
   UNO_PINS.forEach((n, i) => {
-    const y = -60 + 20 * i;
-    h += `<path class="b" d="M60 ${y}H100"/>` + svgTx(52, y + 4, n, 11, 'end');
-    if(hi.has(n)) h += `<circle cx="80" cy="${y}" r="3.5" fill="#ff6a55"/>`;
+    const [x, y] = UNO_XY[i], rt = x > 0;
+    h += `<path class="b" d="M${rt ? 60 : -240} ${y}H${x}"/>` + svgTx(rt ? 52 : -232, y + 3.5, n, 10, rt ? 'end' : 'start');
+    if(hi.has(n)) h += `<circle cx="${rt ? 80 : -260}" cy="${y}" r="3.5" fill="#ff6a55"/>`;
   });
   return h;
 };
@@ -91,8 +98,8 @@ const DEFS = {
 
   GND:{fa:'زمین (GND)',pre:'',val:'GND',lab:'top',power:true,pins:[[0,0,'GND']],box:[-14,-30,14,0],
     draw:'<path class="b" d="M0 0V-14M-12 -14H12L0 -28Z"/>'},
-  UNO:{fa:'آردوینو Nano',pre:'U',val:'Nano',lab:'none',offboard:true,pins:UNO_PINS.map((n,i) => [100,-60+20*i,n]),box:[-86,-80,100,20],draw:unoDraw,
-    pal:'<g transform="scale(.48) translate(-7 30)">' + unoDraw(null) + '</g>'},
+  UNO:{fa:'آردوینو Uno',pre:'U',val:'Uno',lab:'none',offboard:true,pins:UNO_PINS.map((n,i) => [UNO_XY[i][0],UNO_XY[i][1],n]),box:[-300,-200,102,252],draw:unoDraw,
+    pal:'<g transform="scale(.16) translate(100 -25)">' + unoDraw(null) + '</g>'},
   HDR4:{fa:'هدر ۴پین (برد LED)',pre:'J',val:'1×4',lab:'two',link:[[0,4],[1,5],[2,6],[3,7]],
     pins:HDR_NAMES.map((n,i) => [-40,-40+20*i,n]).concat(HDR_NAMES.map((n,i) => [40,-40+20*i,n])),box:[-40,-54,40,34],draw:HDR_DRAW,
     pal:'<g transform="scale(.8) translate(0 10)">' + HDR_DRAW + '</g>'}
@@ -209,7 +216,7 @@ function dcSolve(els, ref, mem){
 }
 
 /* ====================================================================
-   ادیتور کد روی آردوینو Nano — همان ادیتورِ ArduinoSim (متنی/بلوکی، ⛶، ↺، ■، ▶) که با کلیک روی خودِ
+   ادیتور کد روی آردوینو Uno — همان ادیتورِ ArduinoSim (متنی/بلوکی، ⛶، ↺، ■، ▶) که با کلیک روی خودِ
    آردوینوی داخل مدار زیرِ مدار باز می‌شود. این فایل فقط «جا» را می‌دهد؛ خودِ ادیتور را میزبان می‌سازد:
    cfg.mount(el, host) → { stop(), destroy() }   (host = onPin / onPinsReset / onRunState / onSuccess)
    ==================================================================== */
@@ -239,7 +246,7 @@ function createUnoDock(wrap, cfg, host){
   const el = document.createElement('section');
   el.className = 'cv-uno-dock'; el.hidden = true;
   el.setAttribute('aria-label', 'ویرایشگر کد آردوینو');
-  el.innerHTML = '<div class="cv-uno-bar"><b>&lt;/&gt; کد آردوینو Nano<span>U1</span></b>' +
+  el.innerHTML = '<div class="cv-uno-bar"><b>&lt;/&gt; کد آردوینو Uno<span>U1</span></b>' +
     '<span class="cv-uno-sub">برنامه را اینجا بنویس؛ چراغ‌های مدار با آن روشن و خاموش می‌شوند.</span>' +
     '<button type="button" data-close>✕ بستن</button></div><div class="cv-uno-body"></div>';
   wrap.insertBefore(el, wrap.querySelector('.cv-status'));
@@ -264,7 +271,7 @@ function createUnoDock(wrap, cfg, host){
 
 /* ====================================================================
    نمای «واقعی»: همان مدار و همان سیم‌ها، ولی قطعه‌ها مثل خودشان کشیده می‌شوند — مقاومت با نوارهای رنگیِ مقدارش،
-   باتری ۹ولت سبز، LED گنبدی، آردوینو Nano آبی… مختصات همان مختصات محلیِ شماتیک است تا پایه‌ها و سیم‌ها سر جایشان بمانند.
+   باتری ۹ولت سبز، LED گنبدی، آردوینو Uno آبی… مختصات همان مختصات محلیِ شماتیک است تا پایه‌ها و سیم‌ها سر جایشان بمانند.
    ==================================================================== */
 const R_COL = ['#15171b','#7a4a1e','#d92b2b','#f08a24','#f2d02f','#2f9e44','#2b6fd6','#8e44ad','#8a8f98','#f4f4f4'];
 const R_GOLD = '#d4af37', R_SILVER = '#c0c0c0';
@@ -297,30 +304,28 @@ const mLead = (x1, x2, y, gold) => { y = y || 0; return `<path d="M${x1} ${y}H${
 const wireTube = (d, col, dark) => `<path d="${d}" stroke="${dark}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="${d}" stroke="${col}" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
 const shine = (x, y, w, h, r) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="#fff" opacity=".28"/>`;
 
-function nanoBoardReal(hi){     // آردوینو Nano واقعی: USB بالا، هدرِ ۱۵پینیِ راست (اتصال سیم‌ها) و چپ، پایه‌ها روی لبهٔ برد
-  const PX = 100, LX = -20, P0 = -100;   // ستون پایه‌ها و y اولین پایه
-  const hdr = (x, live) => {
-    let h = `<rect x="${x - 8}" y="${P0 - 10}" width="16" height="300" rx="2" fill="#1b1d22" stroke="#000" stroke-width="1.2"/>`;
-    for(let k = 0; k < 15; k++){
-      const y = P0 + 20 * k, on = live && live.has(y);
-      h += (on ? `<circle cx="${x}" cy="${y}" r="9" fill="#ff6a55" opacity=".55"/>` : '') +
-        `<rect x="${x - 3.4}" y="${y - 3.4}" width="6.8" height="6.8" fill="${on ? '#ffb1a4' : '#e2b84a'}" stroke="#8a6a12" stroke-width=".8"/><circle cx="${x}" cy="${y}" r="1.1" fill="#6b5a1a"/>`;
-    }
-    return h;
-  };
-  const live = new Set(UNO_PINS.map((n, i) => hi.has(n) ? -60 + 20 * i : null).filter(v => v !== null));
-  let h = '<rect x="-31" y="-137" width="142" height="354" rx="6" fill="#1a6fb5" stroke="#0e4a7d" stroke-width="2"/>' +
-    '<rect x="9" y="-151" width="62" height="44" rx="3" fill="#c9d0d7" stroke="#8b949e" stroke-width="1.5"/><rect x="17" y="-151" width="46" height="9" fill="#6d757e"/><rect x="19" y="-128" width="42" height="3" rx="1.5" fill="#8b949e"/>' +
-    '<rect x="28" y="-96" width="24" height="26" fill="#16181d"/>' + Array.from({length:8}, (_, k) => `<rect x="24" y="${-94 + 3.1 * k}" width="4" height="1.8" fill="#b9c0c8"/><rect x="52" y="${-94 + 3.1 * k}" width="4" height="1.8" fill="#b9c0c8"/>`).join('') +
-    '<rect x="28" y="-60" width="24" height="24" rx="3" fill="#b7bec6" stroke="#6d757e" stroke-width="1.4"/><circle cx="40" cy="-48" r="7" fill="#2c3037"/>' +
-    '<rect x="30" y="-22" width="20" height="9" rx="2" fill="#c9d0d7" stroke="#8b949e" stroke-width=".8"/>' +
-    '<rect x="2" y="-70" width="5" height="9" fill="#3ddc84"/><rect x="2" y="-56" width="5" height="9" fill="#f2c94c"/><rect x="12" y="-70" width="5" height="9" fill="#f2c94c"/><rect x="12" y="-56" width="5" height="9" fill="#c93030"/>' +
-    `<g transform="translate(40 66) rotate(45)">${Array.from({length:8}, (_, k) => { const o = -24.5 + 7 * k; return `<rect x="${o - 1}" y="-35" width="2" height="5"/><rect x="${o - 1}" y="30" width="2" height="5"/><rect x="-35" y="${o - 1}" width="5" height="2"/><rect x="30" y="${o - 1}" width="5" height="2"/>`; }).join('').replace(/<rect /g, '<rect fill="#b9c0c8" ')}<rect x="-31" y="-31" width="62" height="62" rx="3" fill="#16181d"/><circle cx="-22" cy="-22" r="3" fill="#2c3037"/></g>` +
-    '<text x="40" y="136" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="20" fill="#f4fbfb">NANO</text>' +
-    '<rect x="20" y="147" width="40" height="60" rx="2" fill="#1b1d22" stroke="#000" stroke-width="1"/>' +
-    [30, 50].map(x => [157, 177, 197].map(y => `<rect x="${x - 3}" y="${y - 3}" width="6" height="6" fill="#e2b84a" stroke="#8a6a12" stroke-width=".7"/>`).join('')).join('') +
-    hdr(LX, null) + hdr(PX, live);
-  UNO_PINS.forEach((n, i) => { h += svgTx(PX - 13, -60 + 20 * i + 3, n, 8.5, 'end'); });
+function unoBoardReal(hi){      // Uno واقعی: USB بالا، هدر دیجیتال راست، هدر برق/آنالوگ چپ؛ سوکت‌ها دقیقاً روی پایه‌های اتصال
+  const sock = (x0, n, y) => `<rect x="${x0 - 50}" y="${y - 65}" width="${n * 100}" height="130" rx="12" fill="#171a1f" stroke="#000" stroke-width="10"/>` +
+    Array.from({length:n}, (_, k) => `<rect x="${x0 + 100 * k - 26}" y="${y - 26}" width="52" height="52" fill="#4b525c"/>`).join('');
+  const logo = (cx, cy) => `<g fill="none" stroke="#f4fbfb" stroke-linecap="round"><circle cx="${cx - 105}" cy="${cy}" r="92" stroke-width="30"/><circle cx="${cx + 105}" cy="${cy}" r="92" stroke-width="30"/><path d="M${cx - 150} ${cy}h90M${cx + 60} ${cy}h90M${cx + 105} ${cy - 45}v90" stroke-width="22"/></g>`;
+  let h = `<g transform="translate(120 -320) rotate(90) scale(.2)">
+    <rect x="0" y="0" width="2700" height="2100" rx="70" fill="#1a6fb5" stroke="#0e4a7d" stroke-width="30"/>
+    <g fill="#b9c0c8">${Array.from({length:14}, (_, k) => `<rect x="${1069 + 93 * k}" y="1160" width="42" height="80"/><rect x="${1069 + 93 * k}" y="1540" width="42" height="80"/>`).join('')}</g>
+    <rect x="1050" y="1230" width="1350" height="320" rx="24" fill="#16181d"/>
+    <path d="M1050 1335a55 55 0 0 1 0 110z" fill="#2c3037"/>
+    <rect x="640" y="520" width="220" height="220" rx="24" fill="#b7bec6" stroke="#6d757e" stroke-width="18"/>
+    <circle cx="750" cy="630" r="72" fill="#c93030"/>
+    ${sock(1900, 8, 100)}${sock(800, 10, 100)}${sock(1000, 8, 2000)}${sock(1900, 6, 2000)}
+    <rect x="-270" y="180" width="690" height="480" rx="30" fill="#c9d0d7" stroke="#8b949e" stroke-width="22"/>
+    <rect x="-80" y="1300" width="640" height="440" rx="36" fill="#1b1d22"/>
+    ${logo(1700, 620)}
+    <text x="1700" y="1060" font-size="190" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#f4fbfb">UNO</text>
+  </g>`;
+  UNO_PINS.forEach((n, i) => {
+    const [x, y] = UNO_XY[i], rt = x > 0;
+    if(hi.has(n)) h += `<circle cx="${x}" cy="${y}" r="9" fill="#ff6a55" opacity=".6"/>`;
+    h += svgTx(rt ? x - 18 : x + 18, y + 3.5, n, 9.5, rt ? 'end' : 'start');
+  });
   return h;
 }
 
@@ -355,6 +360,7 @@ const REAL = {
       `<path d="M-18 -7V-19A18 18 0 0 1 18 -19V-7Z" fill="${fill}" stroke="${burnt ? '#111' : '#00000055'}" stroke-width="1"/>` +
       (burnt ? '' : '<path d="M-8 -7V-23M8 -7V-17" stroke="#9aa1ad" stroke-width="3" stroke-linecap="round" opacity=".7"/><path d="M-10 -22Q0 -29 10 -17" fill="none" stroke="#d9b94a" stroke-width="1" opacity=".8"/>') +
       '<path d="M-13 -17A14 14 0 0 1 -6 -29" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="2.2" stroke-linecap="round"/>' +
+      '<text x="-27" y="-6" text-anchor="middle" font-size="13" font-weight="700" font-family="monospace" fill="#ff8a80" stroke="#0b1426" stroke-width="2.6" paint-order="stroke">+</text><text x="27" y="-6" text-anchor="middle" font-size="13" font-weight="700" font-family="monospace" fill="#8ec5ff" stroke="#0b1426" stroke-width="2.6" paint-order="stroke">&#8722;</text>' +
       (on ? `<circle cy="-18" r="18" fill="${LED_REAL[t].on[1]}" opacity=".28"/>` : '');
   },
   NPN(){
@@ -399,7 +405,7 @@ const REAL = {
   },
   UNO(c){
     const hi = new Set(unoHiNow || UNO_PROG[unoPhase()].hi);
-    return nanoBoardReal(hi) + chipSvg(UNO_CHIP_REAL);
+    return unoBoardReal(hi) + chipSvg(UNO_CHIP_REAL);
   }
 };
 REAL.PNP = REAL.NPN;
@@ -505,7 +511,7 @@ function create(root, opts){
     return DEFS[c.t].pins.map(p => { const q = rot(p[0],p[1],c.r); return {x:c.x+q[0], y:c.y+q[1], name:p[2]}; });
   }
   function bboxOf(c, box){
-    const b = box || (realOn && c.t === 'UNO' ? [-112, -152, 112, 220] : DEFS[c.t].box), xs = [], ys = [];
+    const b = box || (realOn && c.t === 'UNO' ? [-304, -376, 124, 224] : DEFS[c.t].box), xs = [], ys = [];
     [[b[0],b[1]],[b[2],b[1]],[b[0],b[3]],[b[2],b[3]]].forEach(p => { const q = rot(p[0],p[1],c.r); xs.push(c.x+q[0]); ys.push(c.y+q[1]); });
     return {x0:Math.min(...xs), y0:Math.min(...ys), x1:Math.max(...xs), y1:Math.max(...ys)};
   }
@@ -693,6 +699,7 @@ function create(root, opts){
     const hiNow = new Set(ext ? Object.keys(ext).filter(k => ext[k]) : unos.length ? UNO_PROG[unoPhase()].hi : []);
     const unoGndKey = u => { const q = P.get(u.id)[UNO_PINS.indexOf('GND')]; return key(q.x, q.y); };
     unos.forEach(u => { if(gnd.length) uni(unoGndKey(u), key(P.get(gnd[0].id)[0].x, P.get(gnd[0].id)[0].y)); else if(u !== unos[0]) uni(unoGndKey(u), unoGndKey(unos[0])); });
+    unos.forEach(u => UNO_PINS.forEach((n, i) => { if(n === 'GND'){ const q = P.get(u.id)[i]; uni(key(q.x, q.y), unoGndKey(u)); } }));   // همهٔ پایه‌های GND یکی‌اند
     S.comps.forEach(c => { if(c.t === 'HDR4') DEFS.HDR4.link.forEach(l => { const a = P.get(c.id)[l[0]], b = P.get(c.id)[l[1]]; uni(key(a.x, a.y), key(b.x, b.y)); }); });   // هدر: پایهٔ بیرونی = پایهٔ برد
     const vcc = {};
     S.comps.filter(c => c.t === 'VCC').forEach(c => {
@@ -734,7 +741,7 @@ function create(root, opts){
         }
       });
       sources.forEach((s,i) => els.push({k:'V', id:'V' + i, comp:s.comp, p:s.pos, n:s.neg, v:s.v}));
-      unos.forEach(u => UNO_PINS.forEach((n,i) => { if(n !== 'GND') els.push({k:'V', id:'U' + u.id + n, comp:u, p:node(u,i), n:find(unoGndKey(u)), v:(hi && hi.has(n)) ? 5 : 0}); }));   // پایهٔ خروجی آردوینو = منبع ۵ولت (HIGH) یا ۰ولت (LOW)
+      unos.forEach(u => UNO_PINS.forEach((n,i) => { const v = UNO_OUT(n, hi); if(v !== null) els.push({k:'V', id:'U' + u.id + n + i, comp:u, p:node(u,i), n:find(unoGndKey(u)), v}); }));   // پایهٔ خروجی آردوینو = منبع ۵ولت (HIGH) یا ۰ولت (LOW)
       const ref = unos.length ? find(unoGndKey(unos[0])) : gnd.length ? find(key(P.get(gnd[0].id)[0].x, P.get(gnd[0].id)[0].y)) : sources[0].neg;
       const r = dcSolve(els, ref, bjtMem);
       els.forEach(e => {
@@ -837,12 +844,13 @@ function create(root, opts){
   }
 
   function labelsOf(c){
-    const d = DEFS[c.t], b = realOn && /^LED/.test(c.t) ? bboxOf(c, [-40,-42,40,14]) : bboxOf(c), cx = (b.x0+b.x1)/2, cy = (b.y0+b.y1)/2;   // در نمای واقعی گنبد LED بیرون از جعبهٔ شماتیک می‌زند
+    const d = DEFS[c.t], b = realOn && /^LED/.test(c.t) ? bboxOf(c, [-40,-34,40,14]) : bboxOf(c), cx = (b.x0+b.x1)/2, cy = (b.y0+b.y1)/2;   // در نمای واقعی گنبد LED بیرون از جعبهٔ شماتیک می‌زند
     const t = (x,y,anchor,cls,s) => s ? `<text class="${cls}" x="${x}" y="${y}" text-anchor="${anchor}">${esc(s)}</text>` : '';
     if(d.lab === 'none') return '';
     if(d.lab === 'top') return t(cx, b.y0-5, 'middle', 'cv-val', c.val);
     const vert = (b.y1-b.y0) > (b.x1-b.x0) * 1.3;
     if(d.side || vert) return t(b.x1+8, cy-2, 'start', 'cv-ref', c.ref) + t(b.x1+8, cy+14, 'start', 'cv-val', c.val);
+    if(/^LED/.test(c.t)) return t(cx-4, b.y0-6, 'end', 'cv-ref', c.ref) + t(cx+4, b.y0-6, 'start', 'cv-val', c.val);
     return t(cx, b.y0-6, 'middle', 'cv-ref', c.ref) + t(cx, b.y1+14, 'middle', 'cv-val', c.val);
   }
   function compG(c, cls, st){
