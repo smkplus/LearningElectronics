@@ -240,19 +240,32 @@ function injectDockCss(){
 .cv-uno-bar button:hover{border-color:#2ea09d}
 .cv-uno-bar button:focus-visible{outline:2px solid #2ea09d;outline-offset:2px}
 .cv-uno-body{padding:12px}
-.cv-uno-body .sim-wrap{margin:0}`;
+.cv-uno-body .sim-wrap{margin:0}
+.cv-uno-switch{display:inline-flex;border:1px solid rgba(255,255,255,.25);border-radius:9px;overflow:hidden}
+.cv-uno-switch button{border:0;border-radius:0;padding:7px 16px;font:inherit;font-size:13px;font-weight:700;color:inherit;background:transparent;cursor:pointer}
+.cv-uno-switch button:hover:not(.on){background:rgba(255,255,255,.08)}
+.cv-uno-switch button.on{color:#08150f;background:linear-gradient(90deg,#3fbf8f,#57d8a3);cursor:default}
+.cv-uno-switch-props{display:flex;margin-bottom:10px}
+.cv-uno-switch-props button{flex:1}
+.cv-uno-dock.in-side .cv-uno-sub{display:none}
+.cv-wrap.code-on .cv-side > :not(.cv-uno-dock){display:none}
+.cv-wrap.code-on .cv-side .cv-uno-dock{margin-top:0;flex:1 1 auto;min-height:0;overflow:auto}
+.cv-wrap.code-on .cv-side .cv-uno-dock[hidden]{display:none}
+@media (min-width:761px){.cv-wrap.code-on:not(.narrow) .cv-side{width:min(640px,50vw);flex:0 0 min(640px,50vw)}}`;
   document.head.appendChild(s);
 }
 
-function createUnoDock(wrap, cfg, host, ref, comp){
+function createUnoDock(wrap, cfg, host, ref, comp, parent){
   injectDockCss();
   const el = document.createElement('section');
   el.className = 'cv-uno-dock'; el.hidden = true;
   el.setAttribute('aria-label', 'ویرایشگر کد آردوینو');
   el.innerHTML = '<div class="cv-uno-bar"><b>&lt;/&gt; کد آردوینو Uno<span>' + String(ref || 'U1').replace(/[<>&"']/g, '') + '</span></b>' +
     '<span class="cv-uno-sub">برنامه را اینجا بنویس؛ چراغ‌های مدار با آن روشن و خاموش می‌شوند.</span>' +
-    '<button type="button" data-close>✕ بستن</button></div><div class="cv-uno-body"></div>';
-  wrap.insertBefore(el, wrap.querySelector('.cv-status'));
+    (parent ? '<span class="cv-uno-switch"><button type="button" data-close>⚡ مدار</button><button type="button" class="on" tabindex="-1">&lt;/&gt; کد</button></span>'
+            : '<button type="button" data-close>✕ بستن</button>') + '</div><div class="cv-uno-body"></div>';
+  if(parent){ el.classList.add('in-side'); parent.appendChild(el); }      // داخل ستون سمت راست (به‌جای زیرِ مدار)
+  else wrap.insertBefore(el, wrap.querySelector('.cv-status'));
   const body = el.querySelector('.cv-uno-body');
   let handle = null, mounted = false;
   el.querySelector('[data-close]').addEventListener('click', () => { el.hidden = true; if(host.closed) host.closed(); });
@@ -438,6 +451,8 @@ function create(root, opts){
   let ext = (opts.unoExternal || opts.unoCode) ? {} : null;   // null = برنامهٔ داخلی؛ شیء = پایه‌ها را کدِ بیرونی می‌راند ({D12:1,…})
   const eachCfg = (!mission && !opts.unoCode && opts.unoCodeEach !== false && typeof ArduinoSim !== 'undefined') ? unoCodeEach : null;   // طراحی آزاد: کد جدا برای هر Uno
   const docks = new Map(), pinsBy = new Map(), runBy = new Map();
+  if(eachCfg) injectDockCss();
+  if(eachCfg) ext = {};     // طراحی آزاد: تا کد ننوشته‌ای هیچ پایه‌ای HIGH نمی‌شود (برنامهٔ چراغ راهنمای داخلی اجرا نشود)
   let eachRaf = 0;
   const codeCfg = opts.unoCode || null;      // ادیتور کدِ روی آردوینو: {mount(el, host)} (فقط مأموریت‌هایی که بخواهند)
   let codePanel = null, codeOk = !!opts.alreadyDone, codeRunning = false, pinsState = {}, pinsRaf = 0, realOn = false;
@@ -713,6 +728,7 @@ function create(root, opts){
     gnd.forEach(c => uni(key(P.get(c.id)[0].x, P.get(c.id)[0].y), key(P.get(gnd[0].id)[0].x, P.get(gnd[0].id)[0].y)));
     const unos = S.comps.filter(c => c.t === 'UNO');
     const hiNow = new Set(ext ? Object.keys(ext).filter(k => ext[k]) : unos.length ? UNO_PROG[unoPhase()].hi : []);
+    const hiOf = eachCfg ? (u => new Set(hiList(u))) : (() => hiNow);     // طراحی آزاد: هر Uno پایه‌های HIGHِ خودش را دارد
     const unoGndKey = u => { const q = P.get(u.id)[UNO_PINS.indexOf('GND')]; return key(q.x, q.y); };
     unos.forEach(u => { if(gnd.length) uni(unoGndKey(u), key(P.get(gnd[0].id)[0].x, P.get(gnd[0].id)[0].y)); else if(u !== unos[0]) uni(unoGndKey(u), unoGndKey(unos[0])); });
     unos.forEach(u => UNO_PINS.forEach((n, i) => { if(n === 'GND'){ const q = P.get(u.id)[i]; uni(key(q.x, q.y), unoGndKey(u)); } }));   // همهٔ پایه‌های GND یکی‌اند
@@ -743,7 +759,7 @@ function create(root, opts){
     let status = new Map();
     const mark = (c,s) => { if(!c) return; if(!status.get(c.id) || rank[s] > rank[status.get(c.id)]) status.set(c.id, s); };
     let shorted = false;
-    function solveBJT(hi){
+    function solveBJT(hiFn){
       const ohm = s => { const m = /^([\d.]+)\s*([kKM]?)/.exec(String(s)); return (m && parseFloat(m[1]) * ({k:1e3, K:1e3, M:1e6}[m[2]] || 1)) || 1000; };
       const els = [];
       S.comps.forEach(c => {
@@ -757,7 +773,7 @@ function create(root, opts){
         }
       });
       sources.forEach((s,i) => els.push({k:'V', id:'V' + i, comp:s.comp, p:s.pos, n:s.neg, v:s.v}));
-      unos.forEach(u => UNO_PINS.forEach((n,i) => { const v = UNO_OUT(n, hi); if(v !== null) els.push({k:'V', id:'U' + u.id + n + i, comp:u, p:node(u,i), n:find(unoGndKey(u)), v}); }));   // پایهٔ خروجی آردوینو = منبع ۵ولت (HIGH) یا ۰ولت (LOW)
+      unos.forEach(u => UNO_PINS.forEach((n,i) => { const v = UNO_OUT(n, hiFn(u)); if(v !== null) els.push({k:'V', id:'U' + u.id + n + i, comp:u, p:node(u,i), n:find(unoGndKey(u)), v}); }));   // پایهٔ خروجی آردوینو = منبع ۵ولت (HIGH) یا ۰ولت (LOW)
       const ref = unos.length ? find(unoGndKey(unos[0])) : gnd.length ? find(key(P.get(gnd[0].id)[0].x, P.get(gnd[0].id)[0].y)) : sources[0].neg;
       const r = dcSolve(els, ref, bjtMem);
       els.forEach(e => {
@@ -772,13 +788,13 @@ function create(root, opts){
     const useSolver = S.comps.some(c => c.t === 'NPN' || c.t === 'PNP') || unos.length > 0;
     let phases = null;
     if(useSolver && (sources.length || unos.length)){
-      shorted = solveBJT(hiNow);
-      if(unos.length){      // همهٔ مرحله‌های برنامه را هم بررسی کن: هر مرحله چه LEDهایی روشن‌اند / می‌سوزند
+      shorted = solveBJT(hiOf);
+      if(unos.length && !eachCfg){      // همهٔ مرحله‌های برنامه را هم بررسی کن: هر مرحله چه LEDهایی روشن‌اند / می‌سوزند
         const keep = status, burntAll = new Set();
         let anyShort = false;
         phases = UNO_PROG.map(ph => {
           status = new Map();
-          if(solveBJT(new Set(ph.hi))) anyShort = true;
+          if(solveBJT(() => new Set(ph.hi))) anyShort = true;
           const lit = new Set();
           S.comps.forEach(c => { if(DEFS[c.t].edge !== 'led') return; const st = status.get(c.id); if(st === 'on') lit.add(c.t); else if(st === 'burnt') burntAll.add(c.id); });
           return {lit};
@@ -851,6 +867,7 @@ function create(root, opts){
   function setView(v){
     const p = v === 'pcb' ? getPcb() : pcb;
     if(v === 'pcb' && !p) return;
+    if(v === 'pcb') setCodeMode(false);
     realOn = v === 'real';
     wrap.classList.toggle('real-on', realOn);
     buildPalette();
@@ -918,6 +935,7 @@ function create(root, opts){
     const A = analyze();
     unoHiNow = A.hasUno && ext ? A.hi : null;
     unoChipNow = codePanel ? (codeRunning ? 'run' : 'idle') : null;
+    setUnoMaps();
     let h = '', outH = '', inH = '';
     S.wires.forEach(w => {
       const cls = 'cv-wire' + (sel.has('w'+w.id) ? ' sel' : '') + (hot.wires.has(w.id) ? ' hot' : '');
@@ -980,7 +998,8 @@ function create(root, opts){
       propsEl.innerHTML = `<div class="cv-props-title">${esc(d.fa)}</div>` +
         (d.power ? '' : `<label>نام<input id="cvRef" value="${esc(c.ref)}" maxlength="12"></label>`) +
         (d.lab === 'none' ? '' : `<label>مقدار<input id="cvVal" value="${esc(c.val)}" maxlength="24"></label>`) +
-        (codePanel && c.t === 'UNO' ? '<button class="cv-btn" id="cvCode">&lt;/&gt; ویرایش کد آردوینو</button>' : '') +
+        (eachCfg && c.t === 'UNO' ? '<div class="cv-uno-switch cv-uno-switch-props"><button type="button" class="on" tabindex="-1">⚡ مدار</button><button type="button" id="cvCode">&lt;/&gt; کد</button></div>'
+          : codePanel && c.t === 'UNO' ? '<button class="cv-btn" id="cvCode">&lt;/&gt; ویرایش کد آردوینو</button>' : '') +
         (d.push ? '<button class="cv-btn" id="cvPush">نگه دار تا کلید فشرده شود</button>' : '') +
         (d.sw && !d.push ? `<button class="cv-btn" id="cvSw">${c.on ? 'کلید بسته است — باز کن' : 'کلید باز است — ببند'}</button>` : '') +
         `<div class="cv-pins">پایه‌ها: ${d.pins.map(p => esc(p[2])).join(' • ')}</div>`;
@@ -996,7 +1015,7 @@ function create(root, opts){
       const sw = propsEl.querySelector('#cvSw');
       if(sw) sw.addEventListener('click', () => toggleSw(c));
       const cb = propsEl.querySelector('#cvCode');
-      if(cb) cb.addEventListener('click', openCode);
+      if(cb) cb.addEventListener('click', () => openCode(c));
       const pb = propsEl.querySelector('#cvPush');
       if(pb){
         const rel = () => { window.removeEventListener('pointerup', rel); window.removeEventListener('pointercancel', rel); if(c.on){ c.on = false; render(); } };
@@ -1086,9 +1105,9 @@ function create(root, opts){
     const w = toWorld(e), sp = {x:snap(w.x), y:snap(w.y)};
     cursor = sp;
     if(e.button === 2) return;
-    if(codePanel && e.button !== 1 && !spaceDown && tool !== 'wire' && tool !== 'place'){
+    if((codePanel || eachCfg) && e.button !== 1 && !spaceDown && tool !== 'wire' && tool !== 'place'){
       const cu = chipAt(w);
-      if(cu){ drag = null; sel.clear(); sel.add('c' + cu.id); renderProps(); render(); openCode(); return; }
+      if(cu){ drag = null; sel.clear(); sel.add('c' + cu.id); renderProps(); render(); openCode(cu); return; }
     }
     if(e.button === 1 || tool === 'pan' || spaceDown){
       drag = {kind:'pan', sx:e.clientX, sy:e.clientY, vx:view.x, vy:view.y};
@@ -1188,10 +1207,54 @@ function create(root, opts){
     view = {z, x:(r.width - w*z)/2 - b.x0*z, y:(H - h*z)/2 - b.y0*z};
     render();
   }
-  function openCode(){ if(codePanel) codePanel.open(); }
+  /* ---- طراحی آزاد: هر Uno ادیتور کد و پایه‌های خودش را دارد (کلید = c.cid؛ با حذف Uno ادیتورش هم از بین می‌رود) ---- */
+  const pinName = p => /^A\d$/.test(String(p)) ? String(p) : (p >= 14 && p <= 19 ? 'A' + (p - 14) : 'D' + p);
+  const hiList = u => { const m = u && pinsBy.get(u.cid); return m ? Object.keys(m).filter(k => m[k]) : []; };
+  const repaint = () => { if(!eachRaf) eachRaf = requestAnimationFrame(() => { eachRaf = 0; if(!stopped) render(); }); };
+  function makeDock(c){
+    const cid = c.cid;
+    return createUnoDock(wrap, eachCfg, {
+      onPin(p, v){ const m = pinsBy.get(cid) || {}; m[pinName(p)] = v ? 1 : 0; pinsBy.set(cid, m); repaint(); },
+      onPinsReset(){ pinsBy.set(cid, {}); repaint(); },
+      onRunState(r){ runBy.set(cid, !!r); repaint(); },
+      onSuccess(){},
+      closed(){ setCodeMode(false); }      // «⚡ مدار» = برگشت به حالت مدار
+    }, c.ref, c, root.querySelector('.cv-side'));
+  }
+  let codeMode = false;      // حالت کدنویسی: ستون سمت راست جای ابزار/قطعات، ادیتورِ کدِ آردوینو را نشان می‌دهد و عریض‌تر می‌شود
+  function setCodeMode(on){
+    if(!eachCfg || codeMode === on) return;
+    codeMode = on;
+    wrap.classList.toggle('code-on', on);
+    if(!on) docks.forEach(d => d.close());
+  }
+  function syncDocks(){
+    const live = new Set();
+    S.comps.forEach(c => { if(c.t === 'UNO' && c.cid && !live.has(c.cid)){ live.add(c.cid); if(!docks.has(c.cid)) docks.set(c.cid, makeDock(c)); } });
+    [...docks.keys()].forEach(k => { if(!live.has(k)){ docks.get(k).destroy(); docks.delete(k); pinsBy.delete(k); runBy.delete(k); } });
+    if(codeMode && ![...docks.values()].some(d => d.isOpen())) setCodeMode(false);      // Unoی در حال ویرایش حذف شد
+  }
+  function setUnoMaps(forExport){      // نقشهٔ «پایه‌های HIGH» و «نشان کد» برای هر Uno؛ بیرون از حالت طراحی آزاد باید null باشد (متغیرها بین ادیتورها مشترک‌اند)
+    if(!eachCfg){ unoHiBy = null; unoChipBy = null; return; }
+    if(!forExport) syncDocks();
+    unoHiBy = new Map(); unoChipBy = new Map();
+    S.comps.forEach(c => {
+      if(c.t !== 'UNO') return;
+      unoHiBy.set(c.id, hiList(c));
+      if(!forExport) unoChipBy.set(c.id, runBy.get(c.cid) ? 'run' : 'idle');
+    });
+  }
+  if(eachCfg) cleanup.push(() => { if(eachRaf) cancelAnimationFrame(eachRaf); docks.forEach(d => d.destroy()); docks.clear(); });
+  function openCode(cu){
+    if(codePanel){ codePanel.open(); return; }
+    if(!eachCfg || !cu || !cu.cid) return;
+    syncDocks();
+    docks.forEach((d, k) => { if(k !== cu.cid) d.close(); });
+    const d = docks.get(cu.cid); if(d){ d.open(); setCodeMode(true); }
+  }
   // نشان «</> code» روی آردوینو (با چرخش قطعه هم درست کار می‌کند)
   function chipAt(w){
-    if(!codePanel) return null;
+    if(!codePanel && !eachCfg) return null;
     return S.comps.find(c => {
       if(c.t !== 'UNO') return false;
       const cb = realOn ? UNO_CHIP_REAL : UNO_CHIP, a = rot(cb[0], cb[1], c.r), b = rot(cb[2], cb[3], c.r);
@@ -1211,6 +1274,7 @@ function create(root, opts){
     const A = analyze();
     unoHiNow = A.hasUno && ext ? A.hi : null;
     unoChipNow = null;     // نشان کد فقط روی صفحه است، نه در خروجی
+    setUnoMaps(true);
     let body = '';
     S.wires.forEach(w => { body += `<line class="w" x1="${w.x1}" y1="${w.y1}" x2="${w.x2}" y2="${w.y2}"/>`; });
     S.comps.forEach(c => {
@@ -1258,6 +1322,10 @@ function create(root, opts){
     }
   }
 
+  function realThumb(t, d){      // آیکن واقعی قطعه برای نوار قطعات (بدون نشان «</> code» روی Uno)
+    const keep = unoChipNow; unoChipNow = null;
+    try{ return REAL[t]({t, r:0, val:d.val, on:false}, '', uid); } finally { unoChipNow = keep; }
+  }
   function buildPalette(){
     let h = '';
     GROUPS.forEach(g => {
@@ -1266,7 +1334,7 @@ function create(root, opts){
       h += `<div class="cv-pal-title">${g[0]}</div><div class="cv-pal-grid">`;
       types.forEach(t => {
         const d = DEFS[t];
-        h += `<button class="cv-pal-item" data-type="${t}" title="${esc(d.fa)}"><svg viewBox="-48 -48 96 96" class="cv-sym">${realOn && REAL[t] ? REAL[t]({t, r:0, val:d.val, on:false}, '', uid) : (d.pv || '') + (d.pal || drawOf({on:false}, d))}</svg><span>${esc(d.fa)}</span></button>`;
+        h += `<button class="cv-pal-item" data-type="${t}" title="${esc(d.fa)}"><svg viewBox="-48 -48 96 96" class="cv-sym">${realOn && REAL[t] ? realThumb(t, d) : (d.pv || '') + (d.pal || drawOf({on:false}, d))}</svg><span>${esc(d.fa)}</span></button>`;
       });
       h += '</div>';
     });
@@ -1292,9 +1360,9 @@ function create(root, opts){
     zoomAt(p.x, p.y, Math.exp(-e.deltaY * 0.0015));
   }, {passive:false});
   on(svg, 'dblclick', e => {
-    if(codePanel && tool !== 'wire' && tool !== 'place'){      // دوبار کلیک روی آردوینو = باز شدن ویرایشگر کد
+    if((codePanel || eachCfg) && tool !== 'wire' && tool !== 'place'){      // دوبار کلیک روی آردوینو = باز شدن ویرایشگر کد
       const h0 = hitTest(toWorld(e)), c0 = h0 && h0.k === 'c' && S.comps.find(x => x.id === h0.id);
-      if(c0 && c0.t === 'UNO'){ sel.clear(); sel.add('c' + c0.id); renderProps(); render(); openCode(); return; }
+      if(c0 && c0.t === 'UNO'){ sel.clear(); sel.add('c' + c0.id); renderProps(); render(); openCode(c0); return; }
     }
     if(tool !== 'select') return;
     const h = hitTest(toWorld(e));

@@ -818,6 +818,30 @@ void loop() {
       }
     },
 
+    /* آردوینوی داخل «طراحی مدار»: بُرد جدا ندارد (خودِ مدار بُرد است)؛ هر digitalWrite به پایه‌های همان Uno در مدار می‌رسد.
+       مأموریتی در کار نیست، پس هیچ‌وقت «موفق» نمی‌شود. */
+    freeUno: {
+      noBoard: true,
+      board: () => '',
+      blocksTask: 'blink',
+      maxRunMs: 3600000,
+      hint: 'برنامهٔ همین آردوینو را بنویس و «اجرا کن» را بزن؛ پایه‌هایی که با digitalWrite می‌رانی در مدار روشن و خاموش می‌شوند.',
+      successText: '',
+      successLog: '',
+      starter: () => `void setup() {
+  pinMode(13, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(13, HIGH);
+  delay(500);
+  digitalWrite(13, LOW);
+  delay(500);
+}
+`,
+      check: () => ({ ok: false, reason: 'این آردوینو فقط مدار را می‌راند.' })
+    },
+
     serial: {
       board: () => serialSVG(),
       hint: 'کد را بنویس و «اجرا کن» را بزن تا پیام در کنسول سریال ظاهر شود.',
