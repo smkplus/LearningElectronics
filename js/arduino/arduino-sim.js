@@ -24,7 +24,7 @@ const ArduinoSim = (() => {
   // آدرسِ iframe ادیتورِ بلوکی. هر وقت blockly-editor.html (یا فایل‌هایی که
   // خودش لود می‌کند) عوض شد، عددِ v را بالا ببر تا مرورگرِ کاربرانِ قبلی نسخه‌ی
   // کش‌شده را استفاده نکند.
-  const BLOCKLY_EDITOR_URL = 'blockly-editor.html?v=6';
+  const BLOCKLY_EDITOR_URL = 'blockly-editor.html?v=8';
   const MODE_STORAGE_KEY = 'shovalie-madar-arduino-mode-v1';
   const MODE_CHANGE_EVENT = 'shovalie-madar-arduino-mode-change';
   const RUN_SPEED = 2.2;

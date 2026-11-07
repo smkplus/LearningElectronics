@@ -2507,6 +2507,7 @@ const ArduinoBlocks = (() => {
       workspace.clear();
       window.Blockly.serialization.workspaces.load(snapshot.ws, workspace, { recordUndo: false });
       try { findOrCreateGlobalBlock(workspace); } catch (e) { /* noop */ }
+      separateOverlappingTopBlocks(workspace);
       if (snapshot.viewport) {
         try {
           if (typeof snapshot.viewport.scale === 'number') workspace.setScale(snapshot.viewport.scale);
@@ -2530,6 +2531,52 @@ const ArduinoBlocks = (() => {
     if (storedLayout) Object.keys(storedLayout).forEach((k) => { if (k !== '__viewport__') map.set(k, storedLayout[k]); });
     captureTopBlockPositions(workspace).forEach((v, k) => map.set(k, v));
     return map;
+  }
+
+  // بلوک‌های سطحِ‌بالا هیچ‌وقت نباید روی هم بیفتند. اگر چیدمانِ ذخیره‌شده یا
+  // فاصله‌ی پیش‌فرض باعثِ هم‌پوشانی شد (بلوکِ بلند از فاصله‌ی ثابت بیشتر جا
+  // می‌گیرد)، همه را با ارتفاعِ واقعی‌شان زیرِ هم می‌چیند.
+  function separateOverlappingTopBlocks(workspace) {
+    const GAP = 24;
+    // هم‌پوشانی از روی مستطیلِ واقعیِ روی صفحه تشخیص داده می‌شود، نه از
+    // مدلِ اندازه‌ی داخلیِ Blockly که در RTL/Zelos گاهی کمتر برمی‌گرداند.
+    function run() {
+      try {
+        const Blockly = window.Blockly;
+        const items = workspace.getTopBlocks(false)
+          .filter((b) => b.getSvgRoot())
+          .map((b) => ({ b, r: b.getSvgRoot().getBoundingClientRect() }));
+        if (items.length < 2 || items.some((it) => !it.r.width || !it.r.height)) return;
+        items.sort((x, y) => x.r.top - y.r.top);
+        const scale = workspace.scale || 1;
+        const placed = [];
+        Blockly.Events.disable();
+        try {
+          items.forEach(({ b, r }) => {
+            let shift = 0;
+            for (let again = true; again;) {
+              again = false;
+              for (const p of placed) {
+                if (r.left < p.right && p.left < r.right && r.top + shift < p.bottom && p.top < r.bottom + shift) {
+                  shift = p.bottom + GAP - r.top;
+                  again = true;
+                }
+              }
+            }
+            if (shift > 0.5) b.moveBy(0, shift / scale);
+            placed.push({ left: r.left, right: r.right, top: r.top + shift, bottom: r.bottom + shift });
+          });
+        } finally {
+          Blockly.Events.enable();
+        }
+      } catch (e) { /* noop */ }
+    }
+    run();
+    [0, 150, 500, 1200].forEach((ms) => setTimeout(run, ms));
+    try {
+      const rm = window.Blockly.renderManagement;
+      if (rm && rm.finishQueuedRenders) rm.finishQueuedRenders().then(run).catch(() => { /* noop */ });
+    } catch (e) { /* noop */ }
   }
 
   function applyTopBlockPositions(topBlocks, savedPositions) {
@@ -2670,6 +2717,7 @@ const ArduinoBlocks = (() => {
       try {
         window.Blockly.serialization.workspaces.load({ blocks: { languageVersion: 0, blocks: topBlocks }, variables: conv.getVariables() }, workspace, { recordUndo: false });
         reapplyVariableFields(topBlocks, workspace, new Set(conv.getVariables().map((v) => v.id)));
+        separateOverlappingTopBlocks(workspace);
       } catch (loadErr) {
         try {
           workspace.clear();
