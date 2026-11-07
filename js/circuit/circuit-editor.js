@@ -62,7 +62,7 @@ const unoDraw = c => {
   });
   return h;
 };
-const HDR_NAMES = ['D12','D11','D10','GND'];
+const HDR_NAMES = ['GND','D12','D11','D10'];
 const HDR_DRAW = '<path class="b" d="' + HDR_NAMES.map((n, i) => `M-40 ${-40 + 20 * i}H-14M14 ${-40 + 20 * i}H40`).join('') + '"/>' +
   '<rect class="b" x="-14" y="-54" width="28" height="86" rx="4"/>' + HDR_NAMES.map((n, i) => svgTx(0, -36 + 20 * i, n, 9, 'middle')).join('');
 
