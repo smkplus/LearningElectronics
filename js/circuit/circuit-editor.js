@@ -35,15 +35,15 @@ const unoPhase = () => { let t = Date.now() % UNO_TOTAL; for(let i = 0; i < UNO_
 /* همهٔ پایه‌های Uno (USB بالا): ستون راست = هدر دیجیتال، ستون چپ = هدر برق + آنالوگ؛ فاصلهٔ پایه‌ها ۲۰ و روی شبکه */
 const UNO_LAYOUT = [['SCL',100,-160],['SDA',100,-140],['AREF',100,-120],['GND',100,-100],['D13',100,-80],['D12',100,-60],['D11',100,-40],['D10',100,-20],['D9',100,0],['D8',100,20],
   ['D7',100,60],['D6',100,80],['D5',100,100],['D4',100,120],['D3',100,140],['D2',100,160],['D1',100,180],['D0',100,200],
-  ['NC',-280,-120],['IOREF',-280,-100],['RESET',-280,-80],['3V3',-280,-60],['5V',-280,-40],['GND',-280,-20],['GND',-280,0],['VIN',-280,20],
-  ['A0',-280,60],['A1',-280,80],['A2',-280,100],['A3',-280,120],['A4',-280,140],['A5',-280,160]];
+  ['NC',-200,-120],['IOREF',-200,-100],['RESET',-200,-80],['3V3',-200,-60],['5V',-200,-40],['GND',-200,-20],['GND',-200,0],['VIN',-200,20],
+  ['A0',-200,60],['A1',-200,80],['A2',-200,100],['A3',-200,120],['A4',-200,140],['A5',-200,160]];
 const UNO_PINS = UNO_LAYOUT.map(p => p[0]), UNO_XY = UNO_LAYOUT.map(p => [p[1], p[2]]);
 const UNO_OUT = (n, hi) => /^(D\d+|A\d)$/.test(n) ? ((hi && hi.has(n)) ? 5 : 0) : n === '5V' ? 5 : n === '3V3' ? 3.3 : null;   // خروجی‌ها: پایه‌های دیجیتال/آنالوگ، 5V و 3.3V؛ بقیه آزاد
 const svgTx = (x, y, s, sz, anchor, bold) => `<text x="${x}" y="${y}" fill="#e8e2d0" font-family="monospace" font-size="${sz}" text-anchor="${anchor}"${bold ? ' font-weight="700"' : ''}>${s}</text>`;
 let unoHiNow = null;   // پایه‌های HIGH در آخرین رندر (وقتی کدِ دانش‌آموز آردوینو را می‌راند)
 let unoChipNow = null; // null = بدون ادیتور کد؛ 'idle' / 'run' = نشان «</> code» روی آردوینو
-const UNO_CHIP = [-150, -168, -84, -150];   // جعبهٔ نشان روی آردوینو (مختصات محلی قطعه)
-const UNO_CHIP_REAL = [-125, -300, -59, -282];   // همان نشان در نمای واقعی (کنارِ بردِ آبی)
+const UNO_CHIP = [-79, -168, -13, -150];   // جعبهٔ نشان روی آردوینو (مختصات محلی قطعه)
+const UNO_CHIP_REAL = [-118, -222, -52, -204];   // همان نشان در نمای واقعی (کنارِ بردِ آبی)
 const chipSvg = b => {
   if(!unoChipNow) return '';
   const run = unoChipNow === 'run', col = run ? '#3ddc84' : '#e79a54';
@@ -52,13 +52,13 @@ const chipSvg = b => {
 };
 const unoDraw = c => {
   const hi = new Set(c && c.t ? (unoHiNow || UNO_PROG[unoPhase()].hi) : []);
-  let h = '<rect class="b" x="-240" y="-180" width="300" height="430" rx="8"/><rect class="b t" x="-130" y="-196" width="80" height="16" rx="2"/>' +
-    svgTx(-90, -184, 'USB', 8, 'middle') + svgTx(-90, 40, 'ARDUINO', 16, 'middle', true) + svgTx(-90, 74, 'UNO', 34, 'middle', true);
+  let h = '<rect class="b" x="-160" y="-180" width="220" height="400" rx="8"/><rect class="b t" x="-86" y="-196" width="80" height="16" rx="2"/>' +
+    svgTx(-46, -184, 'USB', 8, 'middle') + svgTx(-46, 40, 'ARDUINO', 16, 'middle', true) + svgTx(-46, 74, 'UNO', 34, 'middle', true);
   if(c && c.t) h += chipSvg(UNO_CHIP);
   UNO_PINS.forEach((n, i) => {
     const [x, y] = UNO_XY[i], rt = x > 0;
-    h += `<path class="b" d="M${rt ? 60 : -240} ${y}H${x}"/>` + svgTx(rt ? 52 : -232, y + 3.5, n, 10, rt ? 'end' : 'start');
-    if(hi.has(n)) h += `<circle cx="${rt ? 80 : -260}" cy="${y}" r="3.5" fill="#ff6a55"/>`;
+    h += `<path class="b" d="M${rt ? 60 : -160} ${y}H${x}"/>` + svgTx(rt ? 52 : -152, y + 3.5, n, 10, rt ? 'end' : 'start');
+    if(hi.has(n)) h += `<circle cx="${rt ? 80 : -180}" cy="${y}" r="3.5" fill="#ff6a55"/>`;
   });
   return h;
 };
@@ -98,8 +98,8 @@ const DEFS = {
 
   GND:{fa:'زمین (GND)',pre:'',val:'GND',lab:'top',power:true,pins:[[0,0,'GND']],box:[-14,-30,14,0],
     draw:'<path class="b" d="M0 0V-14M-12 -14H12L0 -28Z"/>'},
-  UNO:{fa:'آردوینو Uno',pre:'U',val:'Uno',lab:'none',offboard:true,pins:UNO_PINS.map((n,i) => [UNO_XY[i][0],UNO_XY[i][1],n]),box:[-300,-200,102,252],draw:unoDraw,
-    pal:'<g transform="scale(.16) translate(100 -25)">' + unoDraw(null) + '</g>'},
+  UNO:{fa:'آردوینو Uno',pre:'U',val:'Uno',lab:'none',offboard:true,pins:UNO_PINS.map((n,i) => [UNO_XY[i][0],UNO_XY[i][1],n]),box:[-204,-200,102,222],draw:unoDraw,
+    pal:'<g transform="scale(.16) translate(51 -11)">' + unoDraw(null) + '</g>'},
   HDR4:{fa:'هدر ۴پین (برد LED)',pre:'J',val:'1×4',lab:'two',link:[[0,4],[1,5],[2,6],[3,7]],
     pins:HDR_NAMES.map((n,i) => [-40,-40+20*i,n]).concat(HDR_NAMES.map((n,i) => [40,-40+20*i,n])),box:[-40,-54,40,34],draw:HDR_DRAW,
     pal:'<g transform="scale(.8) translate(0 10)">' + HDR_DRAW + '</g>'}
@@ -309,17 +309,17 @@ function unoBoardReal(hi){      // Uno واقعی: USB بالا، هدر دیج�
     Array.from({length:n}, (_, k) => `<rect x="${x0 + 100 * k - 26}" y="${y - 26}" width="52" height="52" fill="#4b525c"/>`).join('');
   const logo = (cx, cy) => `<g fill="none" stroke="#f4fbfb" stroke-linecap="round"><circle cx="${cx - 105}" cy="${cy}" r="92" stroke-width="30"/><circle cx="${cx + 105}" cy="${cy}" r="92" stroke-width="30"/><path d="M${cx - 150} ${cy}h90M${cx + 60} ${cy}h90M${cx + 105} ${cy - 45}v90" stroke-width="22"/></g>`;
   let h = `<g transform="translate(120 -320) rotate(90) scale(.2)">
-    <rect x="0" y="0" width="2700" height="2100" rx="70" fill="#1a6fb5" stroke="#0e4a7d" stroke-width="30"/>
-    <g fill="#b9c0c8">${Array.from({length:14}, (_, k) => `<rect x="${1069 + 93 * k}" y="1160" width="42" height="80"/><rect x="${1069 + 93 * k}" y="1540" width="42" height="80"/>`).join('')}</g>
-    <rect x="1050" y="1230" width="1350" height="320" rx="24" fill="#16181d"/>
-    <path d="M1050 1335a55 55 0 0 1 0 110z" fill="#2c3037"/>
+    <rect x="450" y="0" width="2250" height="1700" rx="70" fill="#1a6fb5" stroke="#0e4a7d" stroke-width="30"/>
+    <g fill="#b9c0c8">${Array.from({length:14}, (_, k) => `<rect x="${1069 + 93 * k}" y="810" width="42" height="80"/><rect x="${1069 + 93 * k}" y="1190" width="42" height="80"/>`).join('')}</g>
+    <rect x="1050" y="880" width="1350" height="320" rx="24" fill="#16181d"/>
+    <path d="M1050 985a55 55 0 0 1 0 110z" fill="#2c3037"/>
     <rect x="640" y="520" width="220" height="220" rx="24" fill="#b7bec6" stroke="#6d757e" stroke-width="18"/>
     <circle cx="750" cy="630" r="72" fill="#c93030"/>
-    ${sock(1900, 8, 100)}${sock(800, 10, 100)}${sock(1000, 8, 2000)}${sock(1900, 6, 2000)}
-    <rect x="-270" y="180" width="690" height="480" rx="30" fill="#c9d0d7" stroke="#8b949e" stroke-width="22"/>
-    <rect x="-80" y="1300" width="640" height="440" rx="36" fill="#1b1d22"/>
+    ${sock(1900, 8, 100)}${sock(800, 10, 100)}${sock(1000, 8, 1600)}${sock(1900, 6, 1600)}
+    <rect x="-170" y="180" width="690" height="480" rx="30" fill="#c9d0d7" stroke="#8b949e" stroke-width="22"/>
+    <rect x="20" y="1260" width="640" height="440" rx="36" fill="#1b1d22"/>
     ${logo(1700, 620)}
-    <text x="1700" y="1060" font-size="190" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#f4fbfb">UNO</text>
+    <text x="2300" y="690" font-size="190" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#f4fbfb">UNO</text>
   </g>`;
   UNO_PINS.forEach((n, i) => {
     const [x, y] = UNO_XY[i], rt = x > 0;
@@ -355,13 +355,13 @@ const REAL = {
   LED(c, st, u){
     const burnt = st === 'burnt', on = st === 'on', t = LED_REAL[c.t] ? c.t : 'LED';
     const fill = burnt ? '#2a2a2a' : `url(#${u}-${t}${on ? 'on' : 'off'})`;
-    return mLead(-40, -10) + mLead(40, 10) + '<path d="M-10 0V-7M10 0V-7" stroke="#cfd4dc" stroke-width="2.4" stroke-linecap="round"/>' +
+    return mLead(-40, -2) + mLead(40, 18) + '<g transform="translate(8 0)"><path d="M-10 0V-7M10 0V-7" stroke="#cfd4dc" stroke-width="2.4" stroke-linecap="round"/>' +
       '<rect x="-21" y="-7" width="42" height="5" rx="1.5" fill="#bfc4cc" stroke="#8a929e" stroke-width=".8"/>' +
       `<path d="M-18 -7V-19A18 18 0 0 1 18 -19V-7Z" fill="${fill}" stroke="${burnt ? '#111' : '#00000055'}" stroke-width="1"/>` +
       (burnt ? '' : '<path d="M-8 -7V-23M8 -7V-17" stroke="#9aa1ad" stroke-width="3" stroke-linecap="round" opacity=".7"/><path d="M-10 -22Q0 -29 10 -17" fill="none" stroke="#d9b94a" stroke-width="1" opacity=".8"/>') +
       '<path d="M-13 -17A14 14 0 0 1 -6 -29" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="2.2" stroke-linecap="round"/>' +
       '<text x="-27" y="-6" text-anchor="middle" font-size="13" font-weight="700" font-family="monospace" fill="#ff8a80" stroke="#0b1426" stroke-width="2.6" paint-order="stroke">+</text><text x="27" y="-6" text-anchor="middle" font-size="13" font-weight="700" font-family="monospace" fill="#8ec5ff" stroke="#0b1426" stroke-width="2.6" paint-order="stroke">&#8722;</text>' +
-      (on ? `<circle cy="-18" r="18" fill="${LED_REAL[t].on[1]}" opacity=".28"/>` : '');
+      (on ? `<circle cy="-18" r="18" fill="${LED_REAL[t].on[1]}" opacity=".28"/>` : '') + '</g>';
   },
   NPN(){
     return mLead(-40, -14) + `<path d="M20 -40L9 -14M20 40L9 14" stroke="#555b66" stroke-width="4" stroke-linecap="round"/><path d="M20 -40L9 -14M20 40L9 14" stroke="#d3d8e0" stroke-width="2.2" stroke-linecap="round"/>` +
@@ -511,7 +511,7 @@ function create(root, opts){
     return DEFS[c.t].pins.map(p => { const q = rot(p[0],p[1],c.r); return {x:c.x+q[0], y:c.y+q[1], name:p[2]}; });
   }
   function bboxOf(c, box){
-    const b = box || (realOn && c.t === 'UNO' ? [-304, -376, 124, 224] : DEFS[c.t].box), xs = [], ys = [];
+    const b = box || (realOn && c.t === 'UNO' ? [-224, -356, 124, 224] : DEFS[c.t].box), xs = [], ys = [];
     [[b[0],b[1]],[b[2],b[1]],[b[0],b[3]],[b[2],b[3]]].forEach(p => { const q = rot(p[0],p[1],c.r); xs.push(c.x+q[0]); ys.push(c.y+q[1]); });
     return {x0:Math.min(...xs), y0:Math.min(...ys), x1:Math.max(...xs), y1:Math.max(...ys)};
   }
@@ -837,6 +837,7 @@ function create(root, opts){
     if(v === 'pcb' && !p) return;
     realOn = v === 'real';
     wrap.classList.toggle('real-on', realOn);
+    buildPalette();
     wrap.classList.toggle('pcb-on', v === 'pcb');
     root.querySelectorAll('[data-vw]').forEach(b => b.classList.toggle('on', b.dataset.vw === v));
     if(v === 'pcb') p.show(); else if(p) p.hide();
@@ -1249,11 +1250,15 @@ function create(root, opts){
       h += `<div class="cv-pal-title">${g[0]}</div><div class="cv-pal-grid">`;
       types.forEach(t => {
         const d = DEFS[t];
-        h += `<button class="cv-pal-item" data-type="${t}" title="${esc(d.fa)}"><svg viewBox="-48 -48 96 96" class="cv-sym">${d.pv || ''}${d.pal || drawOf({on:false}, d)}</svg><span>${esc(d.fa)}</span></button>`;
+        h += `<button class="cv-pal-item" data-type="${t}" title="${esc(d.fa)}"><svg viewBox="-48 -48 96 96" class="cv-sym">${realOn && REAL[t] ? REAL[t]({t, r:0, val:d.val, on:false}, '', uid) : (d.pv || '') + (d.pal || drawOf({on:false}, d))}</svg><span>${esc(d.fa)}</span></button>`;
       });
       h += '</div>';
     });
     $('cvPalette').innerHTML = h;
+    if(realOn) root.querySelectorAll('#cvPalette .cv-sym').forEach(s => {
+      try{ const b = s.getBBox(), m = Math.max(b.width, b.height) + 8; if(m > 8) s.setAttribute('viewBox', `${b.x + b.width/2 - m/2} ${b.y + b.height/2 - m/2} ${m} ${m}`); }catch(_){}
+    });
+    root.querySelectorAll('.cv-pal-item').forEach(b => b.classList.toggle('on', tool === 'place' && b.dataset.type === placeType));
   }
 
   on(svg, 'pointerdown', onDown);

@@ -73,7 +73,7 @@ function mountCircuitMission(container, id, { onSuccess, alreadyDone, unoExterna
     isActive:() => container.isConnected && container.offsetParent !== null
   });
   requestAnimationFrame(() => requestAnimationFrame(() => ed.onShow()));
-  addDesignerButton(container);
+  addDesignerButton(container, ed, id);
   return { stop(){ ed.stop(); }, ed };
 }
 const mountLedCircuitMission = (c, o) => mountCircuitMission(c, 'led_circuit', o);
@@ -87,8 +87,14 @@ const mountTrafficLightMission = (c, o) => mountCircuitMission(c, 'traffic_light
 const CIRCUIT_FREE_KEY = 'circuit-free-design-v1';
 let circuitDesigner = null;
 
-function openCircuitDesigner(){
+function openCircuitDesigner(srcEd, srcId){
   if(circuitDesigner || typeof CircuitEditor === 'undefined') return;
+  let freeKey = CIRCUIT_FREE_KEY;
+  const st = srcEd && srcEd._state && srcEd._state();
+  if(st && st.comps.length){      // مدارِ فعلیِ مأموریت را کپی می‌کنیم تا در صفحهٔ بزرگ همان را ببینی (مأموریت دست‌نخورده می‌ماند)
+    freeKey = CIRCUIT_FREE_KEY + '-from-' + srcId;
+    try{ localStorage.setItem(freeKey, JSON.stringify({v:1, comps:st.comps, wires:st.wires, seq:st.seq})); }catch(_){}
+  }
   if(!document.getElementById('cdzCss')){
     const css = document.createElement('style');
     css.id = 'cdzCss';
@@ -137,7 +143,7 @@ function openCircuitDesigner(){
   const prevOverflow = document.body.style.overflow;
   document.body.style.overflow = 'hidden';
   const body = el.querySelector('.cdz-body');
-  const ed = CircuitEditor.create(body, { storageKey:CIRCUIT_FREE_KEY, isActive:() => el.isConnected });
+  const ed = CircuitEditor.create(body, { storageKey:freeKey, isActive:() => el.isConnected });
   requestAnimationFrame(() => requestAnimationFrame(() => ed.onShow()));
   el.addEventListener('click', e => {
     const b = e.target.closest('[data-a]'); if(!b) return;
@@ -153,13 +159,13 @@ function closeCircuitDesigner(){
   document.body.style.overflow = d.prevOverflow || '';
 }
 // دکمهٔ «طراحی آزاد» کنار دکمه‌های نوار ابزارِ مأموریت
-function addDesignerButton(container){
+function addDesignerButton(container, srcEd, srcId){
   const bar = container.querySelector('.cv-toolbar');
   if(!bar || bar.querySelector('[data-cdz]')) return;
   const g = document.createElement('div');
   g.className = 'cv-group';
   g.innerHTML = '<button type="button" class="cv-btn" data-cdz title="صفحهٔ جدید برای طراحی آزاد مدار با همهٔ قطعه‌ها"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 12v6M9 15h6"/></svg>طراحی آزاد</button>';
-  g.firstChild.addEventListener('click', openCircuitDesigner);
+  g.firstChild.addEventListener('click', () => openCircuitDesigner(srcEd, srcId));
   bar.insertBefore(g, bar.querySelector('.cv-menu-wrap'));
 }
 
