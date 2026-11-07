@@ -6,7 +6,7 @@
 
   /* ---------- LAB TAB ---------- */
   .lab-intro{
-    max-width:920px; margin:26px auto 18px; padding:0 18px;
+    max-width:760px; margin:26px auto 18px; padding:0 18px;
     display:flex; gap:14px; align-items:center;
   }
   .lab-intro-icon{
@@ -18,7 +18,7 @@
   .lab-intro-sub{ font-size:13.5px; color:#b9b2a0; line-height:1.8; }
 
   .lab-card{
-    max-width:920px; margin:18px auto; padding:20px; position:relative; overflow:hidden;
+    max-width:760px; margin:18px auto; padding:20px; position:relative; overflow:hidden;
     background:var(--panel); border:1px solid var(--panel-border); border-radius:16px;
     transition:border-color .2s ease;
   }
@@ -108,6 +108,7 @@
     width:100%; height:200px; display:block; border-radius:12px;
     background:radial-gradient(ellipse at 50% 0%, #141b28, #0c0f16); border:1px solid var(--panel-border);
   }
+  .ohm-canvas{ height:250px; }
   .tesla-canvas{ cursor:crosshair; touch-action:none; }
   .magnet-canvas{ cursor:crosshair; touch-action:none; }
 

@@ -40,21 +40,24 @@ const UNO_LAYOUT = [['SCL',100,-160],['SDA',100,-140],['AREF',100,-120],['GND',1
 const UNO_PINS = UNO_LAYOUT.map(p => p[0]), UNO_XY = UNO_LAYOUT.map(p => [p[1], p[2]]);
 const UNO_OUT = (n, hi) => /^(D\d+|A\d)$/.test(n) ? ((hi && hi.has(n)) ? 5 : 0) : n === '5V' ? 5 : n === '3V3' ? 3.3 : null;   // خروجی‌ها: پایه‌های دیجیتال/آنالوگ، 5V و 3.3V؛ بقیه آزاد
 const svgTx = (x, y, s, sz, anchor, bold) => `<text x="${x}" y="${y}" fill="#e8e2d0" font-family="monospace" font-size="${sz}" text-anchor="${anchor}"${bold ? ' font-weight="700"' : ''}>${s}</text>`;
+let unoHiBy = null, unoChipBy = null;   // حالت «هر آردوینو کد خودش را دارد»: Map(شناسهٔ قطعه ← پایه‌های HIGH / وضعیت نشان کد)
+const unoHiFor = c => !(c && c.t) ? [] : unoHiBy ? (unoHiBy.get(c.id) || []) : (c.id === undefined ? [] : (unoHiNow || UNO_PROG[unoPhase()].hi));
 let unoHiNow = null;   // پایه‌های HIGH در آخرین رندر (وقتی کدِ دانش‌آموز آردوینو را می‌راند)
 let unoChipNow = null; // null = بدون ادیتور کد؛ 'idle' / 'run' = نشان «</> code» روی آردوینو
 const UNO_CHIP = [-79, -168, -13, -150];   // جعبهٔ نشان روی آردوینو (مختصات محلی قطعه)
 const UNO_CHIP_REAL = [-118, -222, -52, -204];   // همان نشان در نمای واقعی (کنارِ بردِ آبی)
-const chipSvg = b => {
-  if(!unoChipNow) return '';
-  const run = unoChipNow === 'run', col = run ? '#3ddc84' : '#e79a54';
+const chipSvg = (b, c) => {
+  const cs = unoChipBy ? (c && unoChipBy.get(c.id)) : unoChipNow;
+  if(!cs) return '';
+  const run = cs === 'run', col = run ? '#3ddc84' : '#e79a54';
   return `<g style="cursor:pointer"><rect x="${b[0]}" y="${b[1]}" width="${b[2] - b[0]}" height="${b[3] - b[1]}" rx="4" fill="${col}" fill-opacity=".22" stroke="${col}" stroke-width="1.4"/>` +
     `<text x="${(b[0] + b[2]) / 2}" y="${b[3] - 5.5}" fill="${col}" font-family="monospace" font-size="9.5" font-weight="700" text-anchor="middle">${run ? '&#9654; running' : '&lt;/&gt; code'}</text></g>`;
 };
 const unoDraw = c => {
-  const hi = new Set(c && c.t ? (unoHiNow || UNO_PROG[unoPhase()].hi) : []);
+  const hi = new Set(unoHiFor(c));
   let h = '<rect class="b" x="-160" y="-180" width="220" height="400" rx="8"/><rect class="b t" x="-86" y="-196" width="80" height="16" rx="2"/>' +
     svgTx(-46, -184, 'USB', 8, 'middle') + svgTx(-46, 40, 'ARDUINO', 16, 'middle', true) + svgTx(-46, 74, 'UNO', 34, 'middle', true);
-  if(c && c.t) h += chipSvg(UNO_CHIP);
+  if(c && c.t) h += chipSvg(UNO_CHIP, c);
   UNO_PINS.forEach((n, i) => {
     const [x, y] = UNO_XY[i], rt = x > 0;
     h += `<path class="b" d="M${rt ? 60 : -160} ${y}H${x}"/>` + svgTx(rt ? 52 : -152, y + 3.5, n, 10, rt ? 'end' : 'start');
@@ -241,12 +244,12 @@ function injectDockCss(){
   document.head.appendChild(s);
 }
 
-function createUnoDock(wrap, cfg, host){
+function createUnoDock(wrap, cfg, host, ref, comp){
   injectDockCss();
   const el = document.createElement('section');
   el.className = 'cv-uno-dock'; el.hidden = true;
   el.setAttribute('aria-label', 'ویرایشگر کد آردوینو');
-  el.innerHTML = '<div class="cv-uno-bar"><b>&lt;/&gt; کد آردوینو Uno<span>U1</span></b>' +
+  el.innerHTML = '<div class="cv-uno-bar"><b>&lt;/&gt; کد آردوینو Uno<span>' + String(ref || 'U1').replace(/[<>&"']/g, '') + '</span></b>' +
     '<span class="cv-uno-sub">برنامه را اینجا بنویس؛ چراغ‌های مدار با آن روشن و خاموش می‌شوند.</span>' +
     '<button type="button" data-close>✕ بستن</button></div><div class="cv-uno-body"></div>';
   wrap.insertBefore(el, wrap.querySelector('.cv-status'));
@@ -256,7 +259,7 @@ function createUnoDock(wrap, cfg, host){
   return {
     open(){
       el.hidden = false;
-      if(!mounted){ mounted = true; try{ handle = cfg.mount(body, host) || null; }catch(e){ body.textContent = 'ادیتور کد بارگذاری نشد: ' + e.message; } }   // تنبل: فقط بار اول
+      if(!mounted){ mounted = true; try{ handle = cfg.mount(body, host, comp) || null; }catch(e){ body.textContent = 'ادیتور کد بارگذاری نشد: ' + e.message; } }   // تنبل: فقط بار اول
       if(el.scrollIntoView) try{ el.scrollIntoView({block:'nearest', behavior:'smooth'}); }catch(_){}
     },
     close(){ el.hidden = true; },
@@ -404,8 +407,8 @@ const REAL = {
     return h;
   },
   UNO(c){
-    const hi = new Set(unoHiNow || UNO_PROG[unoPhase()].hi);
-    return unoBoardReal(hi) + chipSvg(UNO_CHIP_REAL);
+    const hi = new Set(unoHiFor(c));
+    return unoBoardReal(hi) + chipSvg(UNO_CHIP_REAL, c);
   }
 };
 REAL.PNP = REAL.NPN;
@@ -420,6 +423,12 @@ function injectRealCss(){
   document.head.appendChild(s);
 }
 
+/* ادیتورِ طراحی آزاد: هر آردوینو Uno کدِ مخصوصِ خودش را دارد (کلید ذخیره = شناسهٔ یکتای همان قطعه، c.cid) */
+const unoCodeEach = {
+  mount:(el, host, c) => ArduinoSim.mount(el, Object.assign({missionId:'circuit-uno-' + c.cid, task:'freeUno'}, host))
+};
+const newCid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
 function create(root, opts){
   opts = opts || {};
   const uid = 'cv' + (++uidSeq);
@@ -427,6 +436,9 @@ function create(root, opts){
   const allowed = opts.palette ? new Set(opts.palette) : null;
   const mission = !!opts.tasks;
   let ext = (opts.unoExternal || opts.unoCode) ? {} : null;   // null = برنامهٔ داخلی؛ شیء = پایه‌ها را کدِ بیرونی می‌راند ({D12:1,…})
+  const eachCfg = (!mission && !opts.unoCode && opts.unoCodeEach !== false && typeof ArduinoSim !== 'undefined') ? unoCodeEach : null;   // طراحی آزاد: کد جدا برای هر Uno
+  const docks = new Map(), pinsBy = new Map(), runBy = new Map();
+  let eachRaf = 0;
   const codeCfg = opts.unoCode || null;      // ادیتور کدِ روی آردوینو: {mount(el, host)} (فقط مأموریت‌هایی که بخواهند)
   let codePanel = null, codeOk = !!opts.alreadyDone, codeRunning = false, pinsState = {}, pinsRaf = 0, realOn = false;
   const isActive = opts.isActive || (() => root.classList.contains('active'));
@@ -533,7 +545,9 @@ function create(root, opts){
   }
   function newComp(t,x,y,r){
     const d = DEFS[t];
-    return {id:S.seq++, t, x, y, r:r&3, ref:d.pre ? nextRef(d.pre) : '', val:d.val, on:false};
+    const o = {id:S.seq++, t, x, y, r:r&3, ref:d.pre ? nextRef(d.pre) : '', val:d.val, on:false};
+    if(t === 'UNO') o.cid = newCid();
+    return o;
   }
 
   function toLocal(e){ const r = svg.getBoundingClientRect(); return {x:e.clientX - r.left, y:e.clientY - r.top}; }
@@ -577,7 +591,9 @@ function create(root, opts){
       if(!c || !Object.prototype.hasOwnProperty.call(DEFS, c.t)) return;
       const x = num(c.x), y = num(c.y);
       if(x === null || y === null) return;
-      out.comps.push({id:out.seq++, t:c.t, x, y, r:(Number(c.r)|0)&3, ref:String(c.ref||'').slice(0,12), val:String(c.val||'').slice(0,24), on:!!c.on && c.t !== 'PB'});
+      const nc = {id:out.seq++, t:c.t, x, y, r:(Number(c.r)|0)&3, ref:String(c.ref||'').slice(0,12), val:String(c.val||'').slice(0,24), on:!!c.on && c.t !== 'PB'};
+      if(c.t === 'UNO') nc.cid = String(c.cid || '').replace(/[^\w-]/g, '').slice(0, 24) || newCid();
+      out.comps.push(nc);
     });
     d.wires.slice(0,5000).forEach(w => {
       if(!w) return;
