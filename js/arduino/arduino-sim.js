@@ -756,6 +756,68 @@ function serialSVG() {
   }
 
   const TASKS = {
+    /* چراغ راهنما: خودِ مدارِ مأموریت «برد» است (آردوینوی Uno + LEDها)، پس اینجا بُردِ جداگانه‌ای نشان داده نمی‌شود.
+       هر digitalWrite از طریق opts.onPin به پایه‌های همان آردوینوی داخل مدار می‌رسد. */
+    traffic: {
+      noBoard: true,
+      board: () => '',
+      blocksTask: 'blink',
+      maxRunMs: 60000,
+      hint: 'سه پین ۱۲ (قرمز)، ۱۱ (زرد) و ۱۰ (سبز) را خروجی کن و با digitalWrite و delay چراغ‌ها را یکی‌یکی روشن کن: سبز ← زرد ← قرمز. بعد «اجرا کن» را بزن.',
+      successText: '🎉 کد درست است — چراغ‌ها به ترتیب سبز ← زرد ← قرمز روشن شدند.',
+      successLog: '✓ ترتیب سبز ← زرد ← قرمز تشخیص داده شد.',
+      starter: () => `int redPin = 12;
+int yellowPin = 11;
+int greenPin = 10;
+
+void setup() {
+  pinMode(redPin, OUTPUT);
+  pinMode(yellowPin, OUTPUT);
+  pinMode(greenPin, OUTPUT);
+}
+
+void loop() {
+  // green: 3 seconds
+  digitalWrite(greenPin, HIGH);
+  delay(3000);
+  digitalWrite(greenPin, LOW);
+
+  // yellow: 1 second
+  digitalWrite(yellowPin, HIGH);
+  delay(1000);
+  digitalWrite(yellowPin, LOW);
+
+  // red: 3 seconds
+  digitalWrite(redPin, HIGH);
+  delay(3000);
+  digitalWrite(redPin, LOW);
+}
+`,
+      check(state) {
+        const NAMES = { 12: 'قرمز', 11: 'زرد', 10: 'سبز' };
+        for (const p of [12, 11, 10]) {
+          if (state.pinModes[p] !== 'OUTPUT') {
+            return { ok: false, reason: `پایه ${p} (${NAMES[p]}) هنوز با ()pinMode روی OUTPUT تنظیم نشده.` };
+          }
+        }
+        const lv = { 12: 0, 11: 0, 10: 0 }, snaps = [];
+        state.events.forEach(e => {
+          const p = String(e.pin);
+          if (e.analog || !(p in lv)) return;
+          lv[p] = e.val ? 1 : 0;
+          snaps.push({ hi: Object.keys(lv).filter(k => lv[k]).join(','), ms: e.ms });
+        });
+        if (!snaps.length) return { ok: false, reason: 'هنوز به چراغ‌ها فرمانی نرسیده — از ()digitalWrite استفاده کن.' };
+        const want = ['10', '11', '12'];
+        let idx = 0, last = -1;
+        snaps.forEach(s => { if (idx < 3 && s.hi === want[idx] && s.ms > last) { idx++; last = s.ms; } });
+        if (idx === 0) return { ok: false, reason: 'هنوز چراغ سبز (پایه ۱۰) به‌تنهایی روشن نشده.' };
+        if (idx === 1) return { ok: false, reason: 'بعد از سبز، چراغ زرد (پایه ۱۱) باید به‌تنهایی روشن شود — بین مرحله‌ها از ()delay استفاده کن و سبز را خاموش کن.' };
+        if (idx === 2) return { ok: false, reason: 'در آخر چراغ قرمز (پایه ۱۲) باید به‌تنهایی روشن شود — زرد را خاموش کن.' };
+        return { ok: true };
+      }
+    },
+
     serial: {
       board: () => serialSVG(),
       hint: 'کد را بنویس و «اجرا کن» را بزن تا پیام در کنسول سریال ظاهر شود.',
@@ -1171,9 +1233,9 @@ void loop() {
 
     container.innerHTML = `
       <div class="sim-wrap${isStm ? ' sim-stm' : ''}">
-        <div class="sim-board-wrap">
+        ${task.noBoard ? '' : `<div class="sim-board-wrap">
           ${task.board(pins)}
-        </div>
+        </div>`}
         <div class="sim-status" data-state="idle">${task.hint}</div>
         ${task.hasButton ? `
         <div class="sim-hw-row">
@@ -1242,6 +1304,11 @@ void loop() {
       </div>`;
 
     ensureHighlightStyle();
+
+    // قلاب‌های میزبان (مثلاً مدارِ مأموریت چراغ راهنما): هر تغییرِ پایه، پاک‌شدنِ پایه‌ها و روشن/خاموش‌شدنِ اجرا
+    const hook = (fn, a, b) => { if (typeof fn === 'function') { try { fn(a, b); } catch (e) { /* ignore */ } } };
+    const hostPin = (p, v) => hook(opts.onPin, p, v);
+    const hostPinsReset = () => hook(opts.onPinsReset);
 
     const el = {
       status: container.querySelector('.sim-status'),
@@ -1683,6 +1750,7 @@ function setSerialScreenText(text) {
 
     function setRunning(isRunning) {
       running = isRunning;
+      hook(opts.onRunState, isRunning);
       el.runBtn.disabled = isRunning;
       el.stopBtn.disabled = !isRunning;
       el.resetBtn.disabled = isRunning;
@@ -1874,6 +1942,7 @@ function setSerialScreenText(text) {
           const numVal = (val === 1 || val === 'HIGH' || val === true) ? 1 : 0;
           io.pins[p] = numVal;
           state.events.push({ pin: p, val: numVal, ms: io._ms });
+          hostPin(p, numVal);
           if (state.wifi.current && p === pins.led) state.wifi.current.led = numVal;   // LED را همین درخواستِ گوشی عوض کرد
           if (halIO) { halIO.write(p, numVal); return; }
           if (p === pins.led) {
@@ -1904,6 +1973,7 @@ function setSerialScreenText(text) {
           const ratio = clamped / 255;
           io.pins[p] = clamped;
           state.events.push({ pin: p, val: clamped, ms: io._ms, analog: true });
+          hostPin(p, clamped > 127 ? 1 : 0);
           if (p === pins.led) {
             setLed(ratio);
             if (pins.pot !== undefined) {
@@ -2084,6 +2154,7 @@ function setSerialScreenText(text) {
       clearConsole();
       setSerialScreenText('');
       setLed(0);
+      hostPinsReset();
       setStatus('در حال اجرا…', 'running');
 
       setErrorLine(0);
@@ -2191,6 +2262,7 @@ function setSerialScreenText(text) {
       setRunning(false);
       resetWifiUi();
       if (halHw) halHw.reset();
+      hostPinsReset();
       setStatus('اجرا متوقف شد.', 'idle');
     }
 
@@ -2206,6 +2278,7 @@ function setSerialScreenText(text) {
       ghostSuggestion = null;
       renderGhost();
       setLed(0);
+      hostPinsReset();
       clearConsole();
       setSerialScreenText('');
       state = freshState();

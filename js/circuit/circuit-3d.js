@@ -44,13 +44,13 @@ function cameraBasis(T){
 const FAM = t => ({LEDY:'LED', LEDG:'LED', NPN:'BJT', PNP:'BJT'}[t] || t);
 const DEF_FP = {R:'R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal', C:'C_Disc_D5.0mm_W2.5mm_P5.00mm', CP:'CP_Radial_D8.0mm_P3.50mm',
   D:'D_DO-35_SOD27_P10.16mm_Horizontal',
-  LED:'LED_D5.0mm', BJT:'TO-92_Inline', BC:'Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical',
+  LED:'LED_D5.0mm', BJT:'TO-92_Inline', BC:'Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical', HDR4:'Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical',
   SW:'SW_Slide_SPST_P10.16mm', PB:'Button_Switch_THT:SW_PUSH_6mm', LAMP:'Lamp_E10_Holder'};
 const fpOf = c => c.t === 'BC' ? DEF_FP.BC : (c.fp || DEF_FP[FAM(c.t)] || '');
 const NAMES = {R:'مقاومت', D:'دیود', LED:'LED قرمز ۵ میلی‌متری', LEDY:'LED زرد ۵ میلی‌متری', LEDG:'LED سبز ۵ میلی‌متری', C:'خازن', CP:'خازن الکترولیتی',
-  NPN:'ترانزیستور NPN', PNP:'ترانزیستور PNP', BC:'کانکتور باتری (هدر ۱×۲)', SW:'کلید', PB:'کلید فشاری ۶ میلی‌متری', LAMP:'لامپ'};
+  NPN:'ترانزیستور NPN', PNP:'ترانزیستور PNP', BC:'کانکتور باتری (هدر ۱×۲)', HDR4:'هدر ۴پین (۱×۴)', SW:'کلید', PB:'کلید فشاری ۶ میلی‌متری', LAMP:'لامپ'};
 const SWATCH = {R:'#e1b57d', D:'#c9772e', LED:'#b31a0d', LEDY:'#d9a400', LEDG:'#1d8f45', C:'#e0a23c', CP:'#1f3a78',
-  NPN:'#262626', PNP:'#262626', BC:'#262626', SW:'#d0d4db', PB:'#d2d1c7', LAMP:'#ffe27a'};
+  NPN:'#262626', PNP:'#262626', BC:'#262626', HDR4:'#262626', SW:'#d0d4db', PB:'#d2d1c7', LAMP:'#ffe27a'};
 const fa = n => Number(n).toLocaleString('fa-IR');
 
 /* ---------- ابعاد برد (میلی‌متر) ---------- */
@@ -166,7 +166,7 @@ function build(T, data){
   const circle = (cx, cz, r) => { const p = []; for(let i = 0; i <= 64; i++){ const t = i / 64 * Math.PI * 2; p.push([cx + r * Math.cos(t), cz + r * Math.sin(t)]); } return p; };
   const SILK = {
     C:[rect(-3.4,-2.5,3.4,2.5)], CP:[circle(0,0,4)], BJT:[circle(.5,0,3)],
-    SW:[rect(-6.5,-3,6.5,3)], PB:[rect(-3,-3,3,3), circle(0,0,1.9)], LAMP:[circle(0,0,5.5)]
+    SW:[rect(-6.5,-3,6.5,3)], HDR4:[rect(-1.33,-5.1,1.33,5.1)], PB:[rect(-3,-3,3,3), circle(0,0,1.9)], LAMP:[circle(0,0,5.5)]
   };
   function silkFor(g, c, fp){
     const fam = FAM(c.t);
@@ -255,6 +255,18 @@ function build(T, data){
       [-1, 1].forEach(s => {
         m.add(tube(P3(s * half, 0, -2.5), P3(s * half, 0, 1.4), .2));
         m.add(tube(P3(s * half, 0, 1.4), P3(s * 1.27, 0, 3.2), .2));
+      });
+    },
+    // هدر ۱×۴ با گام ۲٫۵۴ میلی‌متر (برد چراغ راهنما)
+    HDR4(g){
+      const m = modelGroup(g), plastic = M.plastic, gold = M.gold;
+      const body = box(2.54, 10.16, 2.54, plastic); body.position.set(0, 0, 1.27); m.add(body);
+      [-3.81, -1.27, 1.27, 3.81].forEach(y => {
+        const shaft = new T.Mesh(new T.BoxGeometry(.64, .64, 11.22), gold); shaft.position.set(0, y, 2.77); m.add(shaft);
+        const tg = new T.CylinderGeometry(.2263, .4525, .16, 4, 1); tg.rotateY(Math.PI / 4); axisToZ(tg);
+        const tip = new T.Mesh(tg, gold); tip.position.set(0, y, 8.46); m.add(tip);
+        const bg = new T.CylinderGeometry(.4525, .2263, .16, 4, 1); bg.rotateY(Math.PI / 4); axisToZ(bg);
+        const bot = new T.Mesh(bg, gold); bot.position.set(0, y, -2.92); m.add(bot);
       });
     },
     // کانکتور باتری: هدر ۱×۲ با گام ۲٫۵۴ میلی‌متر، عیناً مدل HTML

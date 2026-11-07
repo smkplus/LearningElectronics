@@ -27,6 +27,35 @@ const LED_LIT = col => `<path d="M-10 -12L10 0L-10 12Z" fill="${col}" opacity=".
 const ledDef = (fa,val,col) => ({fa,pre:'D',val,lab:'two',pins:[[-40,0,'A'],[40,0,'K']],box:[-40,-32,40,14],
   draw:LED_DRAW, lit:LED_LIT(col), glow:col, pv:LED_LIT(col), edge:'led'});
 
+/* آردوینو Uno: برنامهٔ چراغ راهنما — سبز D10 (۳ ثانیه) ← زرد D11 (۱ ثانیه) ← قرمز D12 (۳ ثانیه) */
+const UNO_PROG = [{hi:['D10'], ms:3000}, {hi:['D11'], ms:1000}, {hi:['D12'], ms:3000}];
+const UNO_TOTAL = UNO_PROG.reduce((a, p) => a + p.ms, 0);
+const unoPhase = () => { let t = Date.now() % UNO_TOTAL; for(let i = 0; i < UNO_PROG.length; i++){ if(t < UNO_PROG[i].ms) return i; t -= UNO_PROG[i].ms; } return 0; };
+const UNO_PINS = ['D12','D11','D10','GND'];
+const svgTx = (x, y, s, sz, anchor, bold) => `<text x="${x}" y="${y}" fill="#e8e2d0" font-family="monospace" font-size="${sz}" text-anchor="${anchor}"${bold ? ' font-weight="700"' : ''}>${s}</text>`;
+let unoHiNow = null;   // پایه‌های HIGH در آخرین رندر (وقتی کدِ دانش‌آموز آردوینو را می‌راند)
+let unoChipNow = null; // null = بدون ادیتور کد؛ 'idle' / 'run' = نشان «</> code» روی آردوینو
+const UNO_CHIP = [-64, -76, 2, -58];   // جعبهٔ نشان روی آردوینو (مختصات محلی قطعه)
+const unoDraw = c => {
+  const hi = new Set(c && c.t ? (unoHiNow || UNO_PROG[unoPhase()].hi) : []);
+  let h = '<rect class="b" x="-70" y="-80" width="130" height="100" rx="8"/><rect class="b t" x="-86" y="-44" width="16" height="30" rx="2"/>' +
+    svgTx(-78, -26, 'USB', 7, 'middle') + svgTx(-5, -42, 'ARDUINO', 12, 'middle', true) + svgTx(-5, -14, 'UNO', 22, 'middle', true);
+  if(c && c.t && unoChipNow){
+    const run = unoChipNow === 'run', col = run ? '#3ddc84' : '#e79a54';
+    h += `<g style="cursor:pointer"><rect x="${UNO_CHIP[0]}" y="${UNO_CHIP[1]}" width="${UNO_CHIP[2] - UNO_CHIP[0]}" height="${UNO_CHIP[3] - UNO_CHIP[1]}" rx="4" fill="${col}" fill-opacity=".22" stroke="${col}" stroke-width="1.4"/>` +
+      `<text x="${(UNO_CHIP[0] + UNO_CHIP[2]) / 2}" y="-64" fill="${col}" font-family="monospace" font-size="9.5" font-weight="700" text-anchor="middle">${run ? '&#9654; running' : '&lt;/&gt; code'}</text></g>`;
+  }
+  UNO_PINS.forEach((n, i) => {
+    const y = -60 + 20 * i;
+    h += `<path class="b" d="M60 ${y}H100"/>` + svgTx(52, y + 4, n, 11, 'end');
+    if(hi.has(n)) h += `<circle cx="80" cy="${y}" r="3.5" fill="#ff6a55"/>`;
+  });
+  return h;
+};
+const HDR_NAMES = ['D12','D11','D10','GND'];
+const HDR_DRAW = '<path class="b" d="' + HDR_NAMES.map((n, i) => `M-40 ${-40 + 20 * i}H-14M14 ${-40 + 20 * i}H40`).join('') + '"/>' +
+  '<rect class="b" x="-14" y="-54" width="28" height="86" rx="4"/>' + HDR_NAMES.map((n, i) => svgTx(0, -36 + 20 * i, n, 9, 'middle')).join('');
+
 const DEFS = {
   R:{fa:'مقاومت',pre:'R',val:'1kΩ',lab:'two',pins:[[-40,0,'1'],[40,0,'2']],box:[-40,-10,40,10],edge:'load',
     draw:'<path class="b" d="M-40 0H-20M20 0H40"/><rect class="b" x="-20" y="-8" width="40" height="16"/>'},
@@ -58,13 +87,19 @@ const DEFS = {
     draw:'<path class="b" d="M0 0V-28M-9 -14L0 -28L9 -14"/>'},
 
   GND:{fa:'زمین (GND)',pre:'',val:'GND',lab:'top',power:true,pins:[[0,0,'GND']],box:[-14,-30,14,0],
-    draw:'<path class="b" d="M0 0V-14M-12 -14H12L0 -28Z"/>'}
+    draw:'<path class="b" d="M0 0V-14M-12 -14H12L0 -28Z"/>'},
+  UNO:{fa:'آردوینو Uno',pre:'U',val:'Uno',lab:'none',offboard:true,pins:UNO_PINS.map((n,i) => [100,-60+20*i,n]),box:[-86,-80,100,20],draw:unoDraw,
+    pal:'<g transform="scale(.48) translate(-7 30)">' + unoDraw(null) + '</g>'},
+  HDR4:{fa:'هدر ۴پین (برد LED)',pre:'J',val:'1×4',lab:'two',link:[[0,4],[1,5],[2,6],[3,7]],
+    pins:HDR_NAMES.map((n,i) => [-40,-40+20*i,n]).concat(HDR_NAMES.map((n,i) => [40,-40+20*i,n])),box:[-40,-54,40,34],draw:HDR_DRAW,
+    pal:'<g transform="scale(.8) translate(0 10)">' + HDR_DRAW + '</g>'}
 };
 const drawOf = (c,d) => typeof d.draw === 'function' ? d.draw(c) : d.draw;
 const GROUPS = [
   ['قطعات پایه', ['R','C','CP']],
   ['نیمه‌هادی', ['D','LED','LEDY','LEDG','NPN','PNP']],
-  ['منبع و کلید', ['BC','SW','PB','VCC','GND']]
+  ['منبع و کلید', ['BC','SW','PB','VCC','GND']],
+  ['آردوینو و برد', ['UNO','HDR4']]
 ];
 const HINTS = {
   select:'انتخاب: روی قطعه یا سیم بزن، بکشش تا جابه‌جا شود. روی کلید دوبار بزن تا باز/بسته شود. روی فضای خالی بکش تا چند مورد را با هم انتخاب کنی.',
@@ -170,11 +205,67 @@ function dcSolve(els, ref, mem){
   return {cur, maxSrc};
 }
 
+/* ====================================================================
+   ادیتور کد روی آردوینو Uno — همان ادیتورِ ArduinoSim (متنی/بلوکی، ⛶، ↺، ■، ▶) که با کلیک روی خودِ
+   آردوینوی داخل مدار زیرِ مدار باز می‌شود. این فایل فقط «جا» را می‌دهد؛ خودِ ادیتور را میزبان می‌سازد:
+   cfg.mount(el, host) → { stop(), destroy() }   (host = onPin / onPinsReset / onRunState / onSuccess)
+   ==================================================================== */
+let dockCssDone = false;
+function injectDockCss(){
+  if(dockCssDone || document.getElementById('cvDockCss')) { dockCssDone = true; return; }
+  dockCssDone = true;
+  const s = document.createElement('style');
+  s.id = 'cvDockCss';
+  s.textContent = `
+.cv-uno-dock{margin-top:12px;border:1px solid #2ea09d;border-radius:12px;overflow:hidden;background:var(--card,rgba(255,255,255,.03));box-sizing:border-box}
+.cv-uno-dock[hidden]{display:none}
+.cv-uno-bar{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap;padding:8px 12px;background:rgba(46,160,157,.14);border-bottom:1px solid rgba(46,160,157,.35);color:var(--fg,#e8eaf0);font-size:13px}
+.cv-uno-bar b{font-size:14px;white-space:nowrap}
+.cv-uno-bar b span{direction:ltr;unicode-bidi:isolate;display:inline-block;color:#6fd6d2;font-family:ui-monospace,Consolas,monospace;margin-inline-start:4px}
+.cv-uno-sub{opacity:.75;font-size:12.5px;margin-inline-end:auto}
+.cv-uno-bar button{font:inherit;font-size:12.5px;color:inherit;background:transparent;border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:5px 10px;cursor:pointer}
+.cv-uno-bar button:hover{border-color:#2ea09d}
+.cv-uno-bar button:focus-visible{outline:2px solid #2ea09d;outline-offset:2px}
+.cv-uno-body{padding:12px}
+.cv-uno-body .sim-wrap{margin:0}`;
+  document.head.appendChild(s);
+}
+
+function createUnoDock(wrap, cfg, host){
+  injectDockCss();
+  const el = document.createElement('section');
+  el.className = 'cv-uno-dock'; el.hidden = true;
+  el.setAttribute('aria-label', 'ویرایشگر کد آردوینو');
+  el.innerHTML = '<div class="cv-uno-bar"><b>&lt;/&gt; کد آردوینو Uno<span>U1</span></b>' +
+    '<span class="cv-uno-sub">برنامه را اینجا بنویس؛ چراغ‌های مدار با آن روشن و خاموش می‌شوند.</span>' +
+    '<button type="button" data-close>✕ بستن</button></div><div class="cv-uno-body"></div>';
+  wrap.insertBefore(el, wrap.querySelector('.cv-status'));
+  const body = el.querySelector('.cv-uno-body');
+  let handle = null, mounted = false;
+  el.querySelector('[data-close]').addEventListener('click', () => { el.hidden = true; if(host.closed) host.closed(); });
+  return {
+    open(){
+      el.hidden = false;
+      if(!mounted){ mounted = true; try{ handle = cfg.mount(body, host) || null; }catch(e){ body.textContent = 'ادیتور کد بارگذاری نشد: ' + e.message; } }   // تنبل: فقط بار اول
+      if(el.scrollIntoView) try{ el.scrollIntoView({block:'nearest', behavior:'smooth'}); }catch(_){}
+    },
+    close(){ el.hidden = true; },
+    isOpen: () => !el.hidden,
+    destroy(){
+      if(handle){ try{ if(handle.stop) handle.stop(); if(handle.destroy) handle.destroy(); }catch(_){} handle = null; }
+      el.remove();
+    }
+  };
+}
+
 function create(root, opts){
   opts = opts || {};
   const uid = 'cv' + (++uidSeq);
   const allowed = opts.palette ? new Set(opts.palette) : null;
   const mission = !!opts.tasks;
+  let ext = (opts.unoExternal || opts.unoCode) ? {} : null;   // null = برنامهٔ داخلی؛ شیء = پایه‌ها را کدِ بیرونی می‌راند ({D12:1,…})
+  const codeCfg = opts.unoCode || null;      // ادیتور کدِ روی آردوینو: {mount(el, host)} (فقط مأموریت‌هایی که بخواهند)
+  let codePanel = null, codeOk = !!opts.alreadyDone, codeRunning = false, pinsState = {}, pinsRaf = 0;
   const isActive = opts.isActive || (() => root.classList.contains('active'));
 
   let S = {comps:[], wires:[], seq:1};
@@ -441,6 +532,11 @@ function create(root, opts){
     const node = (c,i) => { const p = P.get(c.id)[i]; return find(key(p.x,p.y)); };
     const gnd = S.comps.filter(c => c.t === 'GND');
     gnd.forEach(c => uni(key(P.get(c.id)[0].x, P.get(c.id)[0].y), key(P.get(gnd[0].id)[0].x, P.get(gnd[0].id)[0].y)));
+    const unos = S.comps.filter(c => c.t === 'UNO');
+    const hiNow = new Set(ext ? Object.keys(ext).filter(k => ext[k]) : unos.length ? UNO_PROG[unoPhase()].hi : []);
+    const unoGndKey = u => { const q = P.get(u.id)[UNO_PINS.indexOf('GND')]; return key(q.x, q.y); };
+    unos.forEach(u => { if(gnd.length) uni(unoGndKey(u), key(P.get(gnd[0].id)[0].x, P.get(gnd[0].id)[0].y)); else if(u !== unos[0]) uni(unoGndKey(u), unoGndKey(unos[0])); });
+    S.comps.forEach(c => { if(c.t === 'HDR4') DEFS.HDR4.link.forEach(l => { const a = P.get(c.id)[l[0]], b = P.get(c.id)[l[1]]; uni(key(a.x, a.y), key(b.x, b.y)); }); });   // هدر: پایهٔ بیرونی = پایهٔ برد
     const vcc = {};
     S.comps.filter(c => c.t === 'VCC').forEach(c => {
       const k = key(P.get(c.id)[0].x, P.get(c.id)[0].y);
@@ -464,10 +560,10 @@ function create(root, opts){
     });
     if(gnd.length) Object.keys(vcc).forEach(v => sources.push({comp:null, v:parseFloat(v) || 5, pos:find(vcc[v]), neg:find(key(P.get(gnd[0].id)[0].x, P.get(gnd[0].id)[0].y))}));
     const rank = {on:1, burnt:2, short:3};
-    const status = new Map();
+    let status = new Map();
     const mark = (c,s) => { if(!c) return; if(!status.get(c.id) || rank[s] > rank[status.get(c.id)]) status.set(c.id, s); };
     let shorted = false;
-    function solveBJT(){
+    function solveBJT(hi){
       const ohm = s => { const m = /^([\d.]+)\s*([kKM]?)/.exec(String(s)); return (m && parseFloat(m[1]) * ({k:1e3, K:1e3, M:1e6}[m[2]] || 1)) || 1000; };
       const els = [];
       S.comps.forEach(c => {
@@ -481,7 +577,8 @@ function create(root, opts){
         }
       });
       sources.forEach((s,i) => els.push({k:'V', id:'V' + i, comp:s.comp, p:s.pos, n:s.neg, v:s.v}));
-      const ref = gnd.length ? find(key(P.get(gnd[0].id)[0].x, P.get(gnd[0].id)[0].y)) : sources[0].neg;
+      unos.forEach(u => UNO_PINS.forEach((n,i) => { if(n !== 'GND') els.push({k:'V', id:'U' + u.id + n, comp:u, p:node(u,i), n:find(unoGndKey(u)), v:(hi && hi.has(n)) ? 5 : 0}); }));   // پایهٔ خروجی آردوینو = منبع ۵ولت (HIGH) یا ۰ولت (LOW)
+      const ref = unos.length ? find(unoGndKey(unos[0])) : gnd.length ? find(key(P.get(gnd[0].id)[0].x, P.get(gnd[0].id)[0].y)) : sources[0].neg;
       const r = dcSolve(els, ref, bjtMem);
       els.forEach(e => {
         const i = r.cur[e.id];
@@ -492,8 +589,25 @@ function create(root, opts){
       });
       return r.maxSrc > 1;
     }
-    const useSolver = S.comps.some(c => c.t === 'NPN' || c.t === 'PNP');
-    if(useSolver && sources.length) shorted = solveBJT();
+    const useSolver = S.comps.some(c => c.t === 'NPN' || c.t === 'PNP') || unos.length > 0;
+    let phases = null;
+    if(useSolver && (sources.length || unos.length)){
+      shorted = solveBJT(hiNow);
+      if(unos.length){      // همهٔ مرحله‌های برنامه را هم بررسی کن: هر مرحله چه LEDهایی روشن‌اند / می‌سوزند
+        const keep = status, burntAll = new Set();
+        let anyShort = false;
+        phases = UNO_PROG.map(ph => {
+          status = new Map();
+          if(solveBJT(new Set(ph.hi))) anyShort = true;
+          const lit = new Set();
+          S.comps.forEach(c => { if(DEFS[c.t].edge !== 'led') return; const st = status.get(c.id); if(st === 'on') lit.add(c.t); else if(st === 'burnt') burntAll.add(c.id); });
+          return {lit};
+        });
+        status = keep;
+        burntAll.forEach(id => status.set(id, 'burnt'));
+        if(anyShort){ shorted = true; unos.forEach(u => status.set(u.id, 'short')); }
+      }
+    }
     if(!useSolver) sources.forEach(src => {
       if(src.pos === src.neg){ shorted = true; mark(src.comp,'short'); return; }
       let count = 0;
@@ -516,7 +630,7 @@ function create(root, opts){
     });
     const ofT = t => S.comps.filter(c => c.t === t);
     const A = {
-      status, shorted,
+      status, shorted, phases, hasUno:unos.length > 0, hi:[...hiNow], codeOk,
       burnt:[...status.values()].filter(s => s === 'burnt').length,
       count:t => ofT(t).length,
       lit:t => ofT(t).filter(c => status.get(c.id) === 'on').length,
@@ -533,7 +647,7 @@ function create(root, opts){
     return {
       comps: S.comps.map(c => {
         const d = DEFS[c.t], b = bboxOf(c);
-        return {t:c.t, x:c.x, y:c.y, r:c.r, ref:c.ref || '', val:c.val || '', on:!!c.on, st:(A && A.status.get(c.id)) || '', power:!!d.power,
+        return {t:c.t, x:c.x, y:c.y, r:c.r, ref:c.ref || '', val:c.val || '', on:!!c.on, st:(A && A.status.get(c.id)) || '', power:!!(d.power || d.offboard),
           box:{x0:b.x0, y0:b.y0, x1:b.x1, y1:b.y1}, pins:pinsOf(c).map(p => [p.x, p.y])};
       }),
       wires: S.wires.map(w => [w.x1, w.y1, w.x2, w.y2])
@@ -546,7 +660,7 @@ function create(root, opts){
     return {
       comps: S.comps.map(c => {
         const d = DEFS[c.t];
-        return {id:c.id, t:c.t, r:c.r, ref:c.ref || '', val:c.val || '', on:!!c.on, st:(A && A.status.get(c.id)) || '', power:!!d.power, link:d.link || null,
+        return {id:c.id, t:c.t, r:c.r, ref:c.ref || '', val:c.val || '', on:!!c.on, st:(A && A.status.get(c.id)) || '', power:!!(d.power || d.offboard), link:d.link || null,
           lpins:d.pins.map(p => [p[0], p[1], p[2]]), sx:c.x, sy:c.y, spins:pinsOf(c).map(p => [p.x, p.y])};
       }),
       wires: S.wires.map(w => [w.x1, w.y1, w.x2, w.y2])
@@ -588,7 +702,7 @@ function create(root, opts){
 
   function updateFeedback(A){
     let msg = '', cls = '';
-    if(A.shorted){ msg = '⚠️ اتصال کوتاه! باتری بدون هیچ بار (مقاومت، لامپ…) بسته شده و سیم‌ها داغ می‌شوند.'; cls = 'bad'; }
+    if(A.shorted){ msg = A.hasUno ? '⚠️ اتصال کوتاه! یکی از پایه‌های آردوینو بدون هیچ بار مستقیم به GND وصل شده است.' : '⚠️ اتصال کوتاه! باتری بدون هیچ بار (مقاومت، لامپ…) بسته شده و سیم‌ها داغ می‌شوند.'; cls = 'bad'; }
     else if(A.burnt){ msg = '🔥 LED بدون مقاومتِ محدودکننده سوخت! یک مقاومت پشت‌سرِ LED بگذار.'; cls = 'bad'; }
     let done = false;
     if(mission){
@@ -616,6 +730,8 @@ function create(root, opts){
     bg.style.opacity = z < 0.45 ? 0 : 1;
     const hot = netHighlight();
     const A = analyze();
+    unoHiNow = A.hasUno && ext ? A.hi : null;
+    unoChipNow = codePanel ? (codeRunning ? 'run' : 'idle') : null;
     let h = '';
     S.wires.forEach(w => {
       const cls = 'cv-wire' + (sel.has('w'+w.id) ? ' sel' : '') + (hot.wires.has(w.id) ? ' hot' : '');
@@ -669,6 +785,7 @@ function create(root, opts){
       propsEl.innerHTML = `<div class="cv-props-title">${esc(d.fa)}</div>` +
         (d.power ? '' : `<label>نام<input id="cvRef" value="${esc(c.ref)}" maxlength="12"></label>`) +
         (d.lab === 'none' ? '' : `<label>مقدار<input id="cvVal" value="${esc(c.val)}" maxlength="24"></label>`) +
+        (codePanel && c.t === 'UNO' ? '<button class="cv-btn" id="cvCode">&lt;/&gt; ویرایش کد آردوینو</button>' : '') +
         (d.push ? '<button class="cv-btn" id="cvPush">نگه دار تا کلید فشرده شود</button>' : '') +
         (d.sw && !d.push ? `<button class="cv-btn" id="cvSw">${c.on ? 'کلید بسته است — باز کن' : 'کلید باز است — ببند'}</button>` : '') +
         `<div class="cv-pins">پایه‌ها: ${d.pins.map(p => esc(p[2])).join(' • ')}</div>`;
@@ -683,6 +800,8 @@ function create(root, opts){
       bind('cvRef','ref'); bind('cvVal','val');
       const sw = propsEl.querySelector('#cvSw');
       if(sw) sw.addEventListener('click', () => toggleSw(c));
+      const cb = propsEl.querySelector('#cvCode');
+      if(cb) cb.addEventListener('click', openCode);
       const pb = propsEl.querySelector('#cvPush');
       if(pb){
         const rel = () => { window.removeEventListener('pointerup', rel); window.removeEventListener('pointercancel', rel); if(c.on){ c.on = false; render(); } };
@@ -772,6 +891,10 @@ function create(root, opts){
     const w = toWorld(e), sp = {x:snap(w.x), y:snap(w.y)};
     cursor = sp;
     if(e.button === 2) return;
+    if(codePanel && e.button !== 1 && !spaceDown && tool !== 'wire' && tool !== 'place'){
+      const cu = chipAt(w);
+      if(cu){ drag = null; sel.clear(); sel.add('c' + cu.id); renderProps(); render(); openCode(); return; }
+    }
     if(e.button === 1 || tool === 'pan' || spaceDown){
       drag = {kind:'pan', sx:e.clientX, sy:e.clientY, vx:view.x, vy:view.y};
       stage.classList.add('panning'); return;
@@ -862,12 +985,23 @@ function create(root, opts){
   function fitView(){
     const r = svg.getBoundingClientRect();
     if(!r.width) return;
+    const H = r.height;
     const b = contentBox(20);
-    if(!b){ view = {x:r.width/2, y:r.height/2, z:mission ? 0.8 : 1}; render(); return; }
+    if(!b){ view = {x:r.width/2, y:H/2, z:mission ? 0.8 : 1}; render(); return; }
     const w = b.x1-b.x0, h = b.y1-b.y0;
-    const z = clamp(Math.min((r.width-40)/w, (r.height-40)/h), 0.25, 2);
-    view = {z, x:(r.width - w*z)/2 - b.x0*z, y:(r.height - h*z)/2 - b.y0*z};
+    const z = clamp(Math.min((r.width-40)/w, (H-40)/h), 0.25, 2);
+    view = {z, x:(r.width - w*z)/2 - b.x0*z, y:(H - h*z)/2 - b.y0*z};
     render();
+  }
+  function openCode(){ if(codePanel) codePanel.open(); }
+  // نشان «</> code» روی آردوینو (با چرخش قطعه هم درست کار می‌کند)
+  function chipAt(w){
+    if(!codePanel) return null;
+    return S.comps.find(c => {
+      if(c.t !== 'UNO') return false;
+      const a = rot(UNO_CHIP[0], UNO_CHIP[1], c.r), b = rot(UNO_CHIP[2], UNO_CHIP[3], c.r);
+      return w.x >= c.x + Math.min(a[0], b[0]) && w.x <= c.x + Math.max(a[0], b[0]) && w.y >= c.y + Math.min(a[1], b[1]) && w.y <= c.y + Math.max(a[1], b[1]);
+    }) || null;
   }
 
   function download(name, blob){
@@ -880,6 +1014,8 @@ function create(root, opts){
     const b = contentBox(30);
     if(!b) return null;
     const A = analyze();
+    unoHiNow = A.hasUno && ext ? A.hi : null;
+    unoChipNow = null;     // نشان کد فقط روی صفحه است، نه در خروجی
     let body = '';
     S.wires.forEach(w => { body += `<line class="w" x1="${w.x1}" y1="${w.y1}" x2="${w.x2}" y2="${w.y2}"/>`; });
     S.comps.forEach(c => {
@@ -935,7 +1071,7 @@ function create(root, opts){
       h += `<div class="cv-pal-title">${g[0]}</div><div class="cv-pal-grid">`;
       types.forEach(t => {
         const d = DEFS[t];
-        h += `<button class="cv-pal-item" data-type="${t}" title="${esc(d.fa)}"><svg viewBox="-48 -48 96 96" class="cv-sym">${d.pv || ''}${drawOf({on:false}, d)}</svg><span>${esc(d.fa)}</span></button>`;
+        h += `<button class="cv-pal-item" data-type="${t}" title="${esc(d.fa)}"><svg viewBox="-48 -48 96 96" class="cv-sym">${d.pv || ''}${d.pal || drawOf({on:false}, d)}</svg><span>${esc(d.fa)}</span></button>`;
       });
       h += '</div>';
     });
@@ -957,6 +1093,10 @@ function create(root, opts){
     zoomAt(p.x, p.y, Math.exp(-e.deltaY * 0.0015));
   }, {passive:false});
   on(svg, 'dblclick', e => {
+    if(codePanel && tool !== 'wire' && tool !== 'place'){      // دوبار کلیک روی آردوینو = باز شدن ویرایشگر کد
+      const h0 = hitTest(toWorld(e)), c0 = h0 && h0.k === 'c' && S.comps.find(x => x.id === h0.id);
+      if(c0 && c0.t === 'UNO'){ sel.clear(); sel.add('c' + c0.id); renderProps(); render(); openCode(); return; }
+    }
     if(tool !== 'select') return;
     const h = hitTest(toWorld(e));
     if(!h || h.k !== 'c') return;
@@ -1042,6 +1182,25 @@ function create(root, opts){
     cleanup.push(() => ro.disconnect());
   }
 
+  let lastPh = -1;
+  const phTimer = setInterval(() => {
+    if(stopped || drag || ext || !isActive() || !S.comps.some(c => c.t === 'UNO')) return;
+    const ph = unoPhase();
+    if(ph !== lastPh){ lastPh = ph; render(); }
+  }, 150);
+  cleanup.push(() => clearInterval(phTimer));
+
+  if(codeCfg){
+    const pushPins = () => { if(!pinsRaf) pinsRaf = requestAnimationFrame(() => { pinsRaf = 0; ext = Object.assign({}, pinsState); if(!stopped) render(); }); };
+    codePanel = createUnoDock(wrap, codeCfg, {
+      onPin(p, v){ pinsState['D' + p] = v ? 1 : 0; pushPins(); },     // کدِ ادیتور پایه‌های آردوینوی داخل مدار را می‌راند
+      onPinsReset(){ pinsState = {}; pushPins(); },
+      onRunState(r){ codeRunning = !!r; if(!stopped) render(); },
+      onSuccess(){ codeOk = true; if(!stopped) render(); }
+    });
+    cleanup.push(() => { if(pinsRaf) cancelAnimationFrame(pinsRaf); codePanel.destroy(); });
+  }
+
   buildPalette();
   load();
   setTool('pan');
@@ -1052,7 +1211,8 @@ function create(root, opts){
     stop(){ stopped = true; if(pcb) pcb.destroy(); if(saveTimer) saveNow(); cleanup.forEach(f => f()); },
     _state(){ return S; },
     _view(){ return view; },
-    _3d(){ return get3DData(); }
+    _3d(){ return get3DData(); },
+    setUnoPins(m){ ext = Object.assign({}, m || {}); if(!stopped) render(); }   // کدِ دانش‌آموز: { D12:1, D11:0, … }
   };
 }
 

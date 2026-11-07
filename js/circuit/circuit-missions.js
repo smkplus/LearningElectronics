@@ -32,40 +32,55 @@ const CIRCUIT_MISSIONS = {
       [[-60,-20,-60,-60],[-60,-60,-20,-60],[60,-60,100,-60],[180,-60,240,-60],[240,-60,240,-40],[240,40,240,60],[240,60,-60,60],[-60,60,-60,20]])
   },
   traffic_light:{
-    note:'هدف: سه LED قرمز، زرد و سبز را هرکدام با مقاومت خودش به کانکتور باتری ۹ ولتی وصل کن تا هر سه روشن شوند. کلید (SW) اختیاری است: روی آن دوبار بزن تا باز/بسته شود.',
-    palette:['BC','R','LED','LEDY','LEDG','SW'],
+    ver:'-v4',
+    note:'هدف: چراغ راهنما با آردوینو Uno! روی برد کوچک، هر LED مقاومت ۳۳۰Ω خودش را دارد و از هدر ۴پین به آردوینو وصل می‌شود: قرمز ← D12، زرد ← D11، سبز ← D10 و پایهٔ مشترک GND. اول مدار را ببند؛ بعد روی خودِ آردوینو دوبار کلیک کن (یا روی نشان &lt;/&gt; code بزن) تا ویرایشگر کد باز شود. کد چراغ راهنما از قبل نوشته شده است؛ ▶ اجرا کن را بزن تا چراغ‌ها یکی‌یکی روشن شوند (سبز ← زرد ← قرمز). بعد می‌توانی زمان‌ها را خودت عوض کنی.',
+    palette:['UNO','HDR4','R','LED','LEDY','LEDG'],
+    // ادیتور کدِ ArduinoSim (متنی/بلوکی)، بدونِ بُردِ جدا: با کلیک روی آردوینوی داخل مدار باز می‌شود. کدِ پیش‌فرض و بررسی در task ِ 'traffic' فایل arduino-sim.js است.
+    unoCode:{missionId:'traffic-light-uno', task:'traffic'},
     tasks:[
-      cktPartsTask('کانکتور باتری و سه LED (قرمز، زرد، سبز) را روی صفحه بگذار', ['BC','LED','LEDY','LEDG']),
+      {label:'آردوینو Uno، هدر ۴پین، سه مقاومت و سه LED (قرمز، زرد، سبز) را روی صفحه بگذار', test:A => ['UNO','HDR4','LED','LEDY','LEDG'].every(t => A.count(t) >= 1) && A.count('R') >= 3},
       {label:'هر LED یک مقاومت پشت‌سرش داشته باشد (هیچ LED نسوزد)', test:A => A.count('R') >= 3 && A.burnt === 0 && !A.shorted},
-      {label:'هر سه چراغ هم‌زمان روشن شوند', test:A => A.lit('LED') >= 1 && A.lit('LEDY') >= 1 && A.lit('LEDG') >= 1}
+      {label:'سیم‌کشی درست: D10 فقط LED سبز، D11 فقط زرد و D12 فقط قرمز را روشن کند', test:A => !!A.phases && ['LEDG','LEDY','LED'].every((t,i) => A.phases[i].lit.size === 1 && A.phases[i].lit.has(t)) && A.burnt === 0 && !A.shorted},
+      {label:'روی آردوینو دوبار کلیک کن، کد را اجرا کن (▶) تا چراغ‌ها به ترتیب سبز ← زرد ← قرمز روشن شوند', needsCode:true, test:A => !!A.codeOk}
     ],
-    solution:cktSolution(
-      [-60,0,60].reduce((a,y) => a.concat([
-        {t:'R',x:120,y,val:'330Ω'},
-        {t:y === -60 ? 'LED' : y === 0 ? 'LEDY' : 'LEDG',x:220,y}
-      ]), []),
-      [[-60,-20,60,-20],[60,-60,60,-20],[60,-20,60,0],[60,0,60,60],
-       [60,-60,80,-60],[60,0,80,0],[60,60,80,60],
-       [160,-60,180,-60],[160,0,180,0],[160,60,180,60],
-       [260,-60,300,-60],[260,0,300,0],[260,60,300,60],
-       [300,-60,300,0],[300,0,300,60],[300,60,300,100],[300,100,-60,100],[-60,100,-60,20]])
+    solution:{
+      comps:[{t:'UNO',x:-260,y:0,ref:'U1'},{t:'HDR4',x:-60,y:-20,ref:'J1'},
+        {t:'R',x:120,y:-60,ref:'R1',val:'330Ω'},{t:'LED',x:220,y:-60,ref:'D1'},
+        {t:'R',x:120,y:0,ref:'R2',val:'330Ω'},{t:'LEDY',x:220,y:0,ref:'D2'},
+        {t:'R',x:120,y:60,ref:'R3',val:'330Ω'},{t:'LEDG',x:220,y:60,ref:'D3'}],
+      wires:[
+        [-160,-60,-100,-60],[-160,-40,-100,-40],[-160,-20,-100,-20],[-160,0,-100,0],
+        [-20,-60,80,-60],[160,-60,180,-60],[260,-60,300,-60],
+        [-20,-40,40,-40],[40,-40,40,0],[40,0,80,0],[160,0,180,0],[260,0,300,0],
+        [-20,-20,20,-20],[20,-20,20,60],[20,60,80,60],[160,60,180,60],[260,60,300,60],
+        [300,-60,300,0],[300,0,300,60],[300,60,300,100],[300,100,-20,100],[-20,100,-20,0]]
+    }
   }
 };
 
-function mountCircuitMission(container, id, { onSuccess, alreadyDone } = {}){
+function mountCircuitMission(container, id, { onSuccess, alreadyDone, unoExternal } = {}){
   const cfg = CIRCUIT_MISSIONS[id];
+  // ادیتور کد = خودِ ArduinoSim روی آردوینوی داخل مدار؛ اگر ArduinoSim روی صفحه نباشد، هدفِ «کد» هم از فهرست حذف می‌شود
+  const hasCode = !!cfg.unoCode && typeof ArduinoSim !== 'undefined';
+  const unoCode = hasCode ? {
+    mount:(el, host) => ArduinoSim.mount(el, Object.assign({missionId:cfg.unoCode.missionId, task:cfg.unoCode.task, alreadyDone}, host))
+  } : null;
   const ed = CircuitEditor.create(container, {
-    storageKey:'circuit-mission-' + id + '-v2',
-    note:cfg.note, palette:cfg.palette, tasks:cfg.tasks, solution:cfg.solution,
-    alreadyDone, onSuccess,
+    storageKey:'circuit-mission-' + id + (cfg.ver || '-v2'),
+    note:cfg.note, palette:cfg.palette, tasks:cfg.tasks.filter(t => hasCode || !t.needsCode), solution:cfg.solution,
+    unoCode,
+    alreadyDone, onSuccess, unoExternal,
     isActive:() => container.isConnected && container.offsetParent !== null
   });
   requestAnimationFrame(() => requestAnimationFrame(() => ed.onShow()));
   addDesignerButton(container);
-  return { stop(){ ed.stop(); } };
+  return { stop(){ ed.stop(); }, ed };
 }
 const mountLedCircuitMission = (c, o) => mountCircuitMission(c, 'led_circuit', o);
 const mountSwitchLampMission = (c, o) => mountCircuitMission(c, 'switch_lamp', o);
+/* چراغ راهنما = مدار + کد. ادیتور کد همان ادیتورِ ArduinoSim است که با کلیک (یا دوبار کلیک) روی آردوینوی داخل مدار،
+   زیرِ مدار باز می‌شود و پایه‌های همان آردوینو را می‌راند؛ بُردِ جداگانه‌ی ArduinoSim دیگر نشان داده نمی‌شود.
+   مأموریت وقتی تمام می‌شود که هم مدار درست باشد هم کد (هدف چهارم). */
 const mountTrafficLightMission = (c, o) => mountCircuitMission(c, 'traffic_light', o);
 
 /* ---------- طراحی آزاد: صفحهٔ تمام‌صفحه با ادیتور کامل (همهٔ قطعه‌ها، بدون مأموریت) ---------- */
