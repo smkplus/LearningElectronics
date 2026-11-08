@@ -514,6 +514,86 @@ function mountHalMission(container, cfg, { onSuccess, alreadyDone } = {}){
   return { stop(){ if(sim) sim.stop(); cx.stop(); } };
 }
 
+/* ---------- STM32 داخل «طراحی مدار» ----------
+   همان CubeMX (ساعت + نقشه‌ی پایه‌ها) و همان ادیتورِ کدِ HAL مأموریت‌ها؛ فقط سخت‌افزارش مدارِ روی صفحه است:
+   پایه‌ای که در Cube «GPIO_Output» شده و کد رویش می‌نویسد، به LEDهای وصل‌شده در مدار می‌رسد.
+   host = { onPin(pin, v), onPinsReset(), onRunState(r), onCfg() } از circuit-editor.js؛ comp.cid شناسه‌ی یکتای همین برد. */
+function mountHalCircuit(container, host, comp){
+  const id = 'circuit-stm-' + ((comp && comp.cid) || 'x');
+  container.innerHTML = `
+    <div class="sim-wrap hs-wrap">
+      <div class="sim-hw-note">اول در تبِ «Cube» پایه‌ی LED را <b>GPIO_Output</b> کن، بعد کد بنویس و «اجرا کن» را بزن؛ LEDهای وصل‌شده به همان پایه در مدار روشن و خاموش می‌شوند.</div>
+      <div class="hs-strip" aria-label="خلاصه‌ی تنظیمات Cube"></div>
+      <div class="hs-bench">
+        <div class="hs-tabsHost"></div>
+        <div class="hs-pane"><div class="hs-cubemount"></div></div>
+      </div>
+      <div class="hs-simmount"></div>
+    </div>`;
+  const q = s => container.querySelector(s);
+  const strip = q('.hs-strip');
+  let tabs = null, cx = null, sim = null, curTab = 'cube';
+  const outs = () => Object.keys(CUBE.cfg).filter(p => cxIsGpio(p) && CUBE.cfg[p] === 'GPIO_Output').sort();
+  const pinProblem = () => outs().length ? '' : '⚠️ هنوز هیچ پایه‌ای در CubeMX خروجی (GPIO_Output) نشده — اول در تبِ «Cube» پایه‌ی LED را انتخاب و GPIO_Output کن.';
+
+  function paintStrip(){
+    const c = cxClock(CUBE.clk), o = outs();
+    const items = [`<button type="button" class="hs-chipb ${c.ready ? 'ok' : 'todo'}" data-go="clock">⏱️ ${toFa(Math.round(c.sys))} MHz</button>`];
+    (o.length ? o : ['PA0']).forEach(p => items.push(`<button type="button" class="hs-chipb ${o.length ? 'ok' : 'todo'}" data-go="${p}" data-fn="GPIO_Output" dir="ltr">${p} · خروجی</button>`));
+    strip.innerHTML = items.join('');
+  }
+  strip.addEventListener('click', e => {
+    const b = e.target.closest('[data-go]'); if(!b) return;
+    if(b.dataset.go === 'clock') tabs.set('clock'); else { tabs.set('cube'); cx.focus(b.dataset.go, b.dataset.fn); }
+  });
+
+  const state = {};
+  const hw = {
+    read: () => 0,
+    write(p, n, v){ const pin = 'P' + p + n; state[pin] = v; if(host.onPin) host.onPin(pin, v); },
+    out: (p, n) => state['P' + p + n] || 0,
+    compare(){},
+    reset(){ Object.keys(state).forEach(k => delete state[k]); },
+    tick(){},
+    isDone: () => false
+  };
+  const starter = 'HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET);\nHAL_Delay(500);\nHAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_RESET);\nHAL_Delay(500);\n';
+
+  tabs = cxTabs(q('.hs-tabsHost'), [
+    { id: 'clock', icon: '⏱️', label: 'ساعت' },
+    { id: 'cube', icon: '🧩', label: 'پایه‌ها (Cube)' }
+  ], t => { curTab = t; cx.showPart(t === 'clock' ? 'clock' : 'pins'); });
+  const marks = () => { const c = cxClock(CUBE.clk); tabs.mark('cube', outs().length ? 'ok' : 'todo'); tabs.mark('clock', c.ready ? 'ok' : c.ok ? '' : 'todo'); };
+  cx = mountCubeMx(q('.hs-cubemount'), {
+    goal: 'روی هر پایه‌ی نقشه بزن و کارش را (مثل منوی CubeMX) انتخاب کن.',
+    showClock: true, clockRequired: false,
+    showList: false, showCode: false,
+    onChange(){ marks(); paintStrip(); if(sim) sim.pushHalContext(); if(host.onCfg) host.onCfg(); }
+  });
+  cx.showPart(curTab === 'clock' ? 'clock' : 'pins');
+  paintStrip(); marks();
+  tabs.set('cube');
+  if(!outs().length) cx.focus('PA0', 'GPIO_Output');
+
+  sim = ArduinoSim.mount(q('.hs-simmount'), {
+    missionId: 'hal-' + id, task: 'stm32robot',
+    onPinsReset: host.onPinsReset, onRunState: host.onRunState,
+    hal: {
+      hint: 'کد را بنویس (متنی یا بلوکی) و «اجرا کن» را بزن.',
+      starter: halMainText({ starter }),
+      blocksTask: 'hal',
+      initLines: ['HAL_Init();', 'SystemClock_Config();', 'MX_GPIO_Init();'],
+      successText: '', successLog: '', pending: '',
+      hw: () => hw,
+      io: (h, api) => halIOFactory(h, api),
+      ctx: () => ({ cfg: Object.assign({}, CUBE.cfg) }),
+      preRun: pinProblem
+    }
+  });
+  sim.pushHalContext();
+  return { stop(){ if(sim) sim.stop(); if(cx) cx.stop(); } };
+}
+
 /* ---------- سخت‌افزار ۱: سنسور روی PA0 و LED روی PC13 ---------- */
 function hsReadHw(root, api){
   root.innerHTML = `

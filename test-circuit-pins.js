@@ -38,8 +38,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const NR = ['D12', 'D11', 'D10', 'D9', 'D8', 'D7', 'D6', 'D5', 'D4', 'D3', 'D2', 'GND', 'RST', 'D0', 'D1'];
   const CX = 400, CY = 300;
   const pinXY = n => {
-    let i = NL.indexOf(n); if (i >= 0) return [CX - 100, CY - 140 + 20 * i, -1];
-    i = NR.indexOf(n); return [CX + 100, CY - 140 + 20 * i, 1];
+    let i = NL.indexOf(n); if (i >= 0) return [CX - 60, CY - 140 + 20 * i, -1];
+    i = NR.indexOf(n); return [CX + 60, CY - 140 + 20 * i, 1];
   };
   let seq = 0;
 

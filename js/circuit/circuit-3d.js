@@ -44,13 +44,13 @@ function cameraBasis(T){
 const FAM = t => ({LEDY:'LED', LEDG:'LED', NPN:'BJT', PNP:'BJT'}[t] || t);
 const DEF_FP = {R:'R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal', C:'C_Disc_D5.0mm_W2.5mm_P5.00mm', CP:'CP_Radial_D8.0mm_P3.50mm',
   D:'D_DO-35_SOD27_P10.16mm_Horizontal',
-  LED:'LED_D5.0mm', BJT:'TO-92_Inline', BC:'Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical', HDR4:'Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical', NANO:'Module:Arduino_Nano', ESP32:'Module:ESP32_DevKit_38Pin',
+  LED:'LED_D5.0mm', BJT:'TO-92_Inline', BC:'Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical', HDR4:'Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical', NANO:'Module:Arduino_Nano', ESP32:'Module:ESP32_DevKit_38Pin', BLUEPILL:'Module:BluePill_STM32F103C8T6',
   SW:'SW_Slide_SPST_P10.16mm', PB:'Button_Switch_THT:SW_PUSH_6mm', LAMP:'Lamp_E10_Holder'};
 const fpOf = c => c.t === 'BC' ? DEF_FP.BC : (c.fp || DEF_FP[FAM(c.t)] || '');
 const NAMES = {R:'مقاومت', D:'دیود', LED:'LED قرمز ۵ میلی‌متری', LEDY:'LED زرد ۵ میلی‌متری', LEDG:'LED سبز ۵ میلی‌متری', C:'خازن', CP:'خازن الکترولیتی',
-  NPN:'ترانزیستور NPN', PNP:'ترانزیستور PNP', BC:'کانکتور باتری (هدر ۱×۲)', HDR4:'هدر ۴پین (۱×۴)', NANO:'آردوینو Nano (ATmega328P)', ESP32:'ESP32‑WROOM‑32 (۳۸ پین)', SW:'کلید', PB:'کلید فشاری ۶ میلی‌متری', LAMP:'لامپ'};
+  NPN:'ترانزیستور NPN', PNP:'ترانزیستور PNP', BC:'کانکتور باتری (هدر ۱×۲)', HDR4:'هدر ۴پین (۱×۴)', NANO:'آردوینو Nano (ATmega328P)', ESP32:'ESP32‑WROOM‑32 (۳۸ پین)', BLUEPILL:'STM32 Blue Pill (F103C8T6)', SW:'کلید', PB:'کلید فشاری ۶ میلی‌متری', LAMP:'لامپ'};
 const SWATCH = {R:'#e1b57d', D:'#c9772e', LED:'#b31a0d', LEDY:'#d9a400', LEDG:'#1d8f45', C:'#e0a23c', CP:'#1f3a78',
-  NPN:'#262626', PNP:'#262626', BC:'#262626', HDR4:'#262626', NANO:'#2450b8', ESP32:'#15161a', SW:'#d0d4db', PB:'#d2d1c7', LAMP:'#ffe27a'};
+  NPN:'#262626', PNP:'#262626', BC:'#262626', HDR4:'#262626', NANO:'#2450b8', ESP32:'#15161a', BLUEPILL:'#1a3f9e', SW:'#d0d4db', PB:'#d2d1c7', LAMP:'#ffe27a'};
 const fa = n => Number(n).toLocaleString('fa-IR');
 
 /* ---------- ابعاد برد (میلی‌متر) ---------- */
@@ -547,6 +547,128 @@ function build(T, data){
     resistor(-8.4, -6.8); resistor(-8.4, -4.6);
     tantalum(-2.6, 6); tantalum(-2.6, -7.2);
     [[-8.2, 0], [-8.2, -1.6], [-8.2, 1.6], [-5.6, 0], [-5.6, 1.6], [-5.6, -1.8], [-2.6, 0], [-2.6, -2.2]].forEach(p => capacitor(p[0], p[1], (p[0] === -5.6 || p[0] === -2.6) ? Math.PI / 2 : 0));
+  };
+
+  /* STM32F103C8T6 Blue Pill — همان مدل فایل «STM32F103C8T6 Blue Pill»: برد آبی ۵۳٫۳×۲۲٫۹×۱٫۶، USB‑C، STM32 (LQFP‑48)،
+     کریستال ۸ مگاهرتز، رگولاتور، کلید RESET، دو جامپر BOOT، LEDها، هدر SWD و دو ردیف پین ۱×۲۰. مبدأ = مرکز برد (USB سمت چپ)؛
+     پایه‌ها از برد اصلی رد می‌شوند و بدنهٔ ماژول ۲٫۵ میلی‌متر بالاتر روی هدرهای پلاستیکی می‌نشیند. */
+  REAL.BLUEPILL = g => {
+    const BW = 53.3, BH = 22.9, BT = 1.6, PITCH = 2.54, ROW = 8.89, LIFT = BT + 2.5;
+    const m = new T.Group(); m.position.set(0, LIFT, 0); g.add(m);
+    const put = (o, x, y, z, p) => { o.position.set(x, y, z); (p || m).add(o); return o; };
+    const bx = (w, h, d, mt, x, y, z, p) => put(box(w, h, d, mt), x, y, z, p);
+    const mBoard = phong(0x1a3f9e, 0x334477, 35), mEdge = phong(0x123a5a, 0x111111, 10);
+    const mGold = phong(0xd9b22a, 0x888888, 60), mSilver = phong(0xd2d2cf, 0x999999, 70), mBlack = phong(0x15161a, 0x222222, 25);
+    const mHole = lambert(0x120d04), mHeader = M.plastic, mCap = phong(0xb08a5a, 0x333333, 20), mJumper = phong(0xe8b81c, 0x555555, 30);
+    const px = i => (i - 9.5) * PITCH;
+    const TOPN = ['3.3','G','5V','B9','B8','B7','B6','B5','B4','B3','A15','A12','A11','A10','A9','A8','B15','B14','B13','B12'];
+    const BOTN = ['VB','C13','C14','C15','A0','A1','A2','A3','A4','A5','A6','A7','B0','B1','B10','B11','R','3.3','G','G'];
+
+    // برد با گوشه‌های گرد
+    (function(){
+      const hw = BW / 2, hh = BH / 2, r = 1, s = new T.Shape();
+      s.moveTo(-hw + r, -hh); s.lineTo(hw - r, -hh); s.quadraticCurveTo(hw, -hh, hw, -hh + r); s.lineTo(hw, hh - r);
+      s.quadraticCurveTo(hw, hh, hw - r, hh); s.lineTo(-hw + r, hh); s.quadraticCurveTo(-hw, hh, -hw, hh - r);
+      s.lineTo(-hw, -hh + r); s.quadraticCurveTo(-hw, -hh, -hw + r, -hh);
+      const bg = new T.ExtrudeGeometry(s, {depth:BT, bevelEnabled:false, curveSegments:24});
+      bg.rotateX(-HALF); bg.translate(0, -BT, 0);
+      m.add(new T.Mesh(bg, [mBoard, mEdge]));
+    })();
+
+    // روکش ابریشمی: نام پایه‌ها، RESET، BOOT0/1، SWD و قاب قطعات
+    (function(){
+      const S = 40, cv = document.createElement('canvas'); cv.width = Math.round(BW * S); cv.height = Math.round(BH * S);
+      const c2 = cv.getContext('2d'), X = x => (x + BW / 2) * S, Z = z => (z + BH / 2) * S;
+      c2.fillStyle = 'rgba(214,177,42,.95)';
+      [[-9.6,-5],[-.6,5],[-.4,-5.1],[12,-5],[17.2,5],[22.4,5]].forEach(p => { c2.beginPath(); c2.arc(X(p[0]), Z(p[1]), .26 * S, 0, Math.PI * 2); c2.fill(); });
+      const WH = 'rgba(248,250,255,.96)'; c2.fillStyle = WH; c2.strokeStyle = WH;
+      const tx = (t, x, z, size, rot, align) => {
+        c2.save(); c2.translate(X(x), Z(z)); if(rot) c2.rotate(rot);
+        c2.font = '700 ' + (size * S) + 'px Arial, Helvetica, sans-serif'; c2.textAlign = align || 'center'; c2.textBaseline = 'middle';
+        c2.fillText(t, 0, 0); c2.restore();
+      };
+      for(let i = 0; i < 20; i++){ tx(TOPN[i], px(i), -(ROW - 1.35), .95, HALF, 'left'); tx(BOTN[i], px(i), ROW - 1.35, .95, -HALF, 'left'); }
+      tx('RESET', -17, 1.2, .9); tx('BOOT0', -8.8, -3, .9, 0, 'left'); tx('BOOT1', -8.8, -.46, .9, 0, 'left');
+      tx('3V3', 23.15, -3.81, .85, 0, 'right'); tx('DIO', 23.15, -1.27, .85, 0, 'right'); tx('CLK', 23.15, 1.27, .85, 0, 'right'); tx('GND', 23.15, 3.81, .85, 0, 'right');
+      c2.lineWidth = .12 * S; c2.lineCap = 'butt'; c2.strokeStyle = 'rgba(248,250,255,.55)';
+      c2.strokeRect(X(3 - 4.95), Z(-4.95), 9.9 * S, 9.9 * S); c2.strokeRect(X(14.2 - 6.3), Z(-2.9), 12.6 * S, 5.8 * S);
+      const tex = new T.CanvasTexture(cv); tex.anisotropy = 4;
+      const pl = new T.Mesh(new T.PlaneGeometry(BW, BH), new T.MeshBasicMaterial({map:tex, transparent:true, depthWrite:false}));
+      pl.rotation.x = -HALF; pl.position.y = .02; m.add(pl);
+    })();
+
+    // پدها + پایه‌ها (بدنه و نوک هرمی) + بلوک پلاستیکی هدر زیر برد
+    const padGeo = new T.CircleGeometry(1.05, 28).rotateX(-HALF), holeGeo = new T.CircleGeometry(.55, 20).rotateX(-HALF);
+    const pinGeo = new T.BoxGeometry(.64, 12.7, .64), tipGeo = new T.ConeGeometry(.42, .5, 4).rotateY(Math.PI / 4);
+    for(let i = 0; i < 20; i++) [-ROW, ROW].forEach(z => {
+      const x = px(i);
+      put(new T.Mesh(padGeo, mGold), x, .05, z); put(new T.Mesh(holeGeo, mHole), x, .09, z);
+      put(new T.Mesh(pinGeo, M.gold), x, -3.75, z); put(new T.Mesh(tipGeo, M.gold), x, 2.85, z);
+      bx(2.46, 2.5, 2.46, mHeader, x, -BT - 1.25, z);
+    });
+
+    // USB‑C
+    (function(){
+      const u = new T.Group(); put(u, -BW / 2 + 2.3, 0, 0);
+      const L = 7.3, HH = 1.63, HW = 4.47, cy = .15 + HH, F = 1.8, xf = -L / 2;
+      const stad = (hw, hh) => { const s = new T.Shape(); s.moveTo(-hw + hh, -hh); s.lineTo(hw - hh, -hh); s.absarc(hw - hh, 0, hh, -HALF, HALF, false); s.lineTo(-hw + hh, hh); s.absarc(-hw + hh, 0, hh, HALF, HALF * 3, false); return s; };
+      const hollow = (hw, hh, iw, ih) => { const s = stad(hw, hh); s.holes.push(new T.Path(stad(iw, ih).getPoints(40))); return s; };
+      const tubeX = (shape, depth, x0, mt) => { const geo = new T.ExtrudeGeometry(shape, {depth, bevelEnabled:false, curveSegments:32}); geo.rotateY(-HALF); put(new T.Mesh(geo, mt), x0, cy, 0, u); };
+      const metal = phong(0xd6d7da, 0xaaaaaa, 80), dark = phong(0x0c0c0f, 0x111111, 10);
+      tubeX(stad(HW, HH), L - F, L / 2, metal);
+      tubeX(hollow(HW, HH, 4.17, 1.28), F - .35, xf + F, metal);
+      tubeX(hollow(HW + .14, HH + .14, 4.17, 1.28), .35, xf + .35, metal);
+      tubeX(hollow(4.16, 1.27, 4.05, 1.16), F, xf + F, dark);
+      tubeX(stad(4.08, 1.19), .05, xf + F, phong(0x050507, 0x111111, 10));
+      bx(1.5, .7, 6.7, phong(0x2c2c33, 0x222222, 20), xf + 1, cy, 0, u);
+      for(let k = 0; k < 12; k++){ const zz = (k - 5.5) * .5; bx(.9, .04, .28, mGold, xf + .9, cy + .36, zz, u); bx(.9, .04, .28, mGold, xf + .9, cy - .36, zz, u); }
+      for(let j = 0; j < 6; j++) bx(.9, .1, .3, mSilver, L / 2 + .4, .2, (j - 2.5) * .85, u);
+      [[-1.4, -4.75], [-1.4, 4.75], [2.3, -4.75], [2.3, 4.75]].forEach(p => bx(1.3, .3, 1, mSilver, p[0], .2, p[1], u));
+    })();
+
+    // قطعات SMD
+    const sm = (x, z, fn) => { const q = new T.Group(); put(q, x, 0, z); fn(q); };
+    const smd2 = (x, z, mt) => sm(x, z, q => { bx(1.2, .5, 1.2, mt, 0, .35, 0, q); bx(.4, .56, 1.25, mSilver, -.8, .38, 0, q); bx(.4, .56, 1.25, mSilver, .8, .38, 0, q); });
+    const smdLed = (x, z, col) => sm(x, z, q => { bx(1.2, .5, 1.2, phong(col, 0x333333, 30), 0, .35, 0, q); bx(.4, .56, 1.25, mGold, -.8, .38, 0, q); bx(.4, .56, 1.25, mGold, .8, .38, 0, q); });
+    const tact = (x, z) => sm(x, z, q => { bx(6, .32, 3.4, mSilver, 0, .28, 0, q); bx(4.4, 1.5, 3, phong(0x1d1d21, 0x222222, 20), 0, 1.19, 0, q); bx(2, .55, 1.6, phong(0x7f8188, 0x555555, 30), 0, 2.2, 0, q); });
+    const bootHeader = (x0, z) => {      // هدر ۳پین BOOT با جامپر زرد روی دو پین اول
+      bx(7.62, 2.5, 2.54, mHeader, x0 + 2.54, 1.25, z);
+      for(let k = 0; k < 3; k++) bx(.64, 5.8, .64, M.gold, x0 + k * 2.54, 2.9, z);
+      bx(5, 2.6, 2.4, mJumper, x0 + 1.27, 3.8, z);
+    };
+
+    sm(3, 0, q => {                       // STM32F103C8T6 (LQFP‑48)
+      const tc = document.createElement('canvas'); tc.width = tc.height = 700;
+      const c = tc.getContext('2d'); c.fillStyle = '#17181c'; c.fillRect(0, 0, 700, 700);
+      c.fillStyle = 'rgba(205,208,216,.92)'; c.font = '700 84px Arial, Helvetica, sans-serif'; c.textAlign = 'left'; c.textBaseline = 'middle';
+      c.fillText('STM32', 120, 270); c.fillText('F103C8T6', 120, 370);
+      c.fillStyle = 'rgba(70,73,82,1)'; c.beginPath(); c.arc(95, 95, 30, 0, Math.PI * 2); c.fill();
+      const side = phong(0x17181c, 0x333333, 40), top = phong(0xffffff, 0x444444, 40); top.map = new T.CanvasTexture(tc);
+      put(new T.Mesh(new T.BoxGeometry(7, 1.2, 7), [side, side, top, side, side, side]), 0, .7, 0, q);
+      for(let k = 0; k < 12; k++){ const o = (k - 5.5) * .5; bx(1, .12, .22, mSilver, 4, .2, o, q); bx(1, .12, .22, mSilver, -4, .2, o, q); bx(.22, .12, 1, mSilver, o, .2, 4, q); bx(.22, .12, 1, mSilver, o, .2, -4, q); }
+    });
+    sm(14.2, 0, q => {                    // کریستال ۸ مگاهرتز
+      const tc = document.createElement('canvas'); tc.width = 648; tc.height = 264;
+      const c = tc.getContext('2d'), gr = c.createLinearGradient(0, 0, 0, 264); gr.addColorStop(0, '#dcdee2'); gr.addColorStop(1, '#bfc2c7');
+      c.fillStyle = gr; c.fillRect(0, 0, 648, 264); c.fillStyle = '#2d3036'; c.font = '700 96px Arial, Helvetica, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText('8.000', 324, 136);
+      const shell = phong(0xc9ccd0, 0xbbbbbb, 90), top = phong(0xffffff, 0x777777, 60); top.map = new T.CanvasTexture(tc);
+      bx(11.4, .5, 4.7, phong(0x1c1c20, 0x222222, 20), 0, .35, 0, q);
+      put(new T.Mesh(new T.BoxGeometry(10.8, 2.8, 4.4), [shell, shell, top, shell, shell, shell]), 0, 2, 0, q);
+      bx(1.4, .08, 3.8, mGold, -5.9, .06, 0, q); bx(1.4, .08, 3.8, mGold, 5.9, .06, 0, q);
+    });
+    bx(3.2, 1, 1.5, phong(0xcfd1d5, 0xbbbbbb, 90), 11.4, .65, 3.9);      // کریستال ۳۲٫۷۶۸ کیلوهرتز
+    bx(.7, .08, 1.5, mGold, 9.5, .06, 3.9); bx(.7, .08, 1.5, mGold, 13.3, .06, 3.9);
+    sm(-6.5, 3, q => {                    // رگولاتور ۳٫۳ ولت (SOT‑89)
+      bx(4, 1.4, 2.4, phong(0x1a1b1f, 0x333333, 30), 0, .8, 0, q);
+      [-1.5, 0, 1.5].forEach(o => bx(.5, .15, .9, mSilver, o, .2, 1.65, q)); bx(1.8, .15, .9, mSilver, 0, .2, -1.65, q);
+    });
+    tact(-17, 3.6); bootHeader(-16, -3); bootHeader(-16, -.46);
+    bx(2.54, 2.5, 10.16, mHeader, 24.5, 1.25, 0);                        // هدر SWD
+    for(let k = 0; k < 4; k++) bx(.64, 5.8, .64, M.gold, 24.5, 2.9, (k - 1.5) * 2.54);
+    smdLed(-3.6, -4.6, 0xf0d8d4); smdLed(-3.6, -1.8, 0xd8f0dc);
+    smd2(-6, -4.6, mBlack); smd2(-6, -1.8, mBlack);
+    [[-10.3, 3], [-3.2, 2], [-3.2, 3.5], [9, -4], [11.3, -4], [8.9, 3.9], [13.9, 3.9]].forEach(p => smd2(p[0], p[1], mCap));
   };
 
   /* قطعاتی که در فایل HTML نبودند: همان مدل ساده‌ی قبلی، با مقیاس میلی‌متر و متریال Phong */

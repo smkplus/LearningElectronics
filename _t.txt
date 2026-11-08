@@ -1,0 +1,35 @@
+﻿ArduinoSim: undefined | load errors: 9 [
+  "Not implemented: HTMLMediaElement's play() method",
+  "Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package",
+  'Uncaught [TypeError: fg.getTotalLength is not a function]',
+  "Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package"
+]
+probe D13: {"pin":"D13","seen":"on","msg":"","boom":false,"sim":"╪»╪▒ ╪¡╪º┘ä ╪º╪¼╪▒╪ºΓÇª"}
+LED+330╬⌐                   D2   ΓåÆ on
+LED+330╬⌐                   D3   ΓåÆ on
+LED+330╬⌐                   D4   ΓåÆ on
+LED+330╬⌐                   D5   ΓåÆ on
+LED+330╬⌐                   D6   ΓåÆ on
+LED+330╬⌐                   D7   ΓåÆ on
+LED+330╬⌐                   D8   ΓåÆ on
+LED+330╬⌐                   D9   ΓåÆ on
+LED+330╬⌐                   D10  ΓåÆ on
+LED+330╬⌐                   D11  ΓåÆ on
+LED+330╬⌐                   D12  ΓåÆ on
+LED+330╬⌐                   D13  ΓåÆ on
+LED+330╬⌐                   D0   ΓåÆ on
+LED+330╬⌐                   D1   ΓåÆ on
+LED+330╬⌐                   A0   ΓåÆ on
+LED+330╬⌐                   A1   ΓåÆ on
+LED+330╬⌐                   A2   ΓåÆ on
+LED+330╬⌐                   A3   ΓåÆ on
+LED+330╬⌐                   A4   ΓåÆ on
+LED+330╬⌐                   A5   ΓåÆ on
+LED+330╬⌐                   A6   ΓåÆ off
+LED+330╬⌐                   A7   ΓåÆ off
+LED ╪¿╪»┘ê┘å ┘à┘é╪º┘ê┘à╪¬            D13  ΓåÆ on+burnt  ≡ƒÆÑ  | ≡ƒÆÑ LED ╪¿╪»┘ê┘å ┘à┘é╪º┘ê┘à╪¬┘É ┘à╪¡╪»┘ê╪»┌⌐┘å┘å╪»┘ç ┘à┘å┘ü╪¼╪▒ ╪┤╪»! █î┌⌐ ┘à┘é╪º┘ê┘à╪¬ ┘╛╪┤╪¬ΓÇî╪│╪▒┘É LED ╪¿┌»╪░╪º╪▒.
+LED ╪¿╪»┘ê┘å ┘à┘é╪º┘ê┘à╪¬            D2   ΓåÆ on+burnt  ≡ƒÆÑ  | ≡ƒÆÑ LED ╪¿╪»┘ê┘å ┘à┘é╪º┘ê┘à╪¬┘É ┘à╪¡╪»┘ê╪»┌⌐┘å┘å╪»┘ç ┘à┘å┘ü╪¼╪▒ ╪┤╪»! █î┌⌐ ┘à┘é╪º┘ê┘à╪¬ ┘╛╪┤╪¬ΓÇî╪│╪▒┘É LED ╪¿┌»╪░╪º╪▒.
+LED ╪¿╪»┘ê┘å ┘à┘é╪º┘ê┘à╪¬            A0   ΓåÆ on+burnt  ≡ƒÆÑ  | ≡ƒÆÑ LED ╪¿╪»┘ê┘å ┘à┘é╪º┘ê┘à╪¬┘É ┘à╪¡╪»┘ê╪»┌⌐┘å┘å╪»┘ç ┘à┘å┘ü╪¼╪▒ ╪┤╪»! █î┌⌐ ┘à┘é╪º┘ê┘à╪¬ ┘╛╪┤╪¬ΓÇî╪│╪▒┘É LED ╪¿┌»╪░╪º╪▒.
+LED ╪¿╪»┘ê┘å ┘à┘é╪º┘ê┘à╪¬            D7   ΓåÆ on+burnt  ≡ƒÆÑ  | ≡ƒÆÑ LED ╪¿╪»┘ê┘å ┘à┘é╪º┘ê┘à╪¬┘É ┘à╪¡╪»┘ê╪»┌⌐┘å┘å╪»┘ç ┘à┘å┘ü╪¼╪▒ ╪┤╪»! █î┌⌐ ┘à┘é╪º┘ê┘à╪¬ ┘╛╪┤╪¬ΓÇî╪│╪▒┘É LED ╪¿┌»╪░╪º╪▒.
+GND=┘╛╪º█î┘ç┘ö Nano             D13  ΓåÆ on
+┌⌐┘å╪¬╪▒┘ä: ┌⌐╪» D5╪î LED ╪▒┘ê█î D6   D6   ΓåÆ off

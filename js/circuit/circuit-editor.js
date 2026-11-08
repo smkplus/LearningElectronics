@@ -69,7 +69,7 @@ const unoDraw = c => {
    ستون راست = ردیف دیجیتال (D12 … D2، GND، RST، RX0، TX1). فاصلهٔ پایه‌ها ۲۰ و روی شبکه؛ نام پایه‌ها همان نام‌های Uno (D0 = RX0، D1 = TX1) */
 const NANO_L = ['D13','3V3','REF','A0','A1','A2','A3','A4','A5','A6','A7','5V','RST','GND','VIN'];
 const NANO_R = ['D12','D11','D10','D9','D8','D7','D6','D5','D4','D3','D2','GND','RST','D0','D1'];
-const NANO_LAYOUT = NANO_L.map((n, i) => [n, -100, -140 + 20 * i]).concat(NANO_R.map((n, i) => [n, 100, -140 + 20 * i]));
+const NANO_LAYOUT = NANO_L.map((n, i) => [n, -60, -140 + 20 * i]).concat(NANO_R.map((n, i) => [n, 60, -140 + 20 * i]));
 const NANO_PINS = NANO_LAYOUT.map(p => p[0]), NANO_XY = NANO_LAYOUT.map(p => [p[1], p[2]]);
 const NANO_SHOW = {D0:'RX0', D1:'TX1', REF:'AREF'};   // نام نمایشی روی نقاشی
 const NANO_OUT = (n, hi) => (n === 'A6' || n === 'A7') ? null : UNO_OUT(n, hi);   // A6/A7 فقط ورودی‌اند
@@ -77,14 +77,14 @@ const NANO_CHIP = [-27, -166, 27, -148];          // نشان «</> code» رو�
 const NANO_CHIP_REAL = [-27, -212, 27, -194];     // همان نشان در نمای واقعی (بالای USB)
 const nanoDraw = c => {
   const hi = new Set(unoHiFor(c));
-  let h = '<rect class="b" x="-60" y="-170" width="120" height="340" rx="8"/><rect class="b t" x="-20" y="-186" width="40" height="16" rx="2"/>' +
+  let h = '<rect class="b" x="-40" y="-170" width="80" height="340" rx="8"/><rect class="b t" x="-20" y="-186" width="40" height="16" rx="2"/>' +
     svgTx(0, -174, 'USB', 8, 'middle') +
     '<text transform="translate(5 30) rotate(-90)" fill="#e8e2d0" font-family="monospace" font-size="17" font-weight="700" text-anchor="middle">ARDUINO NANO</text>';
   if(c && c.t) h += chipSvg(NANO_CHIP, c);
   NANO_PINS.forEach((n, i) => {
     const [x, y] = NANO_XY[i], rt = x > 0;
-    h += `<path class="b" d="M${rt ? 60 : -60} ${y}H${x}"/>` + svgTx(rt ? 52 : -52, y + 3.5, NANO_SHOW[n] || n, 10, rt ? 'end' : 'start');
-    if(hi.has(n)) h += `<circle cx="${rt ? 80 : -80}" cy="${y}" r="3.5" fill="#ff6a55"/>`;
+    h += `<path class="b" d="M${rt ? 40 : -40} ${y}H${x}"/>` + svgTx(rt ? 32 : -32, y + 3.5, NANO_SHOW[n] || n, 10, rt ? 'end' : 'start');
+    if(hi.has(n)) h += `<circle cx="${rt ? 50 : -50}" cy="${y}" r="3.5" fill="#ff6a55"/>`;
   });
   return h;
 };
@@ -114,13 +114,40 @@ const esp32Draw = c => {
   });
   return h;
 };
+/* STM32F103C8T6 Blue Pill: USB بالا؛ ۲۰ پایه در هر ستون با فاصلهٔ ۲۰. ستون چپ = ردیف VBAT (VBAT، PC13 … PB11، RST، 3V3، GND، GND)،
+   ستون راست = ردیف 3V3 (3V3، GND، 5V، PB9 … PB12). ولتاژ منطقی ۳٫۳ ولت؛ پایه‌های تغذیه (3V3، 5V) همیشه منبع‌اند و پایه‌های GPIO وقتی در CubeMX «GPIO_Output» شوند با کدِ HAL روشن/خاموش می‌شوند. */
+const BP_L = ['VBAT','PC13','PC14','PC15','PA0','PA1','PA2','PA3','PA4','PA5','PA6','PA7','PB0','PB1','PB10','PB11','RST','3V3_','GND','GND'];
+const BP_R = ['3V3','GND','5V','PB9','PB8','PB7','PB6','PB5','PB4','PB3','PA15','PA12','PA11','PA10','PA9','PA8','PB15','PB14','PB13','PB12'];
+const BP_LAYOUT = BP_L.map((n, i) => [n, -80, -190 + 20 * i]).concat(BP_R.map((n, i) => [n, 80, -190 + 20 * i]));
+const BP_PINS = BP_LAYOUT.map(p => p[0]), BP_XY = BP_LAYOUT.map(p => [p[1], p[2]]);
+const BP_SHOW = {'3V3_':'3V3'};   // پایهٔ ۳٫۳ ولت دوم (با اولی یک نت است)
+const BP_CHIP = [-26, -122, 26, -104];            // نشان «</> code» روی شماتیک
+const BP_CHIP_REAL = [-27, -246, 27, -228];       // همان نشان در نمای واقعی (بالای USB)
+const BP_OUT = (n, hi) => n === '3V3' ? 3.3 : n === '5V' ? 5 : (/^P[A-D]\d+$/.test(n) && typeof CUBE !== 'undefined' && CUBE.cfg[n] === 'GPIO_Output') ? ((hi && hi.has(n)) ? 3.3 : 0) : null;
+const bluePillDraw = c => {
+  const hi = new Set(unoHiFor(c));
+  let h = '<rect class="b" x="-55" y="-202" width="110" height="404" rx="8"/><rect class="b t" x="-22" y="-218" width="44" height="16" rx="2"/>' +
+    svgTx(0, -206, 'USB', 8, 'middle') +
+    '<rect class="b t" x="-18" y="-10" width="36" height="60" rx="3"/>' +
+    '<text transform="translate(-8 100) rotate(-90)" fill="#e8e2d0" font-family="monospace" font-size="24" font-weight="700" text-anchor="middle">BLUE PILL</text>' +
+    '<text transform="translate(12 100) rotate(-90)" fill="#e8e2d0" font-family="monospace" font-size="11" text-anchor="middle">STM32F103C8T6</text>';
+  if(c && c.t) h += chipSvg(BP_CHIP, c);
+  BP_PINS.forEach((n, i) => {
+    const [x, y] = BP_XY[i], rt = x > 0;
+    h += `<path class="b" d="M${rt ? 55 : -55} ${y}H${x}"/>` + svgTx(rt ? 47 : -47, y + 3.5, BP_SHOW[n] || n, 9.5, rt ? 'end' : 'start');
+    if(hi.has(n)) h += `<circle cx="${rt ? 67.5 : -67.5}" cy="${y}" r="3.5" fill="#ff6a55"/>`;
+  });
+  return h;
+};
 /* جدول یکپارچهٔ آردوینوها: هر نوع پایه‌ها، خروجی‌ها، نشان کد و جعبهٔ نمای واقعی خودش را دارد */
 const MCU = {
   UNO:{pins:UNO_PINS, out:UNO_OUT, chip:UNO_CHIP, chipReal:UNO_CHIP_REAL, boxReal:[-224, -356, 124, 224], name:'Uno'},
-  NANO:{pins:NANO_PINS, out:NANO_OUT, chip:NANO_CHIP, chipReal:NANO_CHIP_REAL, boxReal:[-112, -220, 112, 200], name:'Nano'},
-  ESP32:{pins:ESP_PINS, out:ESP_OUT, chip:ESP_CHIP, chipReal:ESP_CHIP_REAL, boxReal:[-114, -246, 114, 208], name:'ESP32'}
+  NANO:{pins:NANO_PINS, out:NANO_OUT, chip:NANO_CHIP, chipReal:NANO_CHIP_REAL, boxReal:[-76, -220, 76, 200], name:'Nano'},
+  ESP32:{pins:ESP_PINS, out:ESP_OUT, chip:ESP_CHIP, chipReal:ESP_CHIP_REAL, boxReal:[-114, -246, 114, 208], name:'ESP32'},
+  BLUEPILL:{pins:BP_PINS, out:BP_OUT, chip:BP_CHIP, chipReal:BP_CHIP_REAL, boxReal:[-96, -254, 96, 214], name:'Blue Pill'}
 };
-const isMcu = t => t === 'UNO' || t === 'NANO' || t === 'ESP32';
+const isMcu = t => t === 'UNO' || t === 'NANO' || t === 'ESP32' || t === 'BLUEPILL';   // بردهایی که ادیتور کد دارند (Blue Pill: CubeMX + HAL)
+const isBoard = t => Object.prototype.hasOwnProperty.call(MCU, t);   // همهٔ بردها
 const HDR_NAMES = ['GND','D12','D11','D10'];
 const HDR_DRAW = '<path class="b" d="' + HDR_NAMES.map((n, i) => `M-40 ${-40 + 20 * i}H-14M14 ${-40 + 20 * i}H40`).join('') + '"/>' +
   '<rect class="b" x="-14" y="-54" width="28" height="86" rx="4"/>' + HDR_NAMES.map((n, i) => svgTx(0, -36 + 20 * i, n, 9, 'middle')).join('');
@@ -159,10 +186,12 @@ const DEFS = {
     draw:'<path class="b" d="M0 0V-14M-12 -14H12L0 -28Z"/>'},
   UNO:{fa:'آردوینو Uno',pre:'U',val:'Uno',lab:'none',offboard:true,pins:UNO_PINS.map((n,i) => [UNO_XY[i][0],UNO_XY[i][1],n]),box:[-204,-200,102,222],draw:unoDraw,
     pal:'<g transform="scale(.16) translate(51 -11)">' + unoDraw(null) + '</g>'},
-  NANO:{fa:'آردوینو Nano',pre:'U',val:'Nano',lab:'none',pins:NANO_PINS.map((n,i) => [NANO_XY[i][0],NANO_XY[i][1],n]),box:[-104,-192,104,174],draw:nanoDraw,
+  NANO:{fa:'آردوینو Nano',pre:'U',val:'Nano',lab:'none',pins:NANO_PINS.map((n,i) => [NANO_XY[i][0],NANO_XY[i][1],n]),box:[-64,-192,64,174],draw:nanoDraw,
     pal:'<g transform="scale(.16) translate(0 8)">' + nanoDraw(null) + '</g>'},
   ESP32:{fa:'ESP32 (WROOM-32، ۳۸ پین)',pre:'U',val:'ESP32',lab:'none',pins:ESP_PINS.map((n,i) => [ESP_XY[i][0],ESP_XY[i][1],n]),box:[-104,-214,104,196],draw:esp32Draw,
     pal:'<g transform="scale(.14) translate(0 8)">' + esp32Draw(null) + '</g>'},
+  BLUEPILL:{fa:'STM32 Blue Pill (F103C8T6)',pre:'U',val:'BluePill',lab:'none',pins:BP_PINS.map((n,i) => [BP_XY[i][0],BP_XY[i][1],n]),box:[-84,-222,84,206],draw:bluePillDraw,
+    pal:'<g transform="scale(.13) translate(0 8)">' + bluePillDraw(null) + '</g>'},
   HDR4:{fa:'هدر ۴پین (برد LED)',pre:'J',val:'1×4',lab:'two',link:[[0,4],[1,5],[2,6],[3,7]],
     pins:HDR_NAMES.map((n,i) => [-40,-40+20*i,n]).concat(HDR_NAMES.map((n,i) => [40,-40+20*i,n])),box:[-40,-54,40,34],draw:HDR_DRAW,
     pal:'<g transform="scale(.8) translate(0 10)">' + HDR_DRAW + '</g>'}
@@ -172,7 +201,7 @@ const GROUPS = [
   ['قطعات پایه', ['R','C','CP']],
   ['نیمه‌هادی', ['D','LED','LEDY','LEDG','NPN','PNP']],
   ['منبع و کلید', ['BC','SW','PB','VCC','GND']],
-  ['آردوینو و برد', ['UNO','NANO','ESP32','HDR4']]
+  ['آردوینو و برد', ['UNO','NANO','ESP32','BLUEPILL','HDR4']]
 ];
 const HINTS = {
   select:'انتخاب: روی قطعه یا سیم بزن، بکشش تا جابه‌جا شود. روی کلید دوبار بزن تا باز/بسته شود. روی فضای خالی بکش تا چند مورد را با هم انتخاب کنی.',
@@ -320,7 +349,7 @@ function createUnoDock(wrap, cfg, host, ref, comp, parent){
   const el = document.createElement('section');
   el.className = 'cv-uno-dock'; el.hidden = true;
   el.setAttribute('aria-label', 'ویرایشگر کد آردوینو');
-  el.innerHTML = '<div class="cv-uno-bar"><b>&lt;/&gt; کد آردوینو ' + (comp && MCU[comp.t] ? MCU[comp.t].name : 'Uno') + '<span>' + String(ref || 'U1').replace(/[<>&"']/g, '') + '</span></b>' +
+  el.innerHTML = '<div class="cv-uno-bar"><b>&lt;/&gt; ' + (comp && comp.t === 'BLUEPILL' ? 'کد STM32 ' : 'کد آردوینو ') + (comp && MCU[comp.t] ? MCU[comp.t].name : 'Uno') + '<span>' + String(ref || 'U1').replace(/[<>&"']/g, '') + '</span></b>' +
     '<span class="cv-uno-sub">برنامه را اینجا بنویس؛ چراغ‌های مدار با آن روشن و خاموش می‌شوند.</span>' +
     (parent ? '<span class="cv-uno-switch"><button type="button" data-close>⚡ مدار</button><button type="button" class="on" tabindex="-1">&lt;/&gt; کد</button></span>'
             : '<button type="button" data-close>✕ بستن</button>') + '</div><div class="cv-uno-body"></div>';
@@ -380,6 +409,21 @@ const mLead = (x1, x2, y, gold) => { y = y || 0; return `<path d="M${x1} ${y}H${
 const wireTube = (d, col, dark) => `<path d="${d}" stroke="${dark}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="${d}" stroke="${col}" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
 const shine = (x, y, w, h, r) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="#fff" opacity=".28"/>`;
 
+/* ظاهر مشترک همهٔ بردها (مثل Uno): USB فلزی از بالا + سوکت سیاه با سوراخ‌های خاکستری روی نقطه‌های اتصال */
+const usbTop = (topY, p) => {
+  const y = topY - p, h = p + 8;
+  return `<rect x="-30" y="${y}" width="60" height="${h}" rx="4" fill="#c9d0d7" stroke="#8b949e" stroke-width="3"/>` +
+    `<rect x="-24" y="${y + 5}" width="48" height="${h - 16}" rx="2" fill="#b4bbc4"/><rect x="-24" y="${y + 5}" width="48" height="3" fill="#fff" opacity=".55"/>` +
+    `<path d="M-30 ${topY + 1}H30" stroke="#8b949e" stroke-width="2"/>`;
+};
+const sockets = xy => {
+  const cols = new Map();
+  xy.forEach(q => { const c = cols.get(q[0]) || [Infinity, -Infinity]; c[0] = Math.min(c[0], q[1]); c[1] = Math.max(c[1], q[1]); cols.set(q[0], c); });
+  let s = '';
+  cols.forEach((c, x) => { s += `<rect x="${x - 9.5}" y="${c[0] - 10}" width="19" height="${c[1] - c[0] + 20}" rx="2" fill="#171a1f" stroke="#000" stroke-width="2"/>`; });
+  return s + xy.map(q => `<rect x="${q[0] - 5.2}" y="${q[1] - 5.2}" width="10.4" height="10.4" fill="#4b525c"/>`).join('');
+};
+
 function unoBoardReal(hi){      // Uno واقعی: USB بالا، هدر دیجیتال راست، هدر برق/آنالوگ چپ؛ سوکت‌ها دقیقاً روی پایه‌های اتصال
   const sock = (x0, n, y) => `<rect x="${x0 - 50}" y="${y - 65}" width="${n * 100}" height="130" rx="12" fill="#171a1f" stroke="#000" stroke-width="10"/>` +
     Array.from({length:n}, (_, k) => `<rect x="${x0 + 100 * k - 26}" y="${y - 26}" width="52" height="52" fill="#4b525c"/>`).join('');
@@ -405,38 +449,25 @@ function unoBoardReal(hi){      // Uno واقعی: USB بالا، هدر دیج�
   return h;
 }
 
-function nanoBoardReal(hi){      // Nano واقعی: USB بالا، ردیف دیجیتال راست؛ سوکت‌ها دقیقاً روی پایه‌های اتصال، با پایه‌های موازی تا ردیف هدر
-  const ys = Array.from({length:15}, (_, k) => -140 + 20 * k);
-  let h = '<rect x="-71" y="-165" width="142" height="354" rx="9" fill="#2450b8" stroke="#16337c" stroke-width="3"/>' +
-    '<rect x="-38" y="-177" width="3" height="11" rx="1.5" fill="#8b949e"/><rect x="35" y="-177" width="3" height="11" rx="1.5" fill="#8b949e"/>' +
-    '<rect x="-36" y="-189" width="72" height="31" rx="14" fill="#cfd5dc" stroke="#78828f" stroke-width="2.5"/><rect x="-29" y="-186" width="58" height="4" rx="2" fill="#fff" opacity=".65"/>' +
-    '<rect x="-30" y="-183" width="60" height="21" rx="9.5" fill="#14161a"/><rect x="-23" y="-176.5" width="46" height="7" rx="2" fill="#505763"/>' +
-    '<g fill="#d9b54a">' + Array.from({length:9}, (_, k) => `<rect x="${-21.5 + 5.4 * k}" y="-179" width="2.8" height="1.8" rx=".5"/><rect x="${-21.5 + 5.4 * k}" y="-168" width="2.8" height="1.8" rx=".5"/>`).join('') + '</g>' +
-    '<g transform="translate(0 -41.6) rotate(45)"><rect x="-27" y="-27" width="54" height="54" rx="3" fill="#17181c"/><circle cx="19" cy="19" r="3" fill="#b9bbc2"/></g>' +
+function nanoBoardReal(hi){      // Nano واقعی: USB از بالا؛ سوکت‌های سیاه (مثل Uno) دقیقاً روی نقطه‌های اتصال
+  let h = '<rect x="-71" y="-165" width="142" height="354" rx="9" fill="#2450b8" stroke="#16337c" stroke-width="3"/>' + usbTop(-165, 27) +
+    '<g transform="translate(0 -41.6) rotate(45)"><rect x="-22" y="-22" width="44" height="44" rx="3" fill="#17181c"/><circle cx="15" cy="15" r="3" fill="#b9bbc2"/></g>' +
     '<rect x="19" y="-2" width="12" height="20" rx="2" fill="#4c5059"/>' +
     '<rect x="-17" y="24" width="42" height="31" rx="3" fill="#cfcdc6" stroke="#6d757e" stroke-width="2"/><circle cx="4" cy="39.5" r="8.5" fill="#d1242a"/>';
-  [[30.7, '#d9a400'], [11, '#d9a400'], [-8.7, '#2fd36f'], [-28.3, '#e08a2a']].forEach(a => {
+  [[27, '#d9a400'], [9.5, '#d9a400'], [-8, '#2fd36f'], [-25.5, '#e08a2a']].forEach(a => {
     h += `<rect x="${a[0] - 3.5}" y="66" width="7" height="9" rx="1" fill="#15161a"/><rect x="${a[0] - 3.5}" y="89" width="7" height="9" rx="1" fill="${a[1]}"/>`;
   });
-  [-1, 1].forEach(s => { h += `<rect x="${s * 60 - 6}" y="-150" width="12" height="300" rx="2" fill="#16181d"/>`; });
-  NANO_PINS.forEach((n, i) => {
-    const [x, y] = NANO_XY[i], rt = x > 0, hx = rt ? 60 : -60;
-    h += `<path d="M${hx} ${y}H${x}" stroke="#8a6a12" stroke-width="5" stroke-linecap="round" fill="none"/><path d="M${hx} ${y}H${x}" stroke="#e2b84a" stroke-width="3" stroke-linecap="round" fill="none"/>` +
-      `<rect x="${hx - 4}" y="${y - 4}" width="8" height="8" fill="#e2b84a" stroke="#8a6a12" stroke-width="1"/><circle cx="${x}" cy="${y}" r="6.5" fill="#4b525c" stroke="#000" stroke-width="2"/>`;
-  });
-  h += svgTx(0, 154, 'NANO', 18, 'middle', true);
+  h += sockets(NANO_XY) + svgTx(0, 154, 'NANO', 18, 'middle', true);
   NANO_PINS.forEach((n, i) => {
     const [x, y] = NANO_XY[i], rt = x > 0;
     if(hi.has(n)) h += `<circle cx="${x}" cy="${y}" r="9" fill="#ff6a55" opacity=".6"/>`;
-    h += svgTx(rt ? 50 : -50, y + 3.5, NANO_SHOW[n] || n, 9.5, rt ? 'end' : 'start');
+    h += svgTx(rt ? x - 11 : x + 11, y + 3.5, NANO_SHOW[n] || n, 9.5, rt ? 'end' : 'start');
   });
   return h;
 }
 
-function esp32BoardReal(hi){      // ESP32 واقعی: USB بالا، آنتن پایین؛ ردیف‌های پایه دقیقاً روی x = ±100 (۲۵٫۴ میلی‌متر)
-  let h = '<rect x="-110.5" y="-204.5" width="221" height="409" rx="9" fill="#15161a" stroke="#0a0a0c" stroke-width="3"/>' +
-    '<rect x="-35" y="-214" width="70" height="31" rx="14" fill="#cfd5dc" stroke="#78828f" stroke-width="2.5"/><rect x="-29" y="-211" width="58" height="4" rx="2" fill="#fff" opacity=".65"/>' +
-    '<rect x="-30" y="-208" width="60" height="21" rx="9.5" fill="#14161a"/><rect x="-23" y="-201.5" width="46" height="7" rx="2" fill="#505763"/>' +
+function esp32BoardReal(hi){      // ESP32 واقعی: USB از بالا، آنتن پایین؛ سوکت‌های سیاه روی x = ±100
+  let h = '<rect x="-110.5" y="-204.5" width="221" height="409" rx="9" fill="#15161a" stroke="#0a0a0c" stroke-width="3"/>' + usbTop(-204.5, 14) +
     '<rect x="-20" y="-120.5" width="39" height="39" rx="3" fill="#17181c"/><circle cx="-14" cy="-114.5" r="2.5" fill="#b9bbc2"/>' +
     '<rect x="21.7" y="-76.8" width="51" height="27.5" rx="2" fill="#1a1b1f"/>' +
     '<rect x="-71" y="-2" width="142" height="201" rx="2" fill="#121317" stroke="#2a2c31" stroke-width="1.5"/>' +
@@ -447,15 +478,41 @@ function esp32BoardReal(hi){      // ESP32 واقعی: USB بالا، آنتن �
     const cx = s * 56.7;
     h += `<rect x="${cx - 13.5}" y="-161.3" width="27" height="47" rx="3" fill="#1d1d21" stroke="#8a8f98" stroke-width="1.5"/><circle cx="${cx}" cy="-137.8" r="8" fill="#7f8188"/>`;
   });
-  h += `<rect x="-56.7" y="-51" width="6.3" height="7.9" fill="#d98a84"/><rect x="-39.3" y="-51" width="6.3" height="7.9" fill="${hi.has('D2') ? '#3aa0ff' : '#9fb7cf'}"/>`;
-  [-1, 1].forEach(s => { h += `<rect x="${s * 100 - 9.5}" y="-190" width="19" height="380" rx="2" fill="#17171b"/>`; });
+  h += `<rect x="-56.7" y="-51" width="6.3" height="7.9" fill="#d98a84"/><rect x="-39.3" y="-51" width="6.3" height="7.9" fill="${hi.has('D2') ? '#3aa0ff' : '#9fb7cf'}"/>` + sockets(ESP_XY);
   ESP_PINS.forEach((n, i) => {
     const [x, y] = ESP_XY[i], rt = x > 0;
-    h += `<rect x="${x - 4}" y="${y - 4}" width="8" height="8" fill="#e2b84a" stroke="#8a6a12" stroke-width="1"/><circle cx="${x}" cy="${y}" r="6.5" fill="none" stroke="#e2b84a" stroke-width="1.4"/>`;
     if(hi.has(n)) h += `<circle cx="${x}" cy="${y}" r="9" fill="#ff6a55" opacity=".6"/>`;
     h += svgTx(rt ? x - 11 : x + 11, y + 3.5, ESP_SHOW[n] || n, 9.5, rt ? 'end' : 'start');
   });
   h += svgTx(0, -137, 'ESP32', 16, 'middle', true) + svgTx(-33.9, -132, 'EN', 7, 'middle') + svgTx(33.9, -132, 'BOOT', 7, 'middle');
+  return h;
+}
+
+function bluePillBoardReal(hi){      // Blue Pill واقعی: USB از بالا، SWD پایین؛ سوکت‌های سیاه (مثل Uno) روی x = ±100
+  let h = '<rect x="-93" y="-209.8" width="186" height="419.6" rx="8" fill="#1a3f9e" stroke="#123a5a" stroke-width="3"/>' + usbTop(-209.8, 14) +
+    '<rect x="-27.5" y="-3.9" width="55" height="55" rx="3" fill="#17181c"/><circle cx="-20" cy="3.5" r="2.5" fill="#46495a"/>' +
+    '<text transform="translate(-4 23.6) rotate(-90)" fill="#cdd0d8" font-family="monospace" font-size="8" font-weight="700" text-anchor="middle">STM32</text>' +
+    '<text transform="translate(6 23.6) rotate(-90)" fill="#cdd0d8" font-family="monospace" font-size="8" font-weight="700" text-anchor="middle">F103C8T6</text>' +
+    '<rect x="-17.3" y="69.3" width="34.6" height="85" rx="3" fill="#c9ccd0" stroke="#8d9198" stroke-width="2"/>' +
+    '<text transform="translate(0 111.8) rotate(-90)" fill="#2d3036" font-family="monospace" font-size="9" font-weight="700" text-anchor="middle">8.000</text>' +
+    '<rect x="24.8" y="77.3" width="11.8" height="25" rx="2" fill="#cfd1d5" stroke="#8d9198" stroke-width="1.2"/>' +
+    '<rect x="14.2" y="-67" width="18.9" height="31.5" rx="2" fill="#1a1b1f"/>' +
+    '<rect x="14.9" y="-157.4" width="26.8" height="47" rx="3" fill="#1d1d21" stroke="#8a8f98" stroke-width="1.5"/><circle cx="28.3" cy="-133.9" r="8" fill="#7f8188"/>' +
+    '<rect x="-40.9" y="-33" width="9.4" height="9.4" fill="#d98a84"/><rect x="-18.9" y="-33" width="9.4" height="9.4" fill="#8fc79a"/>' +
+    '<rect x="-40" y="183" width="80" height="20" rx="2" fill="#17171b"/>';
+  [-30, -10, 10, 30].forEach(x => { h += `<rect x="${x - 3}" y="190" width="6" height="6" fill="#e2b84a" stroke="#8a6a12" stroke-width=".8"/>`; });
+  [-23.6, -3.6].forEach(cx => {
+    h += `<rect x="${cx - 10}" y="-136" width="20" height="60" rx="2" fill="#17171b"/><rect x="${cx - 9}" y="-136" width="18" height="39" rx="2" fill="#e8b81c"/>`;
+    [-126, -106, -86].forEach(y => { h += `<rect x="${cx - 3}" y="${y - 3}" width="6" height="6" fill="#e2b84a" stroke="#8a6a12" stroke-width=".8"/>`; });
+  });
+  h += sockets(BP_XY);
+  BP_PINS.forEach((n, i) => {
+    const [x, y] = BP_XY[i], rt = x > 0;
+    if(hi.has(n)) h += `<circle cx="${x}" cy="${y}" r="9" fill="#ff6a55" opacity=".6"/>`;
+    h += svgTx(rt ? x - 11 : x + 11, y + 3.5, BP_SHOW[n] || n, 8.5, rt ? 'end' : 'start');
+  });
+  h += svgTx(0, -172, 'BLUE PILL', 14, 'middle', true) + svgTx(28.3, -161, 'RESET', 6.5, 'middle') + svgTx(-23.6, -70, 'BOOT0', 6.5, 'middle') + svgTx(-3.6, -70, 'BOOT1', 6.5, 'middle');
+  [['3V3', -30], ['DIO', -10], ['CLK', 10], ['GND', 30]].forEach(a => { h += svgTx(a[1], 180, a[0], 6, 'middle'); });
   return h;
 }
 
@@ -544,6 +601,10 @@ const REAL = {
   ESP32(c){
     const hi = new Set(unoHiFor(c));
     return esp32BoardReal(hi) + chipSvg(ESP_CHIP_REAL, c);
+  },
+  BLUEPILL(c){
+    const hi = new Set(unoHiFor(c));
+    return bluePillBoardReal(hi) + chipSvg(BP_CHIP_REAL, c);
   }
 };
 REAL.PNP = REAL.NPN;
@@ -660,7 +721,7 @@ function create(root, opts){
     return DEFS[c.t].pins.map(p => { const q = rot(p[0],p[1],c.r); return {x:c.x+q[0], y:c.y+q[1], name:p[2]}; });
   }
   function bboxOf(c, box){
-    const b = box || (realOn && isMcu(c.t) ? MCU[c.t].boxReal : DEFS[c.t].box), xs = [], ys = [];
+    const b = box || (realOn && isBoard(c.t) ? MCU[c.t].boxReal : DEFS[c.t].box), xs = [], ys = [];
     [[b[0],b[1]],[b[2],b[1]],[b[0],b[3]],[b[2],b[3]]].forEach(p => { const q = rot(p[0],p[1],c.r); xs.push(c.x+q[0]); ys.push(c.y+q[1]); });
     return {x0:Math.min(...xs), y0:Math.min(...ys), x1:Math.max(...xs), y1:Math.max(...ys)};
   }
@@ -714,7 +775,7 @@ function create(root, opts){
     clearTimeout(saveTimer); saveTimer = null;
     if(!opts.storageKey) return;
     try{
-      localStorage.setItem(opts.storageKey, JSON.stringify({v:1, comps:S.comps, wires:S.wires, seq:S.seq}));
+      localStorage.setItem(opts.storageKey, JSON.stringify({v:2, comps:S.comps, wires:S.wires, seq:S.seq}));
       savedEl.textContent = 'ذخیره شد ✓';
       setTimeout(() => { savedEl.textContent = ''; }, 1500);
     }catch(e){}
@@ -739,6 +800,11 @@ function create(root, opts){
       if(a.some(v => v === null) || (a[0]===a[2] && a[1]===a[3])) return;
       out.wires.push({id:out.seq++, x1:a[0], y1:a[1], x2:a[2], y2:a[3]});
     });
+    if(d.v !== 2){      // طرح‌های قدیمی: Nano و Blue Pill پایه‌ها را روی x = ±100 داشتند؛ سیم‌ها را به جای جدید ببر
+      const mv = new Map();
+      out.comps.forEach(c => { if(c.t !== 'NANO' && c.t !== 'BLUEPILL') return; DEFS[c.t].pins.forEach(p => { const o = rot(Math.sign(p[0]) * 100, p[1], c.r), n = rot(p[0], p[1], c.r); mv.set(key(c.x + o[0], c.y + o[1]), [c.x + n[0], c.y + n[1]]); }); });
+      if(mv.size) out.wires.forEach(w => { const a = mv.get(key(w.x1, w.y1)), b = mv.get(key(w.x2, w.y2)); if(a){ w.x1 = a[0]; w.y1 = a[1]; } if(b){ w.x2 = b[0]; w.y2 = b[1]; } });
+    }
     return out;
   }
   function build(spec){
@@ -849,12 +915,12 @@ function create(root, opts){
     const node = (c,i) => { const p = P.get(c.id)[i]; return find(key(p.x,p.y)); };
     const gnd = S.comps.filter(c => c.t === 'GND');
     gnd.forEach(c => uni(key(P.get(c.id)[0].x, P.get(c.id)[0].y), key(P.get(gnd[0].id)[0].x, P.get(gnd[0].id)[0].y)));
-    const unos = S.comps.filter(c => isMcu(c.t));
+    const unos = S.comps.filter(c => isBoard(c.t));
     const hiNow = new Set(ext ? Object.keys(ext).filter(k => ext[k]) : unos.length ? UNO_PROG[unoPhase()].hi : []);
     const hiOf = eachCfg ? (u => new Set(hiList(u))) : (() => hiNow);     // طراحی آزاد: هر Uno پایه‌های HIGHِ خودش را دارد
     const unoGndKey = u => { const q = P.get(u.id)[MCU[u.t].pins.indexOf('GND')]; return key(q.x, q.y); };
     unos.forEach(u => { if(gnd.length) uni(unoGndKey(u), key(P.get(gnd[0].id)[0].x, P.get(gnd[0].id)[0].y)); else if(u !== unos[0]) uni(unoGndKey(u), unoGndKey(unos[0])); });
-    unos.forEach(u => MCU[u.t].pins.forEach((n, i) => { if(n === 'GND'){ const q = P.get(u.id)[i]; uni(key(q.x, q.y), unoGndKey(u)); } else if(n === 'RST'){ const q = P.get(u.id)[i], f = P.get(u.id)[MCU[u.t].pins.indexOf('RST')]; uni(key(q.x, q.y), key(f.x, f.y)); } }));   // همهٔ پایه‌های GND یکی‌اند
+    unos.forEach(u => MCU[u.t].pins.forEach((n, i) => { if(n === 'GND'){ const q = P.get(u.id)[i]; uni(key(q.x, q.y), unoGndKey(u)); } else if(n === '3V3_'){ const q = P.get(u.id)[i], f = P.get(u.id)[MCU[u.t].pins.indexOf('3V3')]; uni(key(q.x, q.y), key(f.x, f.y)); } else if(n === 'RST'){ const q = P.get(u.id)[i], f = P.get(u.id)[MCU[u.t].pins.indexOf('RST')]; uni(key(q.x, q.y), key(f.x, f.y)); } }));   // همهٔ پایه‌های GND یکی‌اند
     S.comps.forEach(c => { if(c.t === 'HDR4') DEFS.HDR4.link.forEach(l => { const a = P.get(c.id)[l[0]], b = P.get(c.id)[l[1]]; uni(key(a.x, a.y), key(b.x, b.y)); }); });   // هدر: پایهٔ بیرونی = پایهٔ برد
     const vcc = {};
     S.comps.filter(c => c.t === 'VCC').forEach(c => {
@@ -1439,7 +1505,7 @@ function create(root, opts){
       if(S.comps.length && !confirm('مدار فعلی با پاسخ جایگزین شود؟')) return;
       pushUndo(); build(opts.solution); sel.clear(); save(); sync(); fitView();
     }
-    else if(a === 'json') download('circuit.json', new Blob([JSON.stringify({v:1, comps:S.comps, wires:S.wires}, null, 1)], {type:'application/json'}));
+    else if(a === 'json') download('circuit.json', new Blob([JSON.stringify({v:2, comps:S.comps, wires:S.wires}, null, 1)], {type:'application/json'}));
     else if(a === 'import') $('cvFile').click();
     else if(a === 'svg') exportSvg();
     else if(a === 'png') exportPng();
