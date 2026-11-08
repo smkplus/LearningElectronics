@@ -539,7 +539,7 @@ function mountHalCircuit(container, host, comp){
   function paintStrip(){
     const c = cxClock(CUBE.clk), o = outs();
     const items = [`<button type="button" class="hs-chipb ${c.ready ? 'ok' : 'todo'}" data-go="clock">⏱️ ${toFa(Math.round(c.sys))} MHz</button>`];
-    (o.length ? o : ['PA0']).forEach(p => items.push(`<button type="button" class="hs-chipb ${o.length ? 'ok' : 'todo'}" data-go="${p}" data-fn="GPIO_Output" dir="ltr">${p} · خروجی</button>`));
+    o.forEach(p => items.push(`<button type="button" class="hs-chipb ok" data-go="${p}" data-fn="GPIO_Output" dir="ltr">${p} · خروجی</button>`));
     strip.innerHTML = items.join('');
   }
   strip.addEventListener('click', e => {
@@ -557,7 +557,7 @@ function mountHalCircuit(container, host, comp){
     tick(){},
     isDone: () => false
   };
-  const starter = 'HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET);\nHAL_Delay(500);\nHAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_RESET);\nHAL_Delay(500);\n';
+  const starter = '';      // طراحی آزاد: هیچ پایه‌ای از پیش پیشنهاد نمی‌شود
 
   tabs = cxTabs(q('.hs-tabsHost'), [
     { id: 'clock', icon: '⏱️', label: 'ساعت' },
@@ -573,7 +573,6 @@ function mountHalCircuit(container, host, comp){
   cx.showPart(curTab === 'clock' ? 'clock' : 'pins');
   paintStrip(); marks();
   tabs.set('cube');
-  if(!outs().length) cx.focus('PA0', 'GPIO_Output');
 
   sim = ArduinoSim.mount(q('.hs-simmount'), {
     missionId: 'hal-' + id, task: 'stm32robot',

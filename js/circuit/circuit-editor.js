@@ -620,8 +620,29 @@ function injectRealCss(){
 }
 
 /* ادیتورِ طراحی آزاد: هر آردوینو Uno کدِ مخصوصِ خودش را دارد (کلید ذخیره = شناسهٔ یکتای همان قطعه، c.cid) */
+/* کد آمادهٔ پروژه‌های آماده (c.code): بار اول که ادیتور کد باز می‌شود، همان کد داخل ادیتور گذاشته می‌شود تا فقط ▶ اجرا بزنی.
+   بعد از آن کدِ خودِ دانش‌آموز می‌ماند (علامت در localStorage) و دوباره رویش نمی‌نویسیم. */
+function seedUnoCode(body, c){
+  if(!c || !c.code || !c.cid) return;
+  const key = 'cvSeed-' + c.cid;
+  try{ if(localStorage.getItem(key)) return; }catch(e){}
+  const put = () => {
+    const ta = body.querySelector('textarea');
+    if(!ta) return false;
+    ta.value = c.code;
+    ['input', 'change', 'keyup'].forEach(n => ta.dispatchEvent(new Event(n, {bubbles:true})));
+    try{ localStorage.setItem(key, '1'); }catch(e){}
+    return true;
+  };
+  if(!put()){ let n = 0; const t = setInterval(() => { if(put() || ++n > 25) clearInterval(t); }, 120); }
+}
 const unoCodeEach = {
-  mount:(el, host, c) => ArduinoSim.mount(el, Object.assign({missionId:'circuit-uno-' + c.cid, task:'freeUno'}, host))
+  mount:(el, host, c) => {
+    if(c.t === 'BLUEPILL' && typeof mountHalCircuit === 'function') return mountHalCircuit(el, host, c);      // STM32: CubeMX (ساعت + پایه‌ها) + ادیتور کد HAL از hal-code-editor.js
+    const h = ArduinoSim.mount(el, Object.assign({missionId:'circuit-uno-' + c.cid, task:c.task || 'freeUno', code:c.code, initialCode:c.code}, host));
+    seedUnoCode(el, c);
+    return h;
+  }
 };
 const newCid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
@@ -648,6 +669,8 @@ function create(root, opts){
   let cursor = {x:0, y:0};
   let wireStart = null, drag = null, spaceDown = false, pinch = null, fitted = false, focusIn = false, succeeded = !!opts.alreadyDone;
   let undoStack = [], redoStack = [], lastTaskSig = '', saveTimer = null, stopped = false;
+  const POV_MS = 70, ledSeen = new Map();   // ماندگاری دید: LED اسکن‌شده (ماتریس) تا ۷۰ms بعد از خاموش‌شدن هم روشن دیده می‌شود
+  let povT = 0, sampleT = 0;
   const pointers = new Map(), bjtMem = new Map(), burntSet = new Set();   // LEDِ منفجرشده تا اولین ویرایش مدار خراب می‌ماند
   const cleanup = [];
   const on = (t, ev, fn, o) => { t.addEventListener(ev, fn, o); cleanup.push(() => t.removeEventListener(ev, fn, o)); };
@@ -656,7 +679,7 @@ function create(root, opts){
   const glowDefs = Object.keys(GLOWS).map(c => `<radialGradient id="${uid}-gl${GLOWS[c]}"><stop offset="0" stop-color="${c}" stop-opacity=".65"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></radialGradient>`).join('');
   const menu = mission
     ? '<button data-act="solution">نمایش پاسخ</button><button data-act="clear" class="danger">پاک‌کردن همه</button>'
-    : '<button data-act="example">مدار نمونه (LED)</button><button data-act="json">ذخیره به‌صورت JSON</button><button data-act="import">بارگذاری JSON</button><button data-act="svg">خروجی SVG</button><button data-act="png">خروجی PNG</button><button data-act="clear" class="danger">پاک‌کردن همه</button>';
+    : '<button data-act="presets">پروژه‌های آماده…</button><button data-act="example">مدار نمونه (LED)</button><button data-act="json">ذخیره به‌صورت JSON</button><button data-act="import">بارگذاری JSON</button><button data-act="svg">خروجی SVG</button><button data-act="png">خروجی PNG</button><button data-act="clear" class="danger">پاک‌کردن همه</button>';
 
   root.innerHTML = `
 <div class="cv-wrap${mission ? ' cv-mission' : ''}">
@@ -792,6 +815,8 @@ function create(root, opts){
       if(x === null || y === null) return;
       const nc = {id:out.seq++, t:c.t, x, y, r:(Number(c.r)|0)&3, ref:String(c.ref||'').slice(0,12), val:String(c.val||'').slice(0,24), on:!!c.on && c.t !== 'PB'};
       if(isMcu(c.t)) nc.cid = String(c.cid || '').replace(/[^\w-]/g, '').slice(0, 24) || newCid();
+      if(isMcu(c.t) && c.task === 'traffic') nc.task = 'traffic';      // کد آمادهٔ چراغ راهنما
+      if(isMcu(c.t) && typeof c.code === 'string' && c.code) nc.code = c.code.slice(0, 8000);      // کد آمادهٔ پروژه‌های آماده (مثلاً ماتریس LED)
       out.comps.push(nc);
     });
     d.wires.slice(0,5000).forEach(w => {
@@ -811,7 +836,7 @@ function create(root, opts){
     S = {comps:[], wires:[], seq:1};
     spec.comps.forEach(a => {
       const c = newComp(a.t, a.x, a.y, a.r || 0);
-      if(a.ref) c.ref = a.ref; if(a.val) c.val = a.val; if(a.on) c.on = true;
+      if(a.ref) c.ref = a.ref; if(a.val) c.val = a.val; if(a.on) c.on = true; if(a.task && isMcu(a.t)) c.task = a.task; if(a.code && isMcu(a.t)) c.code = a.code;
       S.comps.push(c);
     });
     spec.wires.forEach(a => S.wires.push({id:S.seq++, x1:a[0], y1:a[1], x2:a[2], y2:a[3]}));
@@ -1015,6 +1040,16 @@ function create(root, opts){
     });
     status.forEach((s, id) => { if(s === 'burnt') burntSet.add(id); });
     burntSet.forEach(id => { if(S.comps.some(c => c.id === id)) status.set(id, 'burnt'); else burntSet.delete(id); });
+    if(eachCfg){      // طراحی آزاد: ماتریس LED با اسکن سریعِ سطرها، مثل چشم، همهٔ رقم را یک‌جا نشان بدهد
+      const now = Date.now(); let pend = false;
+      S.comps.forEach(c => {
+        if(DEFS[c.t].edge !== 'led') return;
+        const st = status.get(c.id);
+        if(st === 'on') ledSeen.set(c.id, now);
+        else if(!st){ const q = ledSeen.get(c.id); if(q && now - q < POV_MS){ status.set(c.id, 'on'); pend = true; } }
+      });
+      if(pend && !povT) povT = setTimeout(() => { povT = 0; if(!stopped) repaint(); }, POV_MS + 10);
+    }
     const ofT = t => S.comps.filter(c => c.t === t);
     const A = {
       status, shorted, phases, hasUno:unos.length > 0, hi:[...hiNow], codeOk,
@@ -1402,15 +1437,16 @@ function create(root, opts){
     render();
   }
   /* ---- طراحی آزاد: هر Uno ادیتور کد و پایه‌های خودش را دارد (کلید = c.cid؛ با حذف Uno ادیتورش هم از بین می‌رود) ---- */
-  const pinName = p => /^A\d$/.test(String(p)) ? String(p) : (p >= 14 && p <= 19 ? 'A' + (p - 14) : 'D' + p);
+  const pinName = p => /^(A\d|P[A-D]\d+)$/.test(String(p)) ? String(p) : (p >= 14 && p <= 19 ? 'A' + (p - 14) : 'D' + p);
   const hiList = u => { const m = u && pinsBy.get(u.cid); return m ? Object.keys(m).filter(k => m[k]) : []; };
   const repaint = () => { if(!eachRaf) eachRaf = requestAnimationFrame(() => { eachRaf = 0; if(!stopped) render(); }); };
   function makeDock(c){
     const cid = c.cid;
     return createUnoDock(wrap, eachCfg, {
-      onPin(p, v){ const m = pinsBy.get(cid) || {}; m[pinName(p)] = v ? 1 : 0; pinsBy.set(cid, m); repaint(); },
-      onPinsReset(){ pinsBy.set(cid, {}); repaint(); },
+      onPin(p, v){ const m = pinsBy.get(cid) || {}; m[pinName(p)] = v ? 1 : 0; pinsBy.set(cid, m); repaint(); if(!sampleT) sampleT = setTimeout(() => { sampleT = 0; if(!stopped) analyze(); }, 0); },      // هر تغییر پایه یک بار هم نمونه‌برداری می‌شود تا اسکن سریع از دست نرود
+      onPinsReset(){ pinsBy.set(cid, {}); ledSeen.clear(); repaint(); },
       onRunState(r){ runBy.set(cid, !!r); repaint(); },
+      onCfg(){ repaint(); },      // STM32: با عوض‌شدن حالت پایه‌ها در CubeMX، مدار دوباره محاسبه شود
       onSuccess(){},
       closed(){ setCodeMode(false); }      // «⚡ مدار» = برگشت به حالت مدار
     }, c.ref, c, root.querySelector('.cv-side'));
@@ -1438,6 +1474,7 @@ function create(root, opts){
       if(!forExport) unoChipBy.set(c.id, runBy.get(c.cid) ? 'run' : 'idle');
     });
   }
+  cleanup.push(() => { clearTimeout(povT); clearTimeout(sampleT); });
   if(eachCfg) cleanup.push(() => { if(eachRaf) cancelAnimationFrame(eachRaf); docks.forEach(d => d.destroy()); docks.clear(); });
   function openCode(cu){
     if(codePanel){ codePanel.open(); return; }
@@ -1454,6 +1491,70 @@ function create(root, opts){
       const cb = realOn ? MCU[c.t].chipReal : MCU[c.t].chip, a = rot(cb[0], cb[1], c.r), b = rot(cb[2], cb[3], c.r);
       return w.x >= c.x + Math.min(a[0], b[0]) && w.x <= c.x + Math.max(a[0], b[0]) && w.y >= c.y + Math.min(a[1], b[1]) && w.y <= c.y + Math.max(a[1], b[1]);
     }) || null;
+  }
+
+  /* ---- پروژه‌های آماده: فهرست CIRCUIT_PRESETS (در circuit-missions.js) را در یک پنجره نشان می‌دهد ---- */
+  let preCssDone = false;
+  function injectPresetCss(){
+    if(preCssDone || document.getElementById('cvPreCss')){ preCssDone = true; return; }
+    preCssDone = true;
+    const st = document.createElement('style');
+    st.id = 'cvPreCss';
+    st.textContent = '.cv-pre{position:absolute;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(6,9,15,.72)}' +
+      '.cv-pre-box{width:min(760px,100%);max-height:100%;display:flex;flex-direction:column;border:1px solid #2ea09d;border-radius:12px;background:var(--bg,#0f1420);color:var(--fg,#e8eaf0);overflow:hidden}' +
+      '.cv-pre-head{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.12)}' +
+      '.cv-pre-head b{font-size:15px;margin-inline-end:auto}' +
+      '.cv-pre-list{display:grid;gap:10px;padding:12px;overflow:auto}' +
+      '.cv-pre-card{border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:12px;background:rgba(255,255,255,.03)}' +
+      '.cv-pre-card b{font-size:14.5px}.cv-pre-card p{margin:6px 0 8px;font-size:13px;line-height:1.8;opacity:.85}' +
+      '.cv-pre-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}' +
+      '.cv-pre-tags span{font:11.5px ui-monospace,Consolas,monospace;direction:ltr;padding:2px 8px;border-radius:999px;background:rgba(46,160,157,.18);color:#6fd6d2}' +
+      '.cv-pre-act{display:flex;flex-wrap:wrap;gap:8px}' +
+      '.cv-pre button{font:inherit;font-size:13px;color:inherit;background:transparent;border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:6px 12px;cursor:pointer}' +
+      '.cv-pre button:hover{border-color:#2ea09d}.cv-pre button:focus-visible{outline:2px solid #2ea09d;outline-offset:2px}' +
+      '.cv-pre button.pri{background:linear-gradient(90deg,#3fbf8f,#57d8a3);color:#08150f;border-color:transparent;font-weight:700}';
+    document.head.appendChild(st);
+  }
+  function copyText(t){
+    if(navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t);
+    return new Promise((ok, no) => {
+      const ta = document.createElement('textarea'); ta.value = t; ta.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy') ? ok() : no(); }catch(e){ no(e); } ta.remove();
+    });
+  }
+  function openPresets(){
+    if(mission || wrap.querySelector('.cv-pre')) return;
+    const list = typeof CIRCUIT_PRESETS !== 'undefined' && Array.isArray(CIRCUIT_PRESETS) ? CIRCUIT_PRESETS : [];
+    injectPresetCss();
+    if(getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
+    const el = document.createElement('div');
+    el.className = 'cv-pre';
+    el.innerHTML = '<div class="cv-pre-box" role="dialog" aria-label="پروژه‌های آماده"><div class="cv-pre-head"><b>پروژه‌های آماده</b><button type="button" data-close>✕ بستن</button></div><div class="cv-pre-list">' +
+      (list.length ? list.map((p, i) => '<div class="cv-pre-card"><b>' + esc(p.title) + '</b><p>' + esc(p.desc) + '</p>' +
+        '<div class="cv-pre-tags">' + (p.boards || []).map(b => '<span>' + esc(b) + '</span>').join('') + '</div>' +
+        '<div class="cv-pre-act"><button type="button" class="pri" data-open="' + i + '">باز کردن پروژه</button>' +
+        (p.code ? '<button type="button" data-copy="' + i + '">کپی کد نمونه</button>' : '') + '</div></div>').join('')
+        : '<div class="cv-props-empty">هنوز پروژه‌ای تعریف نشده است.</div>') + '</div></div>';
+    wrap.appendChild(el);
+    const close = () => { el.remove(); document.removeEventListener('keydown', onKey, true); };
+    const onKey = e => { if(e.code === 'Escape'){ e.stopPropagation(); close(); } };
+    document.addEventListener('keydown', onKey, true);
+    cleanup.push(() => document.removeEventListener('keydown', onKey, true));
+    el.addEventListener('click', e => {
+      if(e.target === el || e.target.closest('[data-close]')){ close(); return; }
+      const o = e.target.closest('[data-open]'), c = e.target.closest('[data-copy]');
+      if(o){
+        const p = list[+o.dataset.open];
+        if(!p || (S.comps.length && !confirm('مدار فعلی با این پروژه جایگزین شود؟ (با واگرد برمی‌گردد)'))) return;
+        pushUndo(); build(p.spec); sel.clear(); save(); sync(); fitView(); setTool('pan');
+        if(p.hint) hintEl.textContent = p.hint;
+        close();
+      } else if(c){
+        const p = list[+c.dataset.copy];
+        copyText(p.code).then(() => { c.textContent = 'کپی شد ✓'; }, () => { c.textContent = 'کپی نشد'; });
+      }
+    });
   }
 
   function download(name, blob){
@@ -1505,6 +1606,7 @@ function create(root, opts){
       if(S.comps.length && !confirm('مدار فعلی با پاسخ جایگزین شود؟')) return;
       pushUndo(); build(opts.solution); sel.clear(); save(); sync(); fitView();
     }
+    else if(a === 'presets') openPresets();
     else if(a === 'json') download('circuit.json', new Blob([JSON.stringify({v:2, comps:S.comps, wires:S.wires}, null, 1)], {type:'application/json'}));
     else if(a === 'import') $('cvFile').click();
     else if(a === 'svg') exportSvg();
@@ -1680,7 +1782,8 @@ function create(root, opts){
 const mainRoot = document.getElementById('circuitTab');
 const main = mainRoot ? create(mainRoot, {storageKey:MAIN_KEY}) : null;
 if(mainRoot){
-  mainRoot.insertAdjacentHTML('afterbegin', '<div class="cdz-bar"><b>طراحی آزاد مدار</b><span class="cdz-sub">همهٔ قطعه‌ها در دسترس است · طرح شما خودکار ذخیره می‌شود</span><button type="button" class="cv-btn" data-new>طرح جدید (صفحهٔ خالی)</button></div>');
+  mainRoot.insertAdjacentHTML('afterbegin', '<div class="cdz-bar"><b>طراحی آزاد مدار</b><span class="cdz-sub">همهٔ قطعه‌ها در دسترس است · طرح شما خودکار ذخیره می‌شود</span><button type="button" class="cv-btn" data-presets>پروژه‌های آماده</button><button type="button" class="cv-btn" data-new>طرح جدید (صفحهٔ خالی)</button></div>');
+  mainRoot.querySelector('[data-presets]').addEventListener('click', () => { const c = mainRoot.querySelector('[data-act="presets"]'); if(c) c.click(); });
   mainRoot.querySelector('[data-new]').addEventListener('click', () => { const c = mainRoot.querySelector('[data-act="clear"]'); if(c) c.click(); });
 }
 window.CircuitEditor = {

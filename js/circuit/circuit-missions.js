@@ -58,6 +58,137 @@ const CIRCUIT_MISSIONS = {
   }
 };
 
+/* ---------- پروژه‌های آماده برای «طراحی آزاد» ----------
+   در منوی «پروژه‌های آماده…» (و دکمهٔ کنار نوار بالا) نشان داده می‌شوند. spec همان قالب build() است: comps + wires.
+   task:'traffic' یعنی ادیتور کدِ همان آردوینو با کد آمادهٔ چراغ راهنما باز شود؛ code برای دکمهٔ «کپی کد نمونه» است. */
+const PRESET_TRAFFIC_CODE = `void setup() {
+  pinMode(10, OUTPUT);  // سبز
+  pinMode(11, OUTPUT);  // زرد
+  pinMode(12, OUTPUT);  // قرمز
+}
+
+void loop() {
+  digitalWrite(10, HIGH);
+  delay(3000);
+  digitalWrite(10, LOW);
+  digitalWrite(11, HIGH);
+  delay(1000);
+  digitalWrite(11, LOW);
+  digitalWrite(12, HIGH);
+  delay(3000);
+  digitalWrite(12, LOW);
+}
+`;
+
+// چراغ راهنما با Nano: D12 ← مقاومت ← LED قرمز، D11 ← زرد، D10 ← سبز؛ کاتد هر سه به GND
+const cktNanoTraffic = (() => {
+  const comps = [{t:'NANO', x:-160, y:0, ref:'U1', task:'traffic'}], wires = [];
+  [['LED', -60, 'D1', 'R1', -40, -140], ['LEDY', 0, 'D2', 'R2', -60, -120], ['LEDG', 60, 'D3', 'R3', -80, -100]].forEach(a => {
+    const [led, y, dref, rref, jx, py] = a;
+    comps.push({t:'R', x:20, y, ref:rref, val:'330Ω'}, {t:led, x:140, y, ref:dref});
+    wires.push([-100, py, jx, py], [jx, py, jx, y], [jx, y, -20, y], [60, y, 100, y], [180, y, 220, y]);
+  });
+  wires.push([220, -60, 220, 0], [220, 0, 220, 60], [220, 60, 220, 100], [220, 100, -60, 100], [-60, 100, -60, 80], [-60, 80, -100, 80]);
+  return {comps, wires};
+})();
+
+const MATRIX_CODE = `// قلب روی ماتریس ۵×۵
+// سطرها (آند): D12 D11 D10 D9 D8      ستون‌ها: D7 D6 D5 D4 D3
+int rows[5] = {12, 11, 10, 9, 8};
+int cols[5] = {7, 6, 5, 4, 3};
+
+// شکل قلب: ۱ = LED روشن، ۰ = خاموش
+int heart[25] = {
+  0, 1, 0, 1, 0,
+  1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1,
+  0, 1, 1, 1, 0,
+  0, 0, 1, 0, 0
+};
+
+void setup() {
+  for (int i = 0; i < 5; i++) {
+    pinMode(rows[i], OUTPUT);
+    pinMode(cols[i], OUTPUT);
+  }
+}
+
+// هر بار فقط یک سطر را روشن می‌کنیم، ولی آنقدر تند که همهٔ قلب یک‌جا دیده می‌شود
+void loop() {
+  for (int r = 0; r < 5; r++) {
+    for (int c = 0; c < 5; c++) {
+      if (heart[r * 5 + c] == 1) digitalWrite(cols[c], HIGH);
+      else digitalWrite(cols[c], LOW);
+    }
+    digitalWrite(rows[r], HIGH);
+    delay(3);
+    digitalWrite(rows[r], LOW);
+  }
+}
+`;
+
+// ماتریس ۵×۵: ۵ سطر (آند، با مقاومت ۱۵۰Ω) از D12…D8؛ ۵ ستون (کاتد) را ترانزیستور NPN به GND می‌بندد و پایهٔ هر ترانزیستور از D7…D3 با مقاومت ۱kΩ فرمان می‌گیرد
+const cktMatrix5 = (() => {
+  const ROWS = 5, COLS = 5, DX = 160, DY = 100, X0 = 120, YQ = ROWS * DY + 40;      // YQ = مرکز ردیف ترانزیستورها
+  const comps = [{t:'NANO', x:-500, y:100, ref:'U1', code:MATRIX_CODE}], wires = [];
+  const CX = Array.from({length:COLS}, (_, j) => X0 + DX * j);
+  // LEDها + مقاومت هر سطر + باس آند هر سطر
+  for(let i = 0; i < ROWS; i++){
+    const ry = DY * i, ya = ry - 40, yk = ry + 40;
+    comps.push({t:'R', x:-20, y:ya, ref:'R' + (i + 1), val:'150Ω'});
+    wires.push([20, ya, CX[0], ya]);
+    for(let j = 0; j < COLS - 1; j++) wires.push([CX[j], ya, CX[j + 1], ya]);
+    CX.forEach((cx, j) => {
+      comps.push({t:'LED', x:cx, y:ry, r:1, ref:'D' + (i * COLS + j + 1)});
+      wires.push([cx, yk, cx + 40, yk]);
+    });
+  }
+  // باس کاتد هر ستون + ترانزیستور + مقاومت پایه + GND
+  CX.forEach((cx, j) => {
+    const xb = cx + 40;
+    for(let i = 0; i < ROWS - 1; i++) wires.push([xb, DY * i + 40, xb, DY * (i + 1) + 40]);
+    wires.push([xb, DY * (ROWS - 1) + 40, xb, YQ - 40], [xb, YQ + 40, xb, YQ + 60]);
+    comps.push({t:'R', x:cx - 60, y:YQ, ref:'R' + (ROWS + j + 1), val:'1kΩ'}, {t:'NPN', x:cx + 20, y:YQ, ref:'Q' + (j + 1)}, {t:'GND', x:xb, y:YQ + 60, r:2});
+  });
+  // سطرها: D12…D8 ← مقاومت هر سطر (هر سطر کانال عمودیِ خودش را دارد تا سیم‌ها روی هم نیفتند)
+  for(let i = 0; i < ROWS; i++){
+    const yp = -40 + 20 * i, ya = -40 + DY * i, xc = -120 - 20 * i;
+    if(i === 0) wires.push([-440, yp, -60, ya]);
+    else wires.push([-440, yp, xc, yp], [xc, yp, xc, ya], [xc, ya, -60, ya]);
+  }
+  // ستون‌ها: D7…D3 ← مقاومت پایهٔ ترانزیستور
+  for(let j = 0; j < COLS; j++){
+    const yp = 60 + 20 * j, xp = -400 + 20 * j, xr = CX[j] - 100, yb = YQ + 120 + 20 * j;
+    wires.push([-440, yp, xp, yp], [xp, yp, xp, yb], [xp, yb, xr, yb], [xr, yb, xr, YQ]);
+  }
+  return {comps, wires};
+})();
+
+const CIRCUIT_PRESETS = [
+  {
+    id:'traffic_uno', title:'چراغ راهنما با آردوینو Uno',
+    desc:'همان مدار مأموریت چراغ راهنما: Uno با برد LED (هدر ۴پین)، سه مقاومت ۳۳۰Ω و سه LED. سبز ← D10، زرد ← D11، قرمز ← D12. کد چراغ راهنما از قبل نوشته شده است.',
+    boards:['Arduino Uno', 'HDR4', 'LED ×3', 'R ×3'], code:PRESET_TRAFFIC_CODE,
+    hint:'روی آردوینو دوبار کلیک کن تا ویرایشگر کد باز شود، بعد ▶ اجرا کن را بزن.',
+    spec:{comps:CIRCUIT_MISSIONS.traffic_light.solution.comps.map(c => c.t === 'UNO' ? Object.assign({task:'traffic'}, c) : c), wires:CIRCUIT_MISSIONS.traffic_light.solution.wires}
+  },
+  {
+    id:'traffic_nano', title:'چراغ راهنما با آردوینو Nano',
+    desc:'همان چراغ راهنما ولی با Nano و بدون برد جدا: هر پایه (D12، D11، D10) از یک مقاومت ۳۳۰Ω به LED قرمز، زرد و سبز می‌رود و کاتدها به GND وصل‌اند.',
+    boards:['Arduino Nano', 'LED ×3', 'R ×3'], code:PRESET_TRAFFIC_CODE,
+    hint:'روی آردوینو دوبار کلیک کن تا ویرایشگر کد باز شود، بعد ▶ اجرا کن را بزن.',
+    spec:cktNanoTraffic
+  },
+  {
+    id:'led_matrix_5x5', title:'ماتریس LED ۵×۵ (قلب)',
+    desc:'بیست‌وپنج LED در پنج سطر و پنج ستون. آند هر سطر با یک مقاومت از Nano تغذیه می‌شود و کاتد هر ستون را یک ترانزیستور NPN به GND می‌بندد. یک LED فقط وقتی روشن می‌شود که سطرش HIGH و ستونش روشن باشد؛ پس سطرها را تند یکی‌یکی روشن می‌کنیم تا شکل کامل دیده شود. کدِ نمایش قلب از قبل روی Nano گذاشته شده است؛ فقط ▶ اجرا کن.',
+    boards:['Arduino Nano', 'NPN ×5', 'LED ×25', 'R ×10'],
+    code:MATRIX_CODE,
+    hint:'روی Nano دوبار کلیک کن؛ کد از قبل آنجاست. ▶ اجرا کن را بزن.',
+    spec:cktMatrix5
+  }
+];
+
 function mountCircuitMission(container, id, { onSuccess, alreadyDone, unoExternal } = {}){
   const cfg = CIRCUIT_MISSIONS[id];
   // ادیتور کد = خودِ ArduinoSim روی آردوینوی داخل مدار؛ اگر ArduinoSim روی صفحه نباشد، هدفِ «کد» هم از فهرست حذف می‌شود
@@ -138,7 +269,7 @@ function openCircuitDesigner(srcEd, srcId){
   el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'طراحی آزاد مدار');
   el.innerHTML = '<div class="cdz-bar"><button type="button" data-a="close" aria-label="بستن">✕ بستن</button><b>طراحی آزاد مدار</b>' +
     '<span class="cdz-sub">همهٔ قطعه‌ها در دسترس است · طرح شما خودکار ذخیره می‌شود</span>' +
-    '<button type="button" data-a="new">طرح جدید (صفحهٔ خالی)</button></div><div class="cdz-body"></div>';
+    '<button type="button" data-a="presets">پروژه‌های آماده</button><button type="button" data-a="new">طرح جدید (صفحهٔ خالی)</button></div><div class="cdz-body"></div>';
   document.body.appendChild(el);
   const prevOverflow = document.body.style.overflow;
   document.body.style.overflow = 'hidden';
@@ -148,6 +279,7 @@ function openCircuitDesigner(srcEd, srcId){
   el.addEventListener('click', e => {
     const b = e.target.closest('[data-a]'); if(!b) return;
     if(b.dataset.a === 'close') closeCircuitDesigner();
+    else if(b.dataset.a === 'presets'){ const c = body.querySelector('[data-act="presets"]'); if(c) c.click(); }
     else if(b.dataset.a === 'new'){ const c = body.querySelector('[data-act="clear"]'); if(c) c.click(); }   // همان «پاک‌کردن همه» (با تأیید و قابل واگرد)
   });
   circuitDesigner = { el, ed, prevOverflow };
