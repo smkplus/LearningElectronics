@@ -88,12 +88,39 @@ const nanoDraw = c => {
   });
   return h;
 };
+/* ESP32-WROOM-32 (برد ۳۸پین): USB بالا، آنتن پایین؛ ۱۹ پایه در هر ستون با فاصلهٔ ۲۰. نام پایه‌ها = شمارهٔ GPIO (D13 = GPIO13) تا کد آردوینو مستقیم کار کند.
+   ستون چپ = ردیف GPIO23 (از USB تا آنتن: CLK … D23، GND)، ستون راست = ردیف EN (5V … 3V3). ولتاژ پایه‌های خروجی ۳٫۳ ولت است. */
+const ESP_L = ['D6','D7','D8','D15','D2','D0','D4','D16','D17','D5','D18','D19','GND','D21','D3','D1','D22','D23','GND'];
+const ESP_R = ['5V','D11','D10','D9','D13','GND','D12','D14','D27','D26','D25','D33','D32','D35','D34','D39','D36','EN','3V3'];
+const ESP_LAYOUT = ESP_L.map((n, i) => [n, -100, -180 + 20 * i]).concat(ESP_R.map((n, i) => [n, 100, -180 + 20 * i]));
+const ESP_PINS = ESP_LAYOUT.map(p => p[0]), ESP_XY = ESP_LAYOUT.map(p => [p[1], p[2]]);
+const ESP_SHOW = {D6:'CLK', D7:'SD0', D8:'SD1', D9:'SD2', D10:'SD3', D11:'CMD', D16:'RX2', D17:'TX2', D3:'RX0', D1:'TX0', D36:'VP', D39:'VN'};   // نام نمایشی روی نقاشی
+const ESP_NOOUT = new Set(['D6','D7','D8','D9','D10','D11','D34','D35','D36','D39']);   // فقط ورودی یا رزرو فلش
+const ESP_OUT = (n, hi) => n === '3V3' ? 3.3 : n === '5V' ? 5 : (/^D\d+$/.test(n) && !ESP_NOOUT.has(n)) ? ((hi && hi.has(n)) ? 3.3 : 0) : null;
+const ESP_CHIP = [-27, -186, 27, -168];          // نشان «</> code» روی شماتیک
+const ESP_CHIP_REAL = [-27, -240, 27, -222];     // همان نشان در نمای واقعی (بالای USB)
+const esp32Draw = c => {
+  const hi = new Set(unoHiFor(c));
+  let h = '<rect class="b" x="-70" y="-192" width="140" height="384" rx="8"/><rect class="b t" x="-22" y="-208" width="44" height="16" rx="2"/>' +
+    svgTx(0, -196, 'USB', 8, 'middle') +
+    '<rect class="b t" x="-40" y="-20" width="80" height="140" rx="3"/>' +
+    '<text transform="translate(-4 50) rotate(-90)" fill="#e8e2d0" font-family="monospace" font-size="28" font-weight="700" text-anchor="middle">ESP32</text>' +
+    '<text transform="translate(22 50) rotate(-90)" fill="#e8e2d0" font-family="monospace" font-size="11" text-anchor="middle">WROOM-32</text>';
+  if(c && c.t) h += chipSvg(ESP_CHIP, c);
+  ESP_PINS.forEach((n, i) => {
+    const [x, y] = ESP_XY[i], rt = x > 0;
+    h += `<path class="b" d="M${rt ? 70 : -70} ${y}H${x}"/>` + svgTx(rt ? 62 : -62, y + 3.5, ESP_SHOW[n] || n, 10, rt ? 'end' : 'start');
+    if(hi.has(n)) h += `<circle cx="${rt ? 85 : -85}" cy="${y}" r="3.5" fill="#ff6a55"/>`;
+  });
+  return h;
+};
 /* جدول یکپارچهٔ آردوینوها: هر نوع پایه‌ها، خروجی‌ها، نشان کد و جعبهٔ نمای واقعی خودش را دارد */
 const MCU = {
   UNO:{pins:UNO_PINS, out:UNO_OUT, chip:UNO_CHIP, chipReal:UNO_CHIP_REAL, boxReal:[-224, -356, 124, 224], name:'Uno'},
-  NANO:{pins:NANO_PINS, out:NANO_OUT, chip:NANO_CHIP, chipReal:NANO_CHIP_REAL, boxReal:[-112, -220, 112, 200], name:'Nano'}
+  NANO:{pins:NANO_PINS, out:NANO_OUT, chip:NANO_CHIP, chipReal:NANO_CHIP_REAL, boxReal:[-112, -220, 112, 200], name:'Nano'},
+  ESP32:{pins:ESP_PINS, out:ESP_OUT, chip:ESP_CHIP, chipReal:ESP_CHIP_REAL, boxReal:[-114, -246, 114, 208], name:'ESP32'}
 };
-const isMcu = t => t === 'UNO' || t === 'NANO';
+const isMcu = t => t === 'UNO' || t === 'NANO' || t === 'ESP32';
 const HDR_NAMES = ['GND','D12','D11','D10'];
 const HDR_DRAW = '<path class="b" d="' + HDR_NAMES.map((n, i) => `M-40 ${-40 + 20 * i}H-14M14 ${-40 + 20 * i}H40`).join('') + '"/>' +
   '<rect class="b" x="-14" y="-54" width="28" height="86" rx="4"/>' + HDR_NAMES.map((n, i) => svgTx(0, -36 + 20 * i, n, 9, 'middle')).join('');
@@ -134,6 +161,8 @@ const DEFS = {
     pal:'<g transform="scale(.16) translate(51 -11)">' + unoDraw(null) + '</g>'},
   NANO:{fa:'آردوینو Nano',pre:'U',val:'Nano',lab:'none',pins:NANO_PINS.map((n,i) => [NANO_XY[i][0],NANO_XY[i][1],n]),box:[-104,-192,104,174],draw:nanoDraw,
     pal:'<g transform="scale(.16) translate(0 8)">' + nanoDraw(null) + '</g>'},
+  ESP32:{fa:'ESP32 (WROOM-32، ۳۸ پین)',pre:'U',val:'ESP32',lab:'none',pins:ESP_PINS.map((n,i) => [ESP_XY[i][0],ESP_XY[i][1],n]),box:[-104,-214,104,196],draw:esp32Draw,
+    pal:'<g transform="scale(.14) translate(0 8)">' + esp32Draw(null) + '</g>'},
   HDR4:{fa:'هدر ۴پین (برد LED)',pre:'J',val:'1×4',lab:'two',link:[[0,4],[1,5],[2,6],[3,7]],
     pins:HDR_NAMES.map((n,i) => [-40,-40+20*i,n]).concat(HDR_NAMES.map((n,i) => [40,-40+20*i,n])),box:[-40,-54,40,34],draw:HDR_DRAW,
     pal:'<g transform="scale(.8) translate(0 10)">' + HDR_DRAW + '</g>'}
@@ -143,7 +172,7 @@ const GROUPS = [
   ['قطعات پایه', ['R','C','CP']],
   ['نیمه‌هادی', ['D','LED','LEDY','LEDG','NPN','PNP']],
   ['منبع و کلید', ['BC','SW','PB','VCC','GND']],
-  ['آردوینو و برد', ['UNO','NANO','HDR4']]
+  ['آردوینو و برد', ['UNO','NANO','ESP32','HDR4']]
 ];
 const HINTS = {
   select:'انتخاب: روی قطعه یا سیم بزن، بکشش تا جابه‌جا شود. روی کلید دوبار بزن تا باز/بسته شود. روی فضای خالی بکش تا چند مورد را با هم انتخاب کنی.',
@@ -291,7 +320,7 @@ function createUnoDock(wrap, cfg, host, ref, comp, parent){
   const el = document.createElement('section');
   el.className = 'cv-uno-dock'; el.hidden = true;
   el.setAttribute('aria-label', 'ویرایشگر کد آردوینو');
-  el.innerHTML = '<div class="cv-uno-bar"><b>&lt;/&gt; کد آردوینو ' + (comp && comp.t === 'NANO' ? 'Nano' : 'Uno') + '<span>' + String(ref || 'U1').replace(/[<>&"']/g, '') + '</span></b>' +
+  el.innerHTML = '<div class="cv-uno-bar"><b>&lt;/&gt; کد آردوینو ' + (comp && MCU[comp.t] ? MCU[comp.t].name : 'Uno') + '<span>' + String(ref || 'U1').replace(/[<>&"']/g, '') + '</span></b>' +
     '<span class="cv-uno-sub">برنامه را اینجا بنویس؛ چراغ‌های مدار با آن روشن و خاموش می‌شوند.</span>' +
     (parent ? '<span class="cv-uno-switch"><button type="button" data-close>⚡ مدار</button><button type="button" class="on" tabindex="-1">&lt;/&gt; کد</button></span>'
             : '<button type="button" data-close>✕ بستن</button>') + '</div><div class="cv-uno-body"></div>';
@@ -379,7 +408,10 @@ function unoBoardReal(hi){      // Uno واقعی: USB بالا، هدر دیج�
 function nanoBoardReal(hi){      // Nano واقعی: USB بالا، ردیف دیجیتال راست؛ سوکت‌ها دقیقاً روی پایه‌های اتصال، با پایه‌های موازی تا ردیف هدر
   const ys = Array.from({length:15}, (_, k) => -140 + 20 * k);
   let h = '<rect x="-71" y="-165" width="142" height="354" rx="9" fill="#2450b8" stroke="#16337c" stroke-width="3"/>' +
-    '<rect x="-29" y="-176" width="58" height="58" rx="9" fill="#c9d0d7" stroke="#8b949e" stroke-width="3"/><rect x="-22" y="-168" width="44" height="42" rx="7" fill="#1b1d22"/><rect x="-15" y="-152" width="30" height="9" rx="2" fill="#3a3f48"/>' +
+    '<rect x="-38" y="-177" width="3" height="11" rx="1.5" fill="#8b949e"/><rect x="35" y="-177" width="3" height="11" rx="1.5" fill="#8b949e"/>' +
+    '<rect x="-36" y="-189" width="72" height="31" rx="14" fill="#cfd5dc" stroke="#78828f" stroke-width="2.5"/><rect x="-29" y="-186" width="58" height="4" rx="2" fill="#fff" opacity=".65"/>' +
+    '<rect x="-30" y="-183" width="60" height="21" rx="9.5" fill="#14161a"/><rect x="-23" y="-176.5" width="46" height="7" rx="2" fill="#505763"/>' +
+    '<g fill="#d9b54a">' + Array.from({length:9}, (_, k) => `<rect x="${-21.5 + 5.4 * k}" y="-179" width="2.8" height="1.8" rx=".5"/><rect x="${-21.5 + 5.4 * k}" y="-168" width="2.8" height="1.8" rx=".5"/>`).join('') + '</g>' +
     '<g transform="translate(0 -41.6) rotate(45)"><rect x="-27" y="-27" width="54" height="54" rx="3" fill="#17181c"/><circle cx="19" cy="19" r="3" fill="#b9bbc2"/></g>' +
     '<rect x="19" y="-2" width="12" height="20" rx="2" fill="#4c5059"/>' +
     '<rect x="-17" y="24" width="42" height="31" rx="3" fill="#cfcdc6" stroke="#6d757e" stroke-width="2"/><circle cx="4" cy="39.5" r="8.5" fill="#d1242a"/>';
@@ -398,6 +430,32 @@ function nanoBoardReal(hi){      // Nano واقعی: USB بالا، ردیف د�
     if(hi.has(n)) h += `<circle cx="${x}" cy="${y}" r="9" fill="#ff6a55" opacity=".6"/>`;
     h += svgTx(rt ? 50 : -50, y + 3.5, NANO_SHOW[n] || n, 9.5, rt ? 'end' : 'start');
   });
+  return h;
+}
+
+function esp32BoardReal(hi){      // ESP32 واقعی: USB بالا، آنتن پایین؛ ردیف‌های پایه دقیقاً روی x = ±100 (۲۵٫۴ میلی‌متر)
+  let h = '<rect x="-110.5" y="-204.5" width="221" height="409" rx="9" fill="#15161a" stroke="#0a0a0c" stroke-width="3"/>' +
+    '<rect x="-35" y="-214" width="70" height="31" rx="14" fill="#cfd5dc" stroke="#78828f" stroke-width="2.5"/><rect x="-29" y="-211" width="58" height="4" rx="2" fill="#fff" opacity=".65"/>' +
+    '<rect x="-30" y="-208" width="60" height="21" rx="9.5" fill="#14161a"/><rect x="-23" y="-201.5" width="46" height="7" rx="2" fill="#505763"/>' +
+    '<rect x="-20" y="-120.5" width="39" height="39" rx="3" fill="#17181c"/><circle cx="-14" cy="-114.5" r="2.5" fill="#b9bbc2"/>' +
+    '<rect x="21.7" y="-76.8" width="51" height="27.5" rx="2" fill="#1a1b1f"/>' +
+    '<rect x="-71" y="-2" width="142" height="201" rx="2" fill="#121317" stroke="#2a2c31" stroke-width="1.5"/>' +
+    '<path d="M0.0 152.4 L0.0 157.9 L-45.7 157.9 L-45.7 165.0 L48.8 165.0 L48.8 172.0 L-45.7 172.0 L-45.7 179.1 L48.8 179.1 L48.8 186.2 L-26.8 186.2 L-26.8 193.3 L-58.3 193.3" fill="none" stroke="#d3ad4f" stroke-width="2.7"/><path d="M61.4 152.4L61.4 194.9L36.2 194.9" fill="none" stroke="#d3ad4f" stroke-width="2.7"/>' +
+    '<rect x="-67.7" y="1.2" width="135.4" height="151.2" rx="2" fill="#c9ccd0" stroke="#8d9198" stroke-width="2"/>' +
+    '<text transform="translate(0 77) rotate(-90)" fill="#31343a" font-family="monospace" font-size="11" font-weight="700" text-anchor="middle">ESP32-WROOM-32</text>';
+  [-1, 1].forEach(s => {
+    const cx = s * 56.7;
+    h += `<rect x="${cx - 13.5}" y="-161.3" width="27" height="47" rx="3" fill="#1d1d21" stroke="#8a8f98" stroke-width="1.5"/><circle cx="${cx}" cy="-137.8" r="8" fill="#7f8188"/>`;
+  });
+  h += `<rect x="-56.7" y="-51" width="6.3" height="7.9" fill="#d98a84"/><rect x="-39.3" y="-51" width="6.3" height="7.9" fill="${hi.has('D2') ? '#3aa0ff' : '#9fb7cf'}"/>`;
+  [-1, 1].forEach(s => { h += `<rect x="${s * 100 - 9.5}" y="-190" width="19" height="380" rx="2" fill="#17171b"/>`; });
+  ESP_PINS.forEach((n, i) => {
+    const [x, y] = ESP_XY[i], rt = x > 0;
+    h += `<rect x="${x - 4}" y="${y - 4}" width="8" height="8" fill="#e2b84a" stroke="#8a6a12" stroke-width="1"/><circle cx="${x}" cy="${y}" r="6.5" fill="none" stroke="#e2b84a" stroke-width="1.4"/>`;
+    if(hi.has(n)) h += `<circle cx="${x}" cy="${y}" r="9" fill="#ff6a55" opacity=".6"/>`;
+    h += svgTx(rt ? x - 11 : x + 11, y + 3.5, ESP_SHOW[n] || n, 9.5, rt ? 'end' : 'start');
+  });
+  h += svgTx(0, -137, 'ESP32', 16, 'middle', true) + svgTx(-33.9, -132, 'EN', 7, 'middle') + svgTx(33.9, -132, 'BOOT', 7, 'middle');
   return h;
 }
 
@@ -482,6 +540,10 @@ const REAL = {
   NANO(c){
     const hi = new Set(unoHiFor(c));
     return nanoBoardReal(hi) + chipSvg(NANO_CHIP_REAL, c);
+  },
+  ESP32(c){
+    const hi = new Set(unoHiFor(c));
+    return esp32BoardReal(hi) + chipSvg(ESP_CHIP_REAL, c);
   }
 };
 REAL.PNP = REAL.NPN;
@@ -525,7 +587,7 @@ function create(root, opts){
   let cursor = {x:0, y:0};
   let wireStart = null, drag = null, spaceDown = false, pinch = null, fitted = false, focusIn = false, succeeded = !!opts.alreadyDone;
   let undoStack = [], redoStack = [], lastTaskSig = '', saveTimer = null, stopped = false;
-  const pointers = new Map(), bjtMem = new Map();
+  const pointers = new Map(), bjtMem = new Map(), burntSet = new Set();   // LEDِ منفجرشده تا اولین ویرایش مدار خراب می‌ماند
   const cleanup = [];
   const on = (t, ev, fn, o) => { t.addEventListener(ev, fn, o); cleanup.push(() => t.removeEventListener(ev, fn, o)); };
 
@@ -629,6 +691,7 @@ function create(root, opts){
   function toWorld(e){ const p = toLocal(e); return {x:(p.x - view.x) / view.z, y:(p.y - view.y) / view.z}; }
 
   function pushUndo(prev){
+    burntSet.clear();
     undoStack.push(prev || JSON.stringify(S));
     if(undoStack.length > 100) undoStack.shift();
     redoStack = [];
@@ -884,6 +947,8 @@ function create(root, opts){
         }
       })(src.pos);
     });
+    status.forEach((s, id) => { if(s === 'burnt') burntSet.add(id); });
+    burntSet.forEach(id => { if(S.comps.some(c => c.id === id)) status.set(id, 'burnt'); else burntSet.delete(id); });
     const ofT = t => S.comps.filter(c => c.t === t);
     const A = {
       status, shorted, phases, hasUno:unos.length > 0, hi:[...hiNow], codeOk,
@@ -950,10 +1015,13 @@ function create(root, opts){
   function compG(c, cls, st){
     const d = DEFS[c.t];
     const lit = st === 'on' && d.lit ? d.lit : '';
-    const x = st === 'burnt' ? '<path class="cv-x" d="M-9 -9L9 9M9 -9L-9 9"/>' : '';
+    const isLed = /^LED/.test(c.t);
+    const x = st === 'burnt' && !isLed ? '<path class="cv-x" d="M-9 -9L9 9M9 -9L-9 9"/>' : '';
+    const bc = rot(...(realOn ? [8, -18] : [0, 0]), c.r);   // مرکز بدنهٔ LED بعد از چرخش
+    const boom = st === 'burnt' && isLed ? `<text x="${c.x + bc[0]}" y="${c.y + bc[1]}" font-size="26" text-anchor="middle" dominant-baseline="central" pointer-events="none">💥</text>` : '';
     const glow = st === 'on' && d.glow ? `<circle cx="${c.x}" cy="${c.y}" r="34" fill="url(#${uid}-gl${GLOWS[d.glow]})" pointer-events="none"/>` : '';
-    if(realOn && REAL[c.t]) return glow + `<g class="${cls}${st ? ' ' + st : ''}" transform="translate(${c.x} ${c.y}) rotate(${(c.r&3)*90})">${REAL[c.t](c, st, uid)}${x}</g>`;
-    return glow + `<g class="${cls}${st ? ' ' + st : ''}" transform="translate(${c.x} ${c.y}) rotate(${(c.r&3)*90})">${lit}${drawOf(c,d)}${x}</g>`;
+    if(realOn && REAL[c.t]) return glow + `<g class="${cls}${st ? ' ' + st : ''}" transform="translate(${c.x} ${c.y}) rotate(${(c.r&3)*90})">${REAL[c.t](c, st, uid)}${x}</g>` + boom;
+    return glow + `<g class="${cls}${st ? ' ' + st : ''}" transform="translate(${c.x} ${c.y}) rotate(${(c.r&3)*90})">${lit}${drawOf(c,d)}${x}</g>` + boom;
   }
   function endCounts(){
     const ends = new Map();
@@ -966,7 +1034,7 @@ function create(root, opts){
   function updateFeedback(A){
     let msg = '', cls = '';
     if(A.shorted){ msg = A.hasUno ? '⚠️ اتصال کوتاه! یکی از پایه‌های آردوینو بدون هیچ بار مستقیم به GND وصل شده است.' : '⚠️ اتصال کوتاه! باتری بدون هیچ بار (مقاومت، لامپ…) بسته شده و سیم‌ها داغ می‌شوند.'; cls = 'bad'; }
-    else if(A.burnt){ msg = '🔥 LED بدون مقاومتِ محدودکننده سوخت! یک مقاومت پشت‌سرِ LED بگذار.'; cls = 'bad'; }
+    else if(A.burnt){ msg = '💥 LED بدون مقاومتِ محدودکننده منفجر شد! یک مقاومت پشت‌سرِ LED بگذار.'; cls = 'bad'; }
     let done = false;
     if(mission){
       const results = opts.tasks.map(t => { let ok = false; try{ ok = !!t.test(A); }catch(e){} return ok; });

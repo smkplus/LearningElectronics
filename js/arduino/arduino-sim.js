@@ -2161,11 +2161,14 @@ function setSerialScreenText(text) {
       // به‌صورت نامرئی تعریف می‌کنیم تا نوشتن A0 در کد کاربر خطا ندهد.
       const aliases = { A0: 14, A1: 15, A2: 16, A3: 17, A4: 18, A5: 19 };
       let src = '';
-      [pins.led, pins.button, pins.pot].forEach((v) => {
-        if (typeof v === 'string' && Object.prototype.hasOwnProperty.call(aliases, v) && src.indexOf(v + ' ') === -1) {
+      const code = el.editor.value;
+      const add = (v) => {
+        if (typeof v === 'string' && Object.prototype.hasOwnProperty.call(aliases, v) && src.indexOf('#define ' + v + ' ') === -1 && !new RegExp('#define\\s+' + v + '\\b').test(code)) {
           src += `#define ${v} ${aliases[v]}\n`;
         }
-      });
+      };
+      [pins.led, pins.button, pins.pot].forEach(add);
+      (code.match(/\bA[0-5]\b/g) || []).forEach(add);   // A0..A5 که مستقیم در کد نوشته شده (مثلاً مدار آزاد)
       return src;
     }
 
