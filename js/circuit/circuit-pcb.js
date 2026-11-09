@@ -17,8 +17,8 @@ const BP_PADS = [];
 [8.89, -8.89].forEach(y => { for(let i = 0; i < 20; i++) BP_PADS.push([+((i - 9.5) * 2.54).toFixed(2), y]); });
 const FP = {
   R:[{n:'R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal', b:[-3.27,-1.37,3.27,1.37], pads:[[-3.81,0],[3.81,0]], s:'<path d="M-3.27 -1.04V-1.37H3.27V-1.04M-3.27 1.04V1.37H3.27V1.04"/>'}],
-  C:[{n:'C_Disc_D5.0mm_W2.5mm_P5.00mm', b:[-3.4,-2.5,3.4,2.5], s:rc(-3.4,-2.5,3.4,2.5) + ln(-.5,-1.6,-.5,1.6) + ln(.5,-1.6,.5,1.6)},
-     {n:'C_Rect_L7.2mm_W2.5mm_P5.00mm', b:[-3.6,-1.25,3.6,1.25], s:rc(-3.6,-1.25,3.6,1.25)}],
+  C:[{n:'C_Radial_D6.3mm_P5.00mm', b:[-3.15,-3.15,3.15,3.15], s:ci(0,0,3.15)},
+     {n:'C_Radial_D8.0mm_P5.00mm', b:[-4,-4,4,4], s:ci(0,0,4)}],
   CP:[{n:'CP_Radial_D8.0mm_P3.50mm', b:[-4,-4,4,4], s:ci(0,0,4) + ln(-6.2,-1.2,-4.6,-1.2) + ln(-5.4,-2,-5.4,-.4)},
       {n:'CP_Radial_D5.0mm_P2.50mm', b:[-2.5,-2.5,2.5,2.5], s:ci(0,0,2.5) + ln(-6.2,-1.2,-4.6,-1.2) + ln(-5.4,-2,-5.4,-.4)}],
   D:[{n:'D_DO-35_SOD27_P10.16mm_Horizontal', b:[-1.9,-.95,1.9,.95], s:rc(-1.9,-.95,1.9,.95) + ln(1.1,-.95,1.1,.95)},
@@ -1000,7 +1000,7 @@ function create(host, api){
     get3D(){
       rebuild(); save();
       return {
-        comps:M.comps.map(c => ({t:c.t, x:c.px, y:c.py, r:c.r, ref:c.ref, val:c.val, on:c.on, st:c.st, power:false, fp:c.f.n, box:c.bb, pins:c.abs.map(a => [a.x, a.y])})),
+        comps:M.comps.map(c => ({t:c.t, x:c.px, y:c.py, r:c.r, ref:c.ref, val:c.val, on:c.on, st:c.st, lv:c.lv, power:false, fp:c.f.n, box:c.bb, pins:c.abs.map(a => [a.x, a.y])})),
         wires:M.segs
       };
     }

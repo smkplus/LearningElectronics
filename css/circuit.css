@@ -241,3 +241,14 @@
 @media (max-width:760px){
   .circuit-tab .cv-main > .pcb{ flex:none; height:70vh; min-height:360px; }
 }
+
+
+/* ===== پیش‌نمایش زندهٔ واقعی (سمت چپ طراحی مدار) ===== */
+.cv-live{ width:clamp(250px,24vw,360px); flex:0 0 clamp(250px,24vw,360px); min-width:0; display:flex; flex-direction:column; }
+.cv-live .c3dp{ height:auto; flex:1 1 auto; min-height:260px; }
+.cv-wrap.pcb-on .cv-live,
+.cv-wrap.code-on .cv-live{ display:none; }
+.cv-wrap.narrow .cv-live{ width:auto; flex:none; height:300px; }
+@media (max-width:760px){
+  .cv-live{ width:auto; flex:none; height:300px; }
+}

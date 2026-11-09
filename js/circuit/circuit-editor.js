@@ -214,6 +214,11 @@ const EXPORT_CSS = '.b{fill:none;stroke:#e79a54;stroke-width:2;stroke-linecap:ro
   '.r{fill:#d4af37;font:600 12px monospace}.v{fill:#e8e2d0;font:12px monospace}';
 const GLOWS = {'#ffd95a':'L','#ff5b5b':'R','#ffd23f':'Y','#3ddc84':'G'};
 
+let LED_LV = new Map();   // شدت نور هر LED (۰ تا ۱) از روی جریانش؛ از ۱ میلی‌آمپر شروع می‌شود و از ~۵ میلی‌آمپر کامل است
+const lvOf = i => Math.pow(Math.min(1, Math.max(0, (i - 0.001) / 0.004)), 0.6);
+const lvGet = id => LED_LV.has(id) ? LED_LV.get(id) : 1;
+const CAP_DT = 0.05;   // گام زمانیِ شبیه‌سازی خازن (ثانیه)
+const capF = s => { const m = /^\s*([\d.]+)\s*([pnuµμm]?)/i.exec(String(s || '')); return m ? parseFloat(m[1]) * ({p:1e-12, n:1e-9, u:1e-6, 'µ':1e-6, 'μ':1e-6, m:1e-3}[m[2].toLowerCase()] || 1) : 1e-7; };
 const BETA = 100, GB = 1/20, GSAT = 1/10, VBE = 0.7, VSAT = 0.2, GS = 1e3, GMIN = 1e-9;
 
 function dcSolve(els, ref, mem){
@@ -238,6 +243,7 @@ function dcSolve(els, ref, mem){
       if(e.k === 'R') gG(A, e.ia, e.ik, e.g);
       else if(e.k === 'V'){ gG(A, e.ia, e.ik, GS); if(e.ia >= 0) z[e.ia] += GS * e.v; if(e.ik >= 0) z[e.ik] -= GS * e.v; }
       else if(e.k === 'D'){ if(mem.get(e.id)) gOff(A, z, e.ia, e.ik, e.g, e.vf); }
+      else if(e.k === 'C') gOff(A, z, e.ia, e.ik, e.g, e.vp);   // خازن: مدل هم‌ارز (اویلر پسرو) = رسانایی C/dt + ولتاژ قبلی
       else if(e.k === 'Q'){
         const s = mem.get(e.id) || 0;
         if(!s) return;
@@ -296,15 +302,16 @@ function dcSolve(els, ref, mem){
   }
   settle();
 
-  const cur = {};
+  const cur = {}, vc = {};
   let maxSrc = 0;
   els.forEach(e => {
     if(e.k === 'R') cur[e.id] = e.g * (V(e.ia) - V(e.ik));
     else if(e.k === 'D') cur[e.id] = mem.get(e.id) ? e.g * (V(e.ia) - V(e.ik) - e.vf) : 0;
     else if(e.k === 'V'){ cur[e.id] = GS * (e.v - (V(e.ia) - V(e.ik))); maxSrc = Math.max(maxSrc, Math.abs(cur[e.id])); }
     else if(e.k === 'Q') cur[e.id] = mem.get(e.id) || 0;
+    else if(e.k === 'C'){ vc[e.id] = V(e.ia) - V(e.ik); cur[e.id] = e.g * (vc[e.id] - e.vp); }
   });
-  return {cur, maxSrc};
+  return {cur, maxSrc, vc};
 }
 
 /* ====================================================================
@@ -524,8 +531,9 @@ const REAL = {
       bd(-14, b[0]) + bd(-7, b[1]) + bd(0, b[2]) + bd(11, R_GOLD) + shine(-19, -6.5, 38, 3, 1.5);
   },
   C(){
-    return mLead(-40, -4) + mLead(4, 40) +
-      '<circle r="13" fill="#e0a23c" stroke="#9a6a14" stroke-width="1.2"/><circle cx="-4" cy="-4" r="5" fill="#fff" opacity=".22"/>';
+    return mLead(-40, -15) + mLead(15, 40) +
+      '<rect x="-15" y="-13" width="30" height="26" rx="5" fill="#17181c" stroke="#050506" stroke-width="1"/>' +
+      '<rect x="-15" y="-13" width="6" height="26" rx="3" fill="#2c2e35"/><rect x="8" y="-13" width="7" height="26" rx="3" fill="#9aa0aa" opacity=".85"/>' + shine(-6, -11, 12, 3, 1.5);
   },
   CP(){
     return mLead(-40, -18) + mLead(18, 40) +
@@ -541,14 +549,15 @@ const REAL = {
   },
   LED(c, st, u){
     const burnt = st === 'burnt', on = st === 'on', t = LED_REAL[c.t] ? c.t : 'LED';
-    const fill = burnt ? '#2a2a2a' : `url(#${u}-${t}${on ? 'on' : 'off'})`;
+    const lv = on ? lvGet(c.id) : 0, fill = burnt ? '#2a2a2a' : `url(#${u}-${t}off)`;
     return mLead(-40, -2) + mLead(40, 18) + '<g transform="translate(8 0)"><path d="M-10 0V-7M10 0V-7" stroke="#cfd4dc" stroke-width="2.4" stroke-linecap="round"/>' +
       '<rect x="-21" y="-7" width="42" height="5" rx="1.5" fill="#bfc4cc" stroke="#8a929e" stroke-width=".8"/>' +
       `<path d="M-18 -7V-19A18 18 0 0 1 18 -19V-7Z" fill="${fill}" stroke="${burnt ? '#111' : '#00000055'}" stroke-width="1"/>` +
+      (on ? `<path d="M-18 -7V-19A18 18 0 0 1 18 -19V-7Z" fill="url(#${u}-${t}on)" opacity="${lv.toFixed(2)}"/>` : '') +
       (burnt ? '' : '<path d="M-8 -7V-23M8 -7V-17" stroke="#9aa1ad" stroke-width="3" stroke-linecap="round" opacity=".7"/><path d="M-10 -22Q0 -29 10 -17" fill="none" stroke="#d9b94a" stroke-width="1" opacity=".8"/>') +
       '<path d="M-13 -17A14 14 0 0 1 -6 -29" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="2.2" stroke-linecap="round"/>' +
       '<text x="-27" y="-6" text-anchor="middle" font-size="13" font-weight="700" font-family="monospace" fill="#ff8a80" stroke="#0b1426" stroke-width="2.6" paint-order="stroke">+</text><text x="27" y="-6" text-anchor="middle" font-size="13" font-weight="700" font-family="monospace" fill="#8ec5ff" stroke="#0b1426" stroke-width="2.6" paint-order="stroke">&#8722;</text>' +
-      (on ? `<circle cy="-18" r="18" fill="${LED_REAL[t].on[1]}" opacity=".28"/>` : '') + '</g>';
+      (on ? `<circle cy="-18" r="18" fill="${LED_REAL[t].on[1]}" opacity="${(.28 * lv).toFixed(2)}"/>` : '') + '</g>';
   },
   NPN(){
     return mLead(-40, -14) + `<path d="M20 -40L9 -14M20 40L9 14" stroke="#555b66" stroke-width="4" stroke-linecap="round"/><path d="M20 -40L9 -14M20 40L9 14" stroke="#d3d8e0" stroke-width="2.2" stroke-linecap="round"/>` +
@@ -671,6 +680,7 @@ function create(root, opts){
   let undoStack = [], redoStack = [], lastTaskSig = '', saveTimer = null, stopped = false;
   const POV_MS = 70, ledSeen = new Map();   // ماندگاری دید: LED اسکن‌شده (ماتریس) تا ۷۰ms بعد از خاموش‌شدن هم روشن دیده می‌شود
   let povT = 0, sampleT = 0;
+  const capMem = new Map(), hasCap = () => S.comps.some(c => c.t === 'C' || c.t === 'CP'); let capNext = new Map();   // ولتاژ هر خازن؛ فقط تایمرِ خازن آن را جلو می‌برد
   const pointers = new Map(), bjtMem = new Map(), burntSet = new Set();   // LEDِ منفجرشده تا اولین ویرایش مدار خراب می‌ماند
   const cleanup = [];
   const on = (t, ev, fn, o) => { t.addEventListener(ev, fn, o); cleanup.push(() => t.removeEventListener(ev, fn, o)); };
@@ -738,6 +748,28 @@ function create(root, opts){
   const svg = $('cvSvg'), world = $('cvWorld'), stage = $('cvStage'), gridPat = root.querySelector(`#${uid}-grid`), bg = $('cvBg');
   const propsEl = $('cvProps'), hintEl = $('cvHint'), coordEl = $('cvCoord'), zoomEl = $('cvZoomTxt'), savedEl = $('cvSaved');
   const msgEl = $('cvMsg'), tasksEl = $('cvTasks'), undoBtn = $('cvUndo'), redoBtn = $('cvRedo');
+
+  /* پیش‌نمایش زندهٔ سمت چپ: همان رندر سه‌بعدی واقعیِ دکمهٔ «سه بعدی»، ولی همیشه باز و همگام با مدار (نه عکس ثابت) */
+  const livePv = !mission && opts.livePreview === true;      // خاموش: پیش‌نمایش خواسته‌شده در پنجرهٔ «پروژه‌های آماده» است (presetSvg)
+  let live3d = null, live3dT = 0, live3dSig = '', live3dTry = 0;
+  if(livePv) stage.insertAdjacentHTML('afterend', '<aside class="cv-live" id="cvLive" aria-label="پیش‌نمایش واقعی مدار"></aside>');
+  function refresh3d(){
+    live3dT = 0;
+    if(stopped || !livePv) return;
+    if(!window.Circuit3D || !Circuit3D.mount){ if(++live3dTry < 20) live3dT = setTimeout(refresh3d, 300); return; }
+    if(!live3d) live3d = Circuit3D.mount($('cvLive'), {onExpand:() => { const b = $('cv3d'); if(b) b.click(); }});
+    if(!live3d.visible()){ live3dSig = ''; return; }      // تب/نمای PCB بسته است؛ با باز شدن دوباره همگام می‌شود
+    try{ const p = getPcb(); live3d.update(p ? p.get3D() : get3DData()); }catch(_){}
+  }
+  const queue3d = () => { if(livePv && !stopped && !live3dT) live3dT = setTimeout(refresh3d, 180); };
+  function touch3d(A){
+    if(!livePv || stopped) return;
+    const sig = S.comps.map(c => c.id + ',' + c.t + ',' + c.x + ',' + c.y + ',' + c.r + ',' + (c.val || '') + ',' + (c.ref || '') + ',' + (c.on ? 1 : 0) + ',' + (A.status.get(c.id) || '') + ',' + Math.round(lvGet(c.id) * 10)).join(';') +
+      '|' + S.wires.map(w => w.x1 + ',' + w.y1 + ',' + w.x2 + ',' + w.y2).join(';');
+    if(sig === live3dSig) return;
+    live3dSig = sig; queue3d();
+  }
+  cleanup.push(() => { clearTimeout(live3dT); if(live3d) live3d.destroy(); });
 
   function rot(x,y,r){ for(let i=0;i<(r&3);i++){ const t = x; x = -y; y = t; } return [x,y]; }
   function pinsOf(c){
@@ -934,6 +966,8 @@ function create(root, opts){
   }
 
   function analyze(){
+    capNext = new Map();
+    let ledIcur = new Map();
     const {find, uni} = dsu();
     S.wires.forEach(w => uni(key(w.x1,w.y1), key(w.x2,w.y2)));
     const P = new Map(S.comps.map(c => [c.id, pinsOf(c)]));
@@ -979,6 +1013,7 @@ function create(root, opts){
       S.comps.forEach(c => {
         const d = DEFS[c.t];
         if(c.t === 'NPN' || c.t === 'PNP') els.push({k:'Q', id:c.id, comp:c, pnp:c.t === 'PNP', b:node(c,0), c:node(c,1), e:node(c,2)});
+        else if(c.t === 'C' || c.t === 'CP') els.push({k:'C', id:c.id, comp:c, a:node(c,0), b:node(c,1), g:capF(c.val) / CAP_DT, vp:capMem.get(c.id) || 0});
         else if(d.edge === 'led') els.push({k:'D', id:c.id, comp:c, led:true, a:node(c,0), b:node(c,1), vf:{LED:1.9, LEDY:2, LEDG:2.1}[c.t] || 2, g:1/20});
         else if(d.edge === 'diode') els.push({k:'D', id:c.id, comp:c, a:node(c,0), b:node(c,1), vf:0.65, g:1/5});
         else if(d.edge === 'load' || d.edge === 'wire'){
@@ -993,18 +1028,20 @@ function create(root, opts){
       els.forEach(e => {
         const i = r.cur[e.id];
         if(e.k === 'R'){ if(Math.abs(i) > 1) mark(e.comp, 'short'); else if(Math.abs(i) > 1e-4) mark(e.comp, 'on'); }
-        else if(e.k === 'D'){ if(e.led && i > 0.035) mark(e.comp, 'burnt'); else if(i > (e.led ? 1e-3 : 1e-4)) mark(e.comp, 'on'); }
+        else if(e.k === 'D'){ if(e.led) ledIcur.set(e.comp.id, i); if(e.led && i > 0.035) mark(e.comp, 'burnt'); else if(i > (e.led ? 1e-3 : 1e-4)) mark(e.comp, 'on'); }
         else if(e.k === 'Q'){ if(i) mark(e.comp, 'on'); }
+        else if(e.k === 'C') capNext.set(e.id, r.vc[e.id]);
         else if(e.k === 'V'){ if(Math.abs(i) > 1) mark(e.comp, 'short'); else if(Math.abs(i) > 1e-4) mark(e.comp, 'on'); }
       });
       return r.maxSrc > 1;
     }
-    const useSolver = S.comps.some(c => c.t === 'NPN' || c.t === 'PNP') || unos.length > 0;
+    const useSolver = S.comps.some(c => c.t === 'NPN' || c.t === 'PNP') || unos.length > 0 || hasCap();
     let phases = null;
     if(useSolver && (sources.length || unos.length)){
-      shorted = solveBJT(hiOf);
+      shorted = solveBJT(hiOf); const mainI = ledIcur;
       if(unos.length && !eachCfg){      // همهٔ مرحله‌های برنامه را هم بررسی کن: هر مرحله چه LEDهایی روشن‌اند / می‌سوزند
         const keep = status, burntAll = new Set();
+        ledIcur = new Map();
         let anyShort = false;
         phases = UNO_PROG.map(ph => {
           status = new Map();
@@ -1013,7 +1050,7 @@ function create(root, opts){
           S.comps.forEach(c => { if(DEFS[c.t].edge !== 'led') return; const st = status.get(c.id); if(st === 'on') lit.add(c.t); else if(st === 'burnt') burntAll.add(c.id); });
           return {lit};
         });
-        status = keep;
+        status = keep; ledIcur = mainI;
         burntAll.forEach(id => status.set(id, 'burnt'));
         if(anyShort){ shorted = true; unos.forEach(u => status.set(u.id, 'short')); }
       }
@@ -1050,6 +1087,7 @@ function create(root, opts){
       });
       if(pend && !povT) povT = setTimeout(() => { povT = 0; if(!stopped) repaint(); }, POV_MS + 10);
     }
+    LED_LV = new Map(); ledIcur.forEach((i, id) => LED_LV.set(id, lvOf(i)));
     const ofT = t => S.comps.filter(c => c.t === t);
     const A = {
       status, shorted, phases, hasUno:unos.length > 0, hi:[...hiNow], codeOk,
@@ -1069,7 +1107,7 @@ function create(root, opts){
     return {
       comps: S.comps.map(c => {
         const d = DEFS[c.t], b = bboxOf(c);
-        return {t:c.t, x:c.x, y:c.y, r:c.r, ref:c.ref || '', val:c.val || '', on:!!c.on, st:(A && A.status.get(c.id)) || '', power:!!(d.power || d.offboard),
+        return {t:c.t, x:c.x, y:c.y, r:c.r, ref:c.ref || '', val:c.val || '', on:!!c.on, st:(A && A.status.get(c.id)) || '', lv:+lvGet(c.id).toFixed(2), power:!!(d.power || d.offboard),
           box:{x0:b.x0, y0:b.y0, x1:b.x1, y1:b.y1}, pins:pinsOf(c).map(p => [p.x, p.y])};
       }),
       wires: S.wires.map(w => [w.x1, w.y1, w.x2, w.y2])
@@ -1082,7 +1120,7 @@ function create(root, opts){
     return {
       comps: S.comps.map(c => {
         const d = DEFS[c.t];
-        return {id:c.id, t:c.t, r:c.r, ref:c.ref || '', val:c.val || '', on:!!c.on, st:(A && A.status.get(c.id)) || '', power:!!(d.power || d.offboard), link:d.link || null,
+        return {id:c.id, t:c.t, r:c.r, ref:c.ref || '', val:c.val || '', on:!!c.on, st:(A && A.status.get(c.id)) || '', lv:+lvGet(c.id).toFixed(2), power:!!(d.power || d.offboard), link:d.link || null,
           lpins:d.pins.map(p => [p[0], p[1], p[2]]), sx:c.x, sy:c.y, spins:pinsOf(c).map(p => [p.x, p.y])};
       }),
       wires: S.wires.map(w => [w.x1, w.y1, w.x2, w.y2])
@@ -1101,6 +1139,7 @@ function create(root, opts){
     root.querySelectorAll('[data-vw]').forEach(b => b.classList.toggle('on', b.dataset.vw === v));
     if(v === 'pcb') p.show(); else if(p) p.hide();
     if(!stopped && v !== 'pcb') render();
+    if(v !== 'pcb') queue3d();
   }
 
   function labelsOf(c){
@@ -1115,12 +1154,12 @@ function create(root, opts){
   }
   function compG(c, cls, st){
     const d = DEFS[c.t];
-    const lit = st === 'on' && d.lit ? d.lit : '';
-    const isLed = /^LED/.test(c.t);
+    const isLed = /^LED/.test(c.t), lv = isLed ? lvGet(c.id) : 1;
+    const lit = st === 'on' && d.lit ? (isLed ? `<g opacity="${lv.toFixed(2)}">${d.lit}</g>` : d.lit) : '';
     const x = st === 'burnt' && !isLed ? '<path class="cv-x" d="M-9 -9L9 9M9 -9L-9 9"/>' : '';
     const bc = rot(...(realOn ? [8, -18] : [0, 0]), c.r);   // مرکز بدنهٔ LED بعد از چرخش
     const boom = st === 'burnt' && isLed ? `<text x="${c.x + bc[0]}" y="${c.y + bc[1]}" font-size="26" text-anchor="middle" dominant-baseline="central" pointer-events="none">💥</text>` : '';
-    const glow = st === 'on' && d.glow ? `<circle cx="${c.x}" cy="${c.y}" r="34" fill="url(#${uid}-gl${GLOWS[d.glow]})" pointer-events="none"/>` : '';
+    const glow = st === 'on' && d.glow ? `<circle cx="${c.x}" cy="${c.y}" r="34" fill="url(#${uid}-gl${GLOWS[d.glow]})" opacity="${lv.toFixed(2)}" pointer-events="none"/>` : '';
     if(realOn && REAL[c.t]) return glow + `<g class="${cls}${st ? ' ' + st : ''}" transform="translate(${c.x} ${c.y}) rotate(${(c.r&3)*90})">${REAL[c.t](c, st, uid)}${x}</g>` + boom;
     return glow + `<g class="${cls}${st ? ' ' + st : ''}" transform="translate(${c.x} ${c.y}) rotate(${(c.r&3)*90})">${lit}${drawOf(c,d)}${x}</g>` + boom;
   }
@@ -1163,6 +1202,7 @@ function create(root, opts){
     const hot = netHighlight();
     const A = analyze();
     unoHiNow = A.hasUno && ext ? A.hi : null;
+    touch3d(A);
     unoChipNow = codePanel ? (codeRunning ? 'run' : 'idle') : null;
     setUnoMaps();
     let h = '', outH = '', inH = '';
@@ -1501,7 +1541,7 @@ function create(root, opts){
     const st = document.createElement('style');
     st.id = 'cvPreCss';
     st.textContent = '.cv-pre{position:absolute;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(6,9,15,.72)}' +
-      '.cv-pre-box{width:min(760px,100%);max-height:100%;display:flex;flex-direction:column;border:1px solid #2ea09d;border-radius:12px;background:var(--bg,#0f1420);color:var(--fg,#e8eaf0);overflow:hidden}' +
+      '.cv-pre-box{width:min(900px,100%);max-height:100%;display:flex;flex-direction:column;border:1px solid #2ea09d;border-radius:12px;background:var(--bg,#0f1420);color:var(--fg,#e8eaf0);overflow:hidden}' +
       '.cv-pre-head{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.12)}' +
       '.cv-pre-head b{font-size:15px;margin-inline-end:auto}' +
       '.cv-pre-list{display:grid;gap:10px;padding:12px;overflow:auto}' +
@@ -1512,7 +1552,11 @@ function create(root, opts){
       '.cv-pre-act{display:flex;flex-wrap:wrap;gap:8px}' +
       '.cv-pre button{font:inherit;font-size:13px;color:inherit;background:transparent;border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:6px 12px;cursor:pointer}' +
       '.cv-pre button:hover{border-color:#2ea09d}.cv-pre button:focus-visible{outline:2px solid #2ea09d;outline-offset:2px}' +
-      '.cv-pre button.pri{background:linear-gradient(90deg,#3fbf8f,#57d8a3);color:#08150f;border-color:transparent;font-weight:700}';
+      '.cv-pre button.pri{background:linear-gradient(90deg,#3fbf8f,#57d8a3);color:#08150f;border-color:transparent;font-weight:700}' +
+      '.cv-pre-card{display:flex;gap:14px;align-items:stretch}.cv-pre-info{flex:1;min-width:0}' +
+      '.cv-pre-thumb{flex:0 0 250px;display:flex;align-items:center;justify-content:center;min-height:150px;padding:8px;background:#0c1018;border:1px solid rgba(255,255,255,.12);border-radius:8px;direction:ltr}' +
+      '.cv-pre-thumb svg{display:block;width:100%;height:auto;max-height:200px}' +
+      '@media (max-width:620px){.cv-pre-card{flex-direction:column-reverse}.cv-pre-thumb{flex:none}}';
     document.head.appendChild(st);
   }
   function copyText(t){
@@ -1523,6 +1567,33 @@ function create(root, opts){
       try{ document.execCommand('copy') ? ok() : no(); }catch(e){ no(e); } ta.remove();
     });
   }
+  /* پیش‌نمایش ۲بعدیِ «نمای واقعی» برای کارت هر پروژهٔ آماده: همان رسم‌کنندهٔ واقعیِ ادیتور، روی یک حالت موقت (مدار فعلی دست نمی‌خورد) */
+  function presetSvg(spec){
+    const keep = {S, realOn, unoHiNow, unoChipNow, unoHiBy, unoChipBy};
+    try{
+      build(spec);
+      realOn = true; unoHiNow = []; unoChipNow = null; unoHiBy = null; unoChipBy = null;
+      const b = contentBox(14);
+      if(!b) return '';
+      let outH = '', inH = '', h = '', jn = '';
+      S.wires.forEach(w => {
+        outH += `<line x1="${w.x1}" y1="${w.y1}" x2="${w.x2}" y2="${w.y2}" style="stroke:#22262d;stroke-width:8;stroke-linecap:round;fill:none"/>`;
+        inH += `<line x1="${w.x1}" y1="${w.y1}" x2="${w.x2}" y2="${w.y2}" style="stroke:#9aa1ad;stroke-width:4.4;stroke-linecap:round;fill:none"/>`;
+      });
+      S.comps.forEach(c => { h += compG(c, 'cv-comp', '') + labelsOf(c); });
+      endCounts().forEach((o, k) => {
+        const [x, y] = k.split(',');
+        if(o.w + o.p >= 3 && o.w >= 1) jn += `<circle cx="${x}" cy="${y}" r="5" style="fill:#cfd4dc;stroke:#22262d;stroke-width:1.5"/>`;
+      });
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${b.x0} ${b.y0} ${b.x1 - b.x0} ${b.y1 - b.y0}" preserveAspectRatio="xMidYMid meet">${outH}${inH}${h}${jn}</svg>`;
+    } finally {
+      S = keep.S; realOn = keep.realOn; unoHiNow = keep.unoHiNow; unoChipNow = keep.unoChipNow; unoHiBy = keep.unoHiBy; unoChipBy = keep.unoChipBy;
+    }
+  }
+  function thumbOf(p){
+    if(!p || !p.spec) return '';
+    try{ const s = presetSvg(p.spec); return s ? '<div class="cv-pre-thumb" aria-hidden="true">' + s + '</div>' : ''; }catch(_){ return ''; }
+  }
   function openPresets(){
     if(mission || wrap.querySelector('.cv-pre')) return;
     const list = typeof CIRCUIT_PRESETS !== 'undefined' && Array.isArray(CIRCUIT_PRESETS) ? CIRCUIT_PRESETS : [];
@@ -1531,10 +1602,10 @@ function create(root, opts){
     const el = document.createElement('div');
     el.className = 'cv-pre';
     el.innerHTML = '<div class="cv-pre-box" role="dialog" aria-label="پروژه‌های آماده"><div class="cv-pre-head"><b>پروژه‌های آماده</b><button type="button" data-close>✕ بستن</button></div><div class="cv-pre-list">' +
-      (list.length ? list.map((p, i) => '<div class="cv-pre-card"><b>' + esc(p.title) + '</b><p>' + esc(p.desc) + '</p>' +
+      (list.length ? list.map((p, i) => '<div class="cv-pre-card"><div class="cv-pre-info"><b>' + esc(p.title) + '</b><p>' + esc(p.desc) + '</p>' +
         '<div class="cv-pre-tags">' + (p.boards || []).map(b => '<span>' + esc(b) + '</span>').join('') + '</div>' +
         '<div class="cv-pre-act"><button type="button" class="pri" data-open="' + i + '">باز کردن پروژه</button>' +
-        (p.code ? '<button type="button" data-copy="' + i + '">کپی کد نمونه</button>' : '') + '</div></div>').join('')
+        (p.code ? '<button type="button" data-copy="' + i + '">کپی کد نمونه</button>' : '') + '</div></div>' + thumbOf(p) + '</div>').join('')
         : '<div class="cv-props-empty">هنوز پروژه‌ای تعریف نشده است.</div>') + '</div></div>';
     wrap.appendChild(el);
     const close = () => { el.remove(); document.removeEventListener('keydown', onKey, true); };
@@ -1753,6 +1824,17 @@ function create(root, opts){
   }, 150);
   cleanup.push(() => clearInterval(phTimer));
 
+  // خازن: هر ۵۰ms یک گام شارژ/دشارژ جلو می‌رود (فقط وقتی ولتاژ خازن هنوز در حال تغییر است صفحه دوباره کشیده می‌شود)
+  const capTimer = setInterval(() => {
+    if(stopped || drag || !isActive()) return;
+    if(!hasCap()){ capMem.clear(); return; }
+    try{ analyze(); }catch(_){ return; }
+    let moved = false;
+    capNext.forEach((v, id) => { if(Math.abs(v - (capMem.get(id) || 0)) > 2e-3) moved = true; capMem.set(id, v); });
+    if(moved) render();
+  }, CAP_DT * 1000);
+  cleanup.push(() => clearInterval(capTimer));
+
   if(codeCfg){
     const pushPins = () => { if(!pinsRaf) pinsRaf = requestAnimationFrame(() => { pinsRaf = 0; ext = Object.assign({}, pinsState); if(!stopped) render(); }); };
     codePanel = createUnoDock(wrap, codeCfg, {
@@ -1770,7 +1852,7 @@ function create(root, opts){
   renderProps();
 
   return {
-    onShow(){ if(!fitted){ fitted = true; fitView(); } else render(); },
+    onShow(){ if(!fitted){ fitted = true; fitView(); } else render(); queue3d(); },
     stop(){ stopped = true; if(pcb) pcb.destroy(); if(saveTimer) saveNow(); cleanup.forEach(f => f()); },
     _state(){ return S; },
     _view(){ return view; },

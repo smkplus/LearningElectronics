@@ -243,11 +243,26 @@ function completedCount(){ return QUESTS.filter(q=>progress[q.id]).length; }
 const LEVEL_XP = 15;
 const levelFor = xp => Math.floor(Math.sqrt(xp / LEVEL_XP));
 const xpForLevel = lv => LEVEL_XP * lv * lv;
-// حداقل سطح لازم برای باز شدن هر بخش از مسیر
-const GROUP_MIN_LEVEL = { electronics:0, arduino:2, esp32:3, stm32:3, circuit:3, robotics:3 };
-const groupMinLevel = g => GROUP_MIN_LEVEL[g] || 0;
-const groupLocked = g => !TEST_MODE && levelFor(earnedXP()) < groupMinLevel(g);
-const groupsOpenedBy = (from, to) => QUEST_GROUPS.filter(g => groupMinLevel(g.id) > from && groupMinLevel(g.id) <= to);
+// هر بخش وقتی باز می‌شود که ۵۰٪ مأموریت‌های «بخشِ قبلی» (به ترتیب QUEST_GROUPS) تمام شده باشد؛ عدد گرد می‌شود به بالا.
+// مثلاً الکترونیک ۷ مأموریت → آردوینو با ۴ مأموریت باز می‌شود. سطح دیگر در قفل بخش‌ها نقشی ندارد.
+const GROUP_UNLOCK_RATIO = 0.5;
+const doneIn = g => QUESTS.filter(q => q.group === g && progress[q.id]).length;
+const countIn = g => QUESTS.filter(q => q.group === g).length;
+const prevGroupOf = g => { const i = QUEST_GROUPS.findIndex(x => x.id === g); return i > 0 ? QUEST_GROUPS[i - 1] : null; };
+const groupNeed = g => { const p = prevGroupOf(g); return p ? Math.ceil(countIn(p.id) * GROUP_UNLOCK_RATIO) : 0; };
+const groupLocked = g => {
+  if(TEST_MODE) return false;
+  const p = prevGroupOf(g);
+  return !!p && doneIn(p.id) < groupNeed(g);
+};
+// متنِ دلیلِ قفل بودنِ یک بخش
+const groupLockText = g => {
+  const p = prevGroupOf(g);
+  if(!p) return '';
+  const left = groupNeed(g) - doneIn(p.id);
+  return `🔒 برای باز شدن این بخش ${toFa(left)} مأموریت دیگر از «${p.title}» را تمام کن (${toFa(doneIn(p.id))} از ${toFa(groupNeed(g))}).`;
+};
+const groupsOpenedBy = (lockedBefore) => QUEST_GROUPS.filter(g => lockedBefore.has(g.id) && !groupLocked(g.id));
 
 const container = document.getElementById('nodesContainer');
 // موتور باننر گفتگو (شوالیه/ولتاژ) به dialogue.js منتقل شد —
@@ -290,10 +305,12 @@ labCards.forEach(card => {
 });
 
 function updateLabLocks(){
-  const done = completedCount();
+  const done = doneIn('electronics');   // فقط مأموریت‌های الکترونیک کارت‌های آزمایشگاه را باز می‌کنند
   labCards.forEach(card => {
     const need = parseInt(card.dataset.unlock, 10) || 0;
-    const locked = TEST_MODE ? false : done < need;
+    // اگر کارت data-unlock-mission داشته باشد، با تمام شدنِ همان مأموریت باز می‌شود؛ وگرنه با شمارش
+    const reqMission = card.dataset.unlockMission;
+    const locked = TEST_MODE ? false : (reqMission ? !progress[reqMission] : done < need);
     // A card that was locked a moment ago and isn't anymore just got unlocked
     // by the mission the person completed — queue it up for the celebration
     // animation (see runPendingLabUnlocks). Skipped on the very first render,
@@ -308,9 +325,13 @@ function updateLabLocks(){
     const stillShowLocked = locked || pendingLabUnlocks.indexOf(card) !== -1;
     card.classList.toggle('locked', stillShowLocked);
     if(locked){
-      const remaining = need - done;
-      card.querySelector('.lab-lock-sub').textContent =
-        `با تکمیل ${toFa(remaining)} مأموریت دیگر باز می‌شود (${toFa(done)} از ${toFa(need)})`;
+      const sub = card.querySelector('.lab-lock-sub');
+      if(reqMission){
+        const m = QUESTS.find(x => x.id === reqMission);
+        sub.textContent = `با تکمیل مأموریت «${m ? m.title : reqMission}» در بخش الکترونیک باز می‌شود`;
+      } else {
+        sub.textContent = `با تکمیل ${toFa(need - done)} مأموریت دیگر از بخش الکترونیک باز می‌شود (${toFa(done)} از ${toFa(need)})`;
+      }
     }
   });
   labLocksInitialized = true;
@@ -368,7 +389,7 @@ window.runPendingLabUnlocks = runPendingLabUnlocks;
         explaining what's inside.
    Both reuse the .overlay/.modal styling from the mission modal, so no HTML
    changes are needed. */
-const LAB_TAB_UNLOCK_MISSIONS = 1;
+const LAB_TAB_UNLOCK_MISSIONS = 2;   // تعداد مأموریتِ تمام‌شده‌ی «الکترونیک» برای باز شدن تب آزمایشگاه
 const LAB_UNLOCK_SEEN_KEY = 'shovalie-madar-lab-unlock-seen';
 const LAB_INTRO_SEEN_KEY = 'shovalie-madar-lab-intro-seen';
 
@@ -424,16 +445,16 @@ const LAB_INTRO_TEXT = 'به آزمایشگاه الکترونیک خوش اوم
 // introduces itself as the lab's own guide (see maybeShowLabIntro below).
 const VOLTAGE_INTRO_TEXT = 'سلام! من ولتاژ هستم ⚡ از این به بعد تو آزمایشگاه کنارتم و کمکت می‌کنم مفهوم‌ها رو با چشم خودت حس کنی.';
 
-const circuitTabLockText = () => `🔒 تب «طراحی مدار» از سطح ${toFa(groupMinLevel('circuit'))} باز می‌شود. با انجام مأموریت‌ها XP بگیر و سطحت را بالا ببر.`;
+const circuitTabLockText = () => groupLockText('circuit').replace('این بخش', 'تب «طراحی مدار»');
 function updateCircuitTabLock(){
   const locked = groupLocked('circuit');
   tabCircuitBtn.classList.toggle('locked', locked);
-  tabCircuitBtn.title = locked ? `از سطح ${toFa(groupMinLevel('circuit'))} باز می‌شود` : '';
+  tabCircuitBtn.title = locked ? groupLockText('circuit') : '';
   circuitTabLocked = locked;   // global flag from common.js, read by tabCircuitBtn's click handler
 }
 
 function updateLabTabLock(){
-  const done = completedCount();
+  const done = doneIn('electronics');
   const unlocked = TEST_MODE || done >= LAB_TAB_UNLOCK_MISSIONS;
   tabLabBtn.classList.toggle('locked', !unlocked);
   labTabLocked = !unlocked; // global flag from common.js, read by tabLabBtn's click handler
@@ -545,7 +566,7 @@ groupBar.addEventListener('click', (e) => {
   const b = e.target.closest('.qg-tab'); if(!b || b.dataset.g === activeGroup) return;
   if(groupLocked(b.dataset.g)){
     SFX.locked();
-    showKnightLine(`🔒 این بخش از سطح ${toFa(groupMinLevel(b.dataset.g))} باز می‌شود. با انجام مأموریت‌ها XP بگیر و سطحت را بالا ببر.`, 'stern');
+    showKnightLine(groupLockText(b.dataset.g), 'stern');
     return;
   }
   SFX.click();
@@ -564,7 +585,7 @@ function paintGroupBar(){
   groupBar.innerHTML = QUEST_GROUPS.map(gr => {
     const all = QUESTS.filter(q => q.group === gr.id), done = all.filter(q => progress[q.id]).length;
     const on = gr.id === activeGroup, lock = groupLocked(gr.id);
-    return `<button type="button" class="qg-tab${on ? ' on' : ''}${done === all.length ? ' full' : ''}${lock ? ' locked' : ''}${freshGroups.has(gr.id) ? ' fresh' : ''}" role="tab" aria-selected="${on}" data-g="${gr.id}"><span class="qg-ic" aria-hidden="true">${lock ? '🔒' : gr.icon}</span><span class="qg-t">${gr.title}</span><small class="qg-n">${lock ? 'سطح ' + toFa(groupMinLevel(gr.id)) : toFa(done) + '/' + toFa(all.length)}</small></button>`;
+    return `<button type="button" class="qg-tab${on ? ' on' : ''}${done === all.length ? ' full' : ''}${lock ? ' locked' : ''}${freshGroups.has(gr.id) ? ' fresh' : ''}" role="tab" aria-selected="${on}" data-g="${gr.id}"><span class="qg-ic" aria-hidden="true">${lock ? '🔒' : gr.icon}</span><span class="qg-t">${gr.title}</span><small class="qg-n">${lock ? 'قفل' : toFa(done) + '/' + toFa(all.length)}</small></button>`;
   }).join('');
 }
 
@@ -588,7 +609,7 @@ function showUnlockPopup(groups, level){
           </g>
         </svg>
       </div>
-      <div class="ul-eyebrow">سطح ${toFa(level)} را رد کردی!</div>
+      <div class="ul-eyebrow">آفرین! پیشرفت خوبی داشتی</div>
       <div class="ul-title">قفل باز شد</div>
       <div class="ul-groups">${groups.map(g => `<span class="ul-chip"><span aria-hidden="true">${g.icon}</span>${g.title}</span>`).join('')}</div>
       <div class="ul-sub">${many ? 'مأموریت‌های تازهٔ این بخش‌ها' : 'مأموریت‌های تازهٔ این بخش'} منتظر توست.${groups.some(g => g.id === 'circuit') ? ' تب «طراحی مدار» هم باز شد.' : ''}</div>
@@ -929,7 +950,7 @@ function onNodeClick(i, locked, evt){
       nodeEl.classList.remove('shake'); void nodeEl.offsetWidth; nodeEl.classList.add('shake');
     }
     showKnightLine(groupLocked(QUESTS[i].group)
-      ? `🔒 این بخش از سطح ${toFa(groupMinLevel(QUESTS[i].group))} باز می‌شود. با انجام مأموریت‌ها XP بگیر و سطحت را بالا ببر.`
+      ? groupLockText(QUESTS[i].group)
       : KNIGHT_LOCKED[Math.floor(Math.random()*KNIGHT_LOCKED.length)], 'stern');
     return;
   }
@@ -1129,10 +1150,10 @@ function closeOverlay(){
 function completeMission(q, { closeOverlayAfter = 420 } = {}){
   if(progress[q.id]) return;
 
-  const levelBefore = levelFor(earnedXP());
+  const lockedBefore = new Set(QUEST_GROUPS.filter(g => groupLocked(g.id)).map(g => g.id));
   progress[q.id] = true;
   saveProgress();
-  const opened = groupsOpenedBy(levelBefore, levelFor(earnedXP()));
+  const opened = groupsOpenedBy(lockedBefore);
 
   track('mission_completed', { id: q.id, title: q.title, xp: q.xp, boss: !!q.boss });
   if (completedCount() === QUESTS.length){

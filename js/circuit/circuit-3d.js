@@ -42,14 +42,14 @@ function cameraBasis(T){
 
 /* ---------- فوت‌پرینت‌ها ---------- */
 const FAM = t => ({LEDY:'LED', LEDG:'LED', NPN:'BJT', PNP:'BJT'}[t] || t);
-const DEF_FP = {R:'R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal', C:'C_Disc_D5.0mm_W2.5mm_P5.00mm', CP:'CP_Radial_D8.0mm_P3.50mm',
+const DEF_FP = {R:'R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal', C:'C_Radial_D6.3mm_P5.00mm', CP:'CP_Radial_D8.0mm_P3.50mm',
   D:'D_DO-35_SOD27_P10.16mm_Horizontal',
   LED:'LED_D5.0mm', BJT:'TO-92_Inline', BC:'Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical', HDR4:'Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical', NANO:'Module:Arduino_Nano', ESP32:'Module:ESP32_DevKit_38Pin', BLUEPILL:'Module:BluePill_STM32F103C8T6',
   SW:'SW_Slide_SPST_P10.16mm', PB:'Button_Switch_THT:SW_PUSH_6mm', LAMP:'Lamp_E10_Holder'};
 const fpOf = c => c.t === 'BC' ? DEF_FP.BC : (c.fp || DEF_FP[FAM(c.t)] || '');
 const NAMES = {R:'مقاومت', D:'دیود', LED:'LED قرمز ۵ میلی‌متری', LEDY:'LED زرد ۵ میلی‌متری', LEDG:'LED سبز ۵ میلی‌متری', C:'خازن', CP:'خازن الکترولیتی',
   NPN:'ترانزیستور NPN', PNP:'ترانزیستور PNP', BC:'کانکتور باتری (هدر ۱×۲)', HDR4:'هدر ۴پین (۱×۴)', NANO:'آردوینو Nano (ATmega328P)', ESP32:'ESP32‑WROOM‑32 (۳۸ پین)', BLUEPILL:'STM32 Blue Pill (F103C8T6)', SW:'کلید', PB:'کلید فشاری ۶ میلی‌متری', LAMP:'لامپ'};
-const SWATCH = {R:'#e1b57d', D:'#c9772e', LED:'#b31a0d', LEDY:'#d9a400', LEDG:'#1d8f45', C:'#e0a23c', CP:'#1f3a78',
+const SWATCH = {R:'#e1b57d', D:'#c9772e', LED:'#b31a0d', LEDY:'#d9a400', LEDG:'#1d8f45', C:'#1c1d21', CP:'#1f3a78',
   NPN:'#262626', PNP:'#262626', BC:'#262626', HDR4:'#262626', NANO:'#2450b8', ESP32:'#15161a', BLUEPILL:'#1a3f9e', SW:'#d0d4db', PB:'#d2d1c7', LAMP:'#ffe27a'};
 const fa = n => Number(n).toLocaleString('fa-IR');
 
@@ -82,7 +82,7 @@ function build(T, data){
   const scene = new T.Scene();
   const rig = new T.Group(), group = new T.Group();
   scene.add(rig); rig.add(group);
-  const sprites = [];
+  const sprites = []; let lights = 0;
 
   const tube = (a, b, r, m) => {
     const v = new V3().subVectors(b, a), len = v.length();
@@ -106,7 +106,7 @@ function build(T, data){
   const glow = (g, color, y, size) => {
     const sp = new T.Sprite(new T.SpriteMaterial({map:glowTex, color, blending:T.AdditiveBlending, transparent:true, depthWrite:false}));
     sp.position.set(0, y, 0); sp.scale.set(size, size, 1); g.add(sp); sprites.push(sp);
-    const pl = new T.PointLight(color, 1.0, 30); pl.position.set(0, y, 0); g.add(pl);
+    if(lights++ < 4){ const pl = new T.PointLight(color, 1.0, 30); pl.position.set(0, y, 0); g.add(pl); }
   };
   const label = (text, color, h) => {
     const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64;
@@ -165,7 +165,7 @@ function build(T, data){
   const rect = (x0, z0, x1, z1) => [[x0,z0],[x1,z0],[x1,z1],[x0,z1],[x0,z0]];
   const circle = (cx, cz, r) => { const p = []; for(let i = 0; i <= 64; i++){ const t = i / 64 * Math.PI * 2; p.push([cx + r * Math.cos(t), cz + r * Math.sin(t)]); } return p; };
   const SILK = {
-    C:[rect(-3.4,-2.5,3.4,2.5)], CP:[circle(0,0,4)], BJT:[circle(.5,0,3)],
+    C:[circle(0,0,3.15)], CP:[circle(0,0,4)], BJT:[circle(.5,0,3)],
     SW:[rect(-6.5,-3,6.5,3)], HDR4:[rect(-1.33,-5.1,1.33,5.1)], PB:[rect(-3,-3,3,3), circle(0,0,1.9)], LAMP:[circle(0,0,5.5)]
   };
   function silkFor(g, c, fp){
@@ -241,12 +241,13 @@ function build(T, data){
     },
     // LED ۵ میلی‌متری — لنز لاتـِه، لبهٔ تخت سمت کاتد، پایه‌ها از پدها به زیر لنز جمع می‌شوند
     LED(g, c){
-      const m = modelGroup(g), def = LEDS[c.t] || LEDS.LED, lit = c.st === 'on', burnt = c.st === 'burnt';
+      const m = modelGroup(g), def = LEDS[c.t] || LEDS.LED, lit = c.st === 'on', burnt = c.st === 'burnt', lv = c.lv == null ? 1 : c.lv;
       const color = burnt ? 0x2a2a2a : def.c;
-      const red = phong(color, 0x2a2a2a, 30, {});
+      const red = phong(color, 0x2a2a2a, 30, lit ? {emissive:new T.Color(def.on), emissiveIntensity:.75 * lv} : {});
       const prof = [new V2(2.45, 4), new V2(2.45, 9.15)];
       for(let i = 1; i <= 32; i++){ const t = i / 32 * HALF; prof.push(new V2(2.45 * Math.cos(t), 9.15 + 2.45 * Math.sin(t))); }
       m.add(new T.Mesh(axisToZ(new T.LatheGeometry(prof, 72)), red));
+      if(lit) glow(g, def.on, 9, 13 * (.3 + .7 * lv));
       const a = Math.acos(2.5 / 2.9), sh = new T.Shape();
       sh.absarc(0, 0, 2.9, a, 2 * Math.PI - a, false); sh.closePath();   // لبهٔ تخت روی +x (کاتد)
       const fl = new T.Mesh(new T.ExtrudeGeometry(sh, {depth:1, bevelEnabled:false, curveSegments:72}), red);
@@ -686,9 +687,11 @@ function build(T, data){
   const legs2 = (g, pins, rest, y) => pins.forEach(p => g.add(tube(P3(p[0], 0, p[1]), P3(p[0] * rest, y, 0), .09)));
   const LEGACY = {
     C(g){
-      const d = cyl(.85, .3, mat('#e0a23c', {roughness:.6})); d.rotation.x = Math.PI / 2; d.position.y = 1.35; g.add(d);
-      legs2(g, [[-2,0],[2,0]], .22, .6);
-      [-1, 1].forEach(s => g.add(tube(P3(s * .22, .6, 0), P3(s * .22, 1.0, 0), .09)));
+      const b = cyl(.9, 1.9, mat('#17181c', {roughness:.4})); b.position.y = .95; g.add(b);
+      const top = cyl(.91, .03, mat('#3a3d44', {roughness:.5})); top.position.y = 1.91; g.add(top);
+      const stripe = box(.05, 1.7, .5, mat('#9aa0aa', {roughness:.5})); stripe.position.set(.9, .95, 0); g.add(stripe);
+      g.add(tube(P3(-2, 0, 0), P3(-.45, .1, 0), .09)); g.add(tube(P3(2, 0, 0), P3(.45, .1, 0), .09));
+      g.add(tube(P3(-.45, 0, 0), P3(-.45, .3, 0), .09)); g.add(tube(P3(.45, 0, 0), P3(.45, .3, 0), .09));
     },
     CP(g){
       const b = cyl(1.05, 2.2, mat('#1f3a78', {roughness:.45})); b.position.y = 1.1; g.add(b);
@@ -883,16 +886,18 @@ function open(data){
   }).catch(() => { if(current === st){ hideLoad(); say('بارگذاری three.js ممکن نشد (اینترنت یا فایل js/vendor/three.min.js را چک کن).'); } });
 }
 
-function start(st, stage, canvas, say, data, ready){
+function start(st, stage, canvas, say, data, ready, live){
   const T = window.THREE;
   let renderer;
   try{ renderer = new T.WebGLRenderer({canvas, antialias:true, alpha:true}); }
-  catch(e){ say('این مرورگر WebGL را اجرا نکرد، پس نمای سه بعدی در دسترس نیست.'); ready(); return; }
+  catch(e){ say('این مرورگر WebGL را اجرا نکرد، پس نمای سه بعدی در دسترس نیست.'); ready(); return null; }
   renderer.setClearColor(0x000000, 0);
   st.renderer = renderer;
   const on = (t, ev, fn, o) => { t.addEventListener(ev, fn, o); st.off.push(() => t.removeEventListener(ev, fn, o)); };
 
-  const {scene, rig, sprites, W, H} = build(T, data);
+  let {scene, rig, sprites, W, H} = build(T, data);
+  let dirty = true;
+  const mark = () => { dirty = true; };
   const basis = cameraBasis(T);
   const cam = new T.OrthographicCamera(-1, 1, 1, -1, 1, 1000);
   cam.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(basis.right, basis.up, basis.back));
@@ -908,7 +913,7 @@ function start(st, stage, canvas, say, data, ready){
     const halfW = .99 * W / 2 + .15 * H / 2 + 3;
     const halfV = .14 * W / 2 + .79 * H / 2 + 6;
     const halfH = Math.max(halfV, halfW / asp);
-    cam.left = -halfH * asp; cam.right = halfH * asp; cam.top = halfH; cam.bottom = -halfH;
+    cam.left = -halfH * asp; cam.right = halfH * asp; cam.top = halfH; cam.bottom = -halfH; mark();
     cam.zoom = zoom; cam.updateProjectionMatrix();
   }
   function resize(){
@@ -925,12 +930,12 @@ function start(st, stage, canvas, say, data, ready){
   const rotateBy = (dx, dy) => {
     const qy = new T.Quaternion().setFromAxisAngle(basis.up, dx);
     const qx = new T.Quaternion().setFromAxisAngle(basis.right, dy);
-    rig.quaternion.premultiply(qy).premultiply(qx);
+    rig.quaternion.premultiply(qy).premultiply(qx); mark();
   };
-  const setZoom = z => { zoom = Math.min(4, Math.max(.6, z)); cam.zoom = zoom; cam.updateProjectionMatrix(); };
+  const setZoom = z => { zoom = Math.min(4, Math.max(.6, z)); cam.zoom = zoom; cam.updateProjectionMatrix(); mark(); };
   const pan = (dx, dy) => {
     const k = (cam.top - cam.bottom) / cam.zoom / Math.max(canvas.clientHeight, 1);
-    rig.position.addScaledVector(basis.right, dx * k).addScaledVector(basis.up, -dy * k);
+    rig.position.addScaledVector(basis.right, dx * k).addScaledVector(basis.up, -dy * k); mark();
   };
 
   const pointers = new Map();
@@ -966,7 +971,7 @@ function start(st, stage, canvas, say, data, ready){
     const step = now => {
       const k = dur ? Math.min(1, (now - t0) / dur) : 1, e = 1 - Math.pow(1 - k, 3);
       rig.quaternion.copy(q0).slerp(qHome, e);
-      rig.position.copy(p0).multiplyScalar(1 - e);
+      rig.position.copy(p0).multiplyScalar(1 - e); mark();
       setZoom(z0 + (1 - z0) * e);
       if(k < 1) anim = requestAnimationFrame(step);
     };
@@ -987,14 +992,130 @@ function start(st, stage, canvas, say, data, ready){
     e.preventDefault();
   });
 
-  let shown = false;
+  let shown = false, lastT = 0;
   (function loop(now){
     st.raf = requestAnimationFrame(loop);
+    if(live){
+      if(!stage.offsetParent) return;
+      if(!dirty && (!sprites.length || now - lastT < 66)) return;      // فقط تپش نور LED: حداکثر ~۱۵ فریم در ثانیه
+    }
+    lastT = now; dirty = false;
     const pulse = .88 + .12 * Math.sin(now / 260);
     sprites.forEach(sp => { sp.material.opacity = pulse; });
     renderer.render(scene, cam);
     if(!shown){ shown = true; requestAnimationFrame(ready); }   // لودینگ بعد از اولین فریم کنار می‌رود
   })(performance.now());
+
+  // بازسازی صحنه با دادهٔ تازه؛ زاویه، جابه‌جایی و زوم کاربر حفظ می‌شود (برای پیش‌نمایش زنده)
+  return {dispose(){ disposeScene(scene); }, update(nd){
+    const b = build(T, simplifyConnector(nd)), old = {scene, rig};
+    b.rig.quaternion.copy(old.rig.quaternion); b.rig.position.copy(old.rig.position);
+    scene = b.scene; rig = b.rig; sprites = b.sprites; W = b.W; H = b.H;
+    disposeScene(old.scene);
+    resize(); mark();
+  }};
+}
+
+function disposeScene(sc){
+  sc.traverse(o => {
+    if(o.geometry) o.geometry.dispose();
+    const ms = !o.material ? [] : Array.isArray(o.material) ? o.material : [o.material];
+    ms.forEach(m => { if(m.map) m.map.dispose(); m.dispose(); });
+  });
+}
+
+/* ---------- پیش‌نمایش زندهٔ توکار (کنار ادیتور): همان صحنه و مدل‌های نمای سه بعدی، بدون عکس ثابت ---------- */
+let liveCssDone = false;
+function injectLiveCss(){
+  if(liveCssDone) return; liveCssDone = true;
+  const s = document.createElement('style');
+  s.textContent = `
+.c3dp{position:relative;display:flex;flex-direction:column;height:100%;min-height:260px;background:var(--panel,#121826);border:1px solid var(--panel-border,#2a3345);border-radius:12px;overflow:hidden;direction:rtl}
+.c3dp-head{display:flex;align-items:center;gap:6px;padding:7px 10px;border-bottom:1px solid var(--panel-border,#2a3345)}
+.c3dp-head b{font:800 13px/1.3 Vazirmatn,system-ui,sans-serif;color:var(--gold,#d4af37);white-space:nowrap}
+.c3dp-sub{margin-inline-start:auto;min-width:0;font:11px/1.3 ui-monospace,Consolas,monospace;color:var(--muted,#9aa3b2);direction:ltr;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c3dp-head button{flex:none;width:28px;height:28px;padding:0;font-size:15px;line-height:1;color:var(--parchment,#e8e2d0);background:transparent;border:1px solid var(--panel-border,#2a3345);border-radius:8px;cursor:pointer}
+.c3dp-head button:hover{border-color:var(--copper,#c9772e)}
+.c3dp-head button:focus-visible,.c3dp-stage canvas:focus-visible{outline:2px solid var(--trace-bright,#57d8a3);outline-offset:2px}
+.c3dp-stage{position:relative;flex:1;min-height:0;background:linear-gradient(180deg,#2b2a42,#15141f);overflow:hidden;touch-action:none;cursor:grab;direction:ltr}
+.c3dp-stage.drag{cursor:grabbing}
+.c3dp-stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;outline:none}
+.c3dp.empty canvas{visibility:hidden}
+.c3dp-load{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:linear-gradient(180deg,rgba(43,42,66,.96),rgba(21,20,31,.96));color:#ecebf4;font:600 12.5px/1.4 Vazirmatn,system-ui,sans-serif}
+.c3dp-load[hidden]{display:none}
+.c3dp-spin{width:30px;height:30px;border:3px solid rgba(236,235,244,.2);border-top-color:var(--trace-bright,#57d8a3);border-radius:50%;animation:c3dpspin .8s linear infinite}
+@keyframes c3dpspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.c3dp-spin{animation-duration:2.4s}}
+.c3dp-note{position:absolute;inset:auto 8px 8px 8px;margin:0;padding:7px 9px;border-radius:8px;background:rgba(0,0,0,.55);color:#ecebf4;font:600 12px/1.8 Vazirmatn,system-ui,sans-serif;direction:rtl;pointer-events:none}
+.c3dp-note[hidden]{display:none}
+.c3dp.empty .c3dp-note{inset:0;display:flex;align-items:center;justify-content:center;padding:18px;text-align:center;background:transparent;color:#a09db4;border-radius:0}
+.c3dp.empty .c3dp-note[hidden]{display:none}
+.c3dp-hint{position:absolute;left:8px;bottom:6px;margin:0;font:600 10.5px/1.4 Vazirmatn,system-ui,sans-serif;color:rgba(236,235,244,.7);background:rgba(0,0,0,.4);padding:2px 7px;border-radius:6px;pointer-events:none;direction:rtl}
+.c3dp.empty .c3dp-hint,.c3dp-note:not([hidden]) ~ .c3dp-hint{display:none}`;
+  document.head.appendChild(s);
+}
+
+function mount(host, o){
+  o = o || {};
+  injectLiveCss();
+  const el = document.createElement('div');
+  el.className = 'c3dp empty';
+  el.innerHTML = '<div class="c3dp-head"><b>پیش‌نمایش واقعی</b><span class="c3dp-sub"></span>' +
+    '<button type="button" data-a="reset" title="بازنشانی نما" aria-label="بازنشانی نما">⟲</button>' +
+    (o.onExpand ? '<button type="button" data-a="full" title="نمای بزرگ" aria-label="نمای بزرگ">⤢</button>' : '') + '</div>' +
+    '<div class="c3dp-stage"><canvas tabindex="0" aria-label="پیش‌نمایش سه بعدی مدار. برای چرخش بکش و برای زوم از چرخ ماوس استفاده کن."></canvas>' +
+    '<div class="c3dp-load" role="status" hidden><div class="c3dp-spin"></div><span>در حال ساخت مدل‌ها…</span></div>' +
+    '<p class="c3dp-note"></p><p class="c3dp-hint">بکش: چرخش · چرخ ماوس: زوم</p></div>';
+  host.appendChild(el);
+  const stage = el.querySelector('.c3dp-stage'), canvas = el.querySelector('canvas'), note = el.querySelector('.c3dp-note'), load = el.querySelector('.c3dp-load'), sub = el.querySelector('.c3dp-sub');
+  const st = {el, raf:0, renderer:null, off:[]};
+  let ctl = null, starting = false, failed = false, dead = false, last = null;
+  const say = t => { note.textContent = t || ''; note.hidden = !t; };
+  const hideLoad = () => { load.hidden = true; };
+  if(o.onExpand) el.querySelector('[data-a="full"]').addEventListener('click', o.onExpand);
+
+  function update(d){
+    if(dead) return;
+    last = d;
+    if(!d || !d.comps || !d.comps.length){
+      el.classList.add('empty'); sub.textContent = '';
+      say('قطعه‌ای روی صفحه نیست. با گذاشتن قطعه، نمای واقعی‌اش همین‌جا ساخته می‌شود.');
+      return;
+    }
+    el.classList.remove('empty'); say('');
+    if(failed) return;
+    try{
+      const sd = simplifyConnector(d), E = extents(sd);
+      sub.textContent = fa(Math.round(E.W)) + '×' + fa(Math.round(E.H)) + ' mm · ' + fa(sd.comps.filter(c => !c.power).length) + ' قطعه';
+    }catch(_){}
+    if(ctl){
+      try{ ctl.update(d); }catch(err){ say('به‌روزرسانی پیش‌نمایش ناموفق بود.'); }
+      return;
+    }
+    if(starting) return;
+    starting = true; load.hidden = false;
+    loadThree().then(() => {
+      if(dead) return;
+      requestAnimationFrame(() => setTimeout(() => {
+        starting = false;
+        if(dead || !last || !last.comps.length){ hideLoad(); return; }
+        try{
+          ctl = start(st, stage, canvas, say, simplifyConnector(last), hideLoad, true);
+          if(!ctl) failed = true;
+        }catch(err){ failed = true; hideLoad(); say('ساخت پیش‌نمایش سه بعدی ناموفق بود.'); }
+      }, 30));
+    }).catch(() => { starting = false; failed = true; hideLoad(); say('بارگذاری three.js ممکن نشد (اینترنت یا فایل js/vendor/three.min.js را چک کن).'); });
+  }
+
+  function destroy(){
+    if(dead) return; dead = true;
+    cancelAnimationFrame(st.raf);
+    st.off.forEach(f => f());
+    if(ctl && ctl.dispose) ctl.dispose();
+    if(st.renderer){ st.renderer.dispose(); if(st.renderer.forceContextLoss) st.renderer.forceContextLoss(); }
+    el.remove();
+  }
+  return {update, destroy, el, visible:() => !!stage.offsetParent};
 }
 
 function close(){
@@ -1009,5 +1130,5 @@ function close(){
 
 // پیش‌بارگذاری کتابخانه (مثلاً وقتی ماوس روی دکمهٔ سه بعدی می‌رود) تا با کلیک آماده باشد
 const preload = () => { loadThree().catch(() => {}); };
-window.Circuit3D = {open, close, preload};
+window.Circuit3D = {open, close, preload, mount};
 })();

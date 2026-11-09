@@ -82,7 +82,7 @@ void loop() {
 
 // چراغ راهنما با Nano: D12 ← مقاومت ← LED قرمز، D11 ← زرد، D10 ← سبز؛ کاتد هر سه به GND
 const cktNanoTraffic = (() => {
-  const comps = [{t:'NANO', x:-160, y:0, ref:'U1', task:'traffic'}], wires = [];
+  const comps = [{t:'NANO', x:-160, y:0, ref:'U1', code:PRESET_TRAFFIC_CODE}], wires = [];
   [['LED', -60, 'D1', 'R1', -40, -140], ['LEDY', 0, 'D2', 'R2', -60, -120], ['LEDG', 60, 'D3', 'R3', -80, -100]].forEach(a => {
     const [led, y, dref, rref, jx, py] = a;
     comps.push({t:'R', x:20, y, ref:rref, val:'330Ω'}, {t:led, x:140, y, ref:dref});
@@ -164,13 +164,29 @@ const cktMatrix5 = (() => {
   return {comps, wires};
 })();
 
+// LED با تأخیر خاموشی: باتری ← کلید فشاری ← گره N؛ N ← خازن ← GND و N ← مقاومت ← LED ← GND
+const cktCapacitor = {
+  comps:[
+    {t:'BC', x:-240, y:0, ref:'J1'},
+    {t:'PB', x:-120, y:-40, ref:'SW1'},
+    {t:'C', x:-40, y:0, r:1, ref:'C1', val:'1000µF'},
+    {t:'R', x:40, y:-40, ref:'R1', val:'1kΩ'},
+    {t:'LED', x:160, y:-40, ref:'D1'}
+  ],
+  wires:[
+    [-200, -20, -200, -40], [-200, -40, -160, -40], [-80, -40, -40, -40], [-40, -40, 0, -40],
+    [80, -40, 120, -40], [200, -40, 240, -40], [240, -40, 240, 40], [240, 40, -40, 40],
+    [-200, 20, -200, 40], [-200, 40, -40, 40]
+  ]
+};
+
 const CIRCUIT_PRESETS = [
   {
     id:'traffic_uno', title:'چراغ راهنما با آردوینو Uno',
     desc:'همان مدار مأموریت چراغ راهنما: Uno با برد LED (هدر ۴پین)، سه مقاومت ۳۳۰Ω و سه LED. سبز ← D10، زرد ← D11، قرمز ← D12. کد چراغ راهنما از قبل نوشته شده است.',
     boards:['Arduino Uno', 'HDR4', 'LED ×3', 'R ×3'], code:PRESET_TRAFFIC_CODE,
     hint:'روی آردوینو دوبار کلیک کن تا ویرایشگر کد باز شود، بعد ▶ اجرا کن را بزن.',
-    spec:{comps:CIRCUIT_MISSIONS.traffic_light.solution.comps.map(c => c.t === 'UNO' ? Object.assign({task:'traffic'}, c) : c), wires:CIRCUIT_MISSIONS.traffic_light.solution.wires}
+    spec:{comps:CIRCUIT_MISSIONS.traffic_light.solution.comps.map(c => c.t === 'UNO' ? Object.assign({code:PRESET_TRAFFIC_CODE}, c) : c), wires:CIRCUIT_MISSIONS.traffic_light.solution.wires}
   },
   {
     id:'traffic_nano', title:'چراغ راهنما با آردوینو Nano',
@@ -186,6 +202,13 @@ const CIRCUIT_PRESETS = [
     code:MATRIX_CODE,
     hint:'روی Nano دوبار کلیک کن؛ کد از قبل آنجاست. ▶ اجرا کن را بزن.',
     spec:cktMatrix5
+  },
+  {
+    id:'cap_led', title:'LED با تأخیر خاموشی (خازن)',
+    desc:'کلید فشاری را نگه دار: LED روشن می‌شود و خازن ۱۰۰۰µF از باتری پر می‌شود. کلید را که رها کنی باتری قطع می‌شود، اما خازن مثل یک باتری کوچک از راه مقاومت ۱kΩ و LED خالی می‌شود؛ برای همین LED حدود دو ثانیه روشن می‌ماند و بعد خاموش می‌شود. خازن را که برداری، LED با رها کردن کلید همان لحظه خاموش می‌شود.',
+    boards:['باتری ۹V', 'کلید فشاری', 'C ×1', 'R ×1', 'LED ×1'],
+    hint:'روی کلید فشاری نگه دار (یا یک‌بار بزن)، بعد رها کن و LED را ببین.',
+    spec:cktCapacitor
   }
 ];
 
