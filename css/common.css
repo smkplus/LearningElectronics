@@ -71,6 +71,19 @@
     padding:5px 12px; font-size:13px; font-weight:700; color:var(--copper-bright);
   }
 
+  .music-btn{
+    display:flex; align-items:center; justify-content:center; flex:0 0 auto;
+    width:34px; height:34px; padding:0; border-radius:50%;
+    background:var(--panel); border:1px solid var(--panel-border);
+    color:var(--trace); cursor:pointer; transition:border-color .15s ease, color .15s ease;
+  }
+  .music-btn:hover{ border-color:var(--trace); }
+  .music-btn svg{ width:18px; height:18px; }
+  .music-btn .ico-off{ display:none; }
+  .music-btn.muted{ color:var(--muted); }
+  .music-btn.muted .ico-on{ display:none; }
+  .music-btn.muted .ico-off{ display:block; }
+
   /* ---------- ACCOUNT (Google sign-in / cloud sync) ---------- */
   .account-wrap{ position:relative; flex:0 0 auto; }
   .account-btn{

@@ -80,7 +80,23 @@ const SFX = {
 /* ================= BACKGROUND MUSIC ================= */
 const bgMusicEl = document.getElementById('bgMusic');
 bgMusicEl.volume = 0.5;
-bgMusicEl.muted = false;
+(function(){
+  let muted = false;
+  try{ muted = localStorage.getItem('bgMusicMuted') === '1'; }catch(e){}
+  bgMusicEl.muted = muted;
+  const btn = document.getElementById('musicBtn');
+  if(!btn) return;
+  const sync = () => {
+    btn.classList.toggle('muted', bgMusicEl.muted);
+    btn.setAttribute('aria-pressed', String(bgMusicEl.muted));
+  };
+  sync();
+  btn.addEventListener('click', () => {
+    bgMusicEl.muted = !bgMusicEl.muted;
+    try{ localStorage.setItem('bgMusicMuted', bgMusicEl.muted ? '1' : '0'); }catch(e){}
+    sync();
+  });
+})();
 
 const MUSIC = (() => {
   let unlocked = false;
