@@ -45,12 +45,12 @@ const FAM = t => ({LEDY:'LED', LEDG:'LED', NPN:'BJT', PNP:'BJT'}[t] || t);
 const DEF_FP = {R:'R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal', C:'C_Radial_D6.3mm_P5.00mm', CP:'CP_Radial_D8.0mm_P3.50mm',
   D:'D_DO-35_SOD27_P10.16mm_Horizontal',
   LED:'LED_D5.0mm', BJT:'TO-92_Inline', BC:'Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical', HDR4:'Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical', NANO:'Module:Arduino_Nano', ESP32:'Module:ESP32_DevKit_38Pin', BLUEPILL:'Module:BluePill_STM32F103C8T6',
-  SW:'SW_Slide_SPST_P10.16mm', PB:'Button_Switch_THT:SW_PUSH_6mm', LAMP:'Lamp_E10_Holder'};
+  SW:'SW_Slide_SPST_P10.16mm', PB:'Button_Switch_THT:SW_PUSH_6mm', LAMP:'Lamp_E10_Holder', BUZ:'Buzzer_Beeper:Buzzer_12x9.5RM7.6'};
 const fpOf = c => c.t === 'BC' ? DEF_FP.BC : (c.fp || DEF_FP[FAM(c.t)] || '');
 const NAMES = {R:'مقاومت', D:'دیود', LED:'LED قرمز ۵ میلی‌متری', LEDY:'LED زرد ۵ میلی‌متری', LEDG:'LED سبز ۵ میلی‌متری', C:'خازن', CP:'خازن الکترولیتی',
-  NPN:'ترانزیستور NPN', PNP:'ترانزیستور PNP', BC:'کانکتور باتری (هدر ۱×۲)', HDR4:'هدر ۴پین (۱×۴)', NANO:'آردوینو Nano (ATmega328P)', ESP32:'ESP32‑WROOM‑32 (۳۸ پین)', BLUEPILL:'STM32 Blue Pill (F103C8T6)', SW:'کلید', PB:'کلید فشاری ۶ میلی‌متری', LAMP:'لامپ'};
+  NPN:'ترانزیستور NPN', PNP:'ترانزیستور PNP', BC:'کانکتور باتری (هدر ۱×۲)', HDR4:'هدر ۴پین (۱×۴)', NANO:'آردوینو Nano (ATmega328P)', ESP32:'ESP32‑WROOM‑32 (۳۸ پین)', BLUEPILL:'STM32 Blue Pill (F103C8T6)', SW:'کلید', PB:'کلید فشاری ۶ میلی‌متری', LAMP:'لامپ', BUZ:'بازر ۱۲ میلی‌متری'};
 const SWATCH = {R:'#e1b57d', D:'#c9772e', LED:'#b31a0d', LEDY:'#d9a400', LEDG:'#1d8f45', C:'#1c1d21', CP:'#1f3a78',
-  NPN:'#262626', PNP:'#262626', BC:'#262626', HDR4:'#262626', NANO:'#2450b8', ESP32:'#15161a', BLUEPILL:'#1a3f9e', SW:'#d0d4db', PB:'#d2d1c7', LAMP:'#ffe27a'};
+  NPN:'#262626', PNP:'#262626', BC:'#262626', HDR4:'#262626', NANO:'#2450b8', ESP32:'#15161a', BLUEPILL:'#1a3f9e', SW:'#d0d4db', PB:'#d2d1c7', LAMP:'#ffe27a', BUZ:'#1d1e22'};
 const fa = n => Number(n).toLocaleString('fa-IR');
 
 /* ---------- ابعاد برد (میلی‌متر) ---------- */
@@ -166,7 +166,7 @@ function build(T, data){
   const circle = (cx, cz, r) => { const p = []; for(let i = 0; i <= 64; i++){ const t = i / 64 * Math.PI * 2; p.push([cx + r * Math.cos(t), cz + r * Math.sin(t)]); } return p; };
   const SILK = {
     C:[circle(0,0,3.15)], CP:[circle(0,0,4)], BJT:[circle(.5,0,3)],
-    SW:[rect(-6.5,-3,6.5,3)], HDR4:[rect(-1.33,-5.1,1.33,5.1)], PB:[rect(-3,-3,3,3), circle(0,0,1.9)], LAMP:[circle(0,0,5.5)]
+    SW:[rect(-6.5,-3,6.5,3)], HDR4:[rect(-1.33,-5.1,1.33,5.1)], PB:[rect(-3,-3,3,3), circle(0,0,1.9)], LAMP:[circle(0,0,5.5)], BUZ:[circle(0,0,6)]
   };
   function silkFor(g, c, fp){
     const fam = FAM(c.t);
@@ -721,6 +721,14 @@ function build(T, data){
       fil.position.y = 2.0; g.add(fil);
       g.add(tube(P3(-2, 0, 0), P3(-.6, .4, 0), .09)); g.add(tube(P3(2, 0, 0), P3(.6, .4, 0), .09));
       if(lit) glow(g, '#ffd95a', 2.0, 6.5);
+    },
+    BUZ(g, c){
+      const lit = c.st === 'on';
+      const body = cyl(2.4, 1.5, mat('#1d1e22', {roughness:.5})); body.position.y = .75; g.add(body);
+      const ring = cyl(1.9, 1.52, mat('#2b2e36')); ring.position.y = .76; g.add(ring);
+      const hole = cyl(.35, 1.56, mat('#050506')); hole.position.y = .78; g.add(hole);
+      g.add(tube(P3(-1.5, 0, 0), P3(-1.5, .2, 0), .09)); g.add(tube(P3(1.5, 0, 0), P3(1.5, .2, 0), .09));
+      if(lit) glow(g, '#57d8a3', 1.6, 4);
     },
     DEFAULT(g){ const b = box(2.4, 1, 2.4, M.dark); b.position.y = .5; g.add(b); }
   };

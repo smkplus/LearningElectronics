@@ -148,6 +148,10 @@ const MCU = {
 };
 const isMcu = t => t === 'UNO' || t === 'NANO' || t === 'ESP32' || t === 'BLUEPILL';   // بردهایی که ادیتور کد دارند (Blue Pill: CubeMX + HAL)
 const isBoard = t => Object.prototype.hasOwnProperty.call(MCU, t);   // همهٔ بردها
+/* برنامهٔ داخلیِ «پیانو» (c.fw === 'piano'): کلیدها INPUT_PULLUP‌اند (یک سر به پایه، سر دیگر به GND) و بازر روی پایهٔ buz است.
+   هر کلیدِ فشرده‌شده نتش را روی بازر می‌زند (تک‌صدا، اولین کلیدِ فشرده برنده است). فرکانس‌ها: Do تا Si اکتاو ۴ */
+const PIANO_FW = {ESP32:{keys:['D13','D14','D27','D26','D25','D33','D32'], buz:'D23'}};
+const PIANO_HZ = [262, 294, 330, 349, 392, 440, 494];
 const HDR_NAMES = ['GND','D12','D11','D10'];
 const HDR_DRAW = '<path class="b" d="' + HDR_NAMES.map((n, i) => `M-40 ${-40 + 20 * i}H-14M14 ${-40 + 20 * i}H40`).join('') + '"/>' +
   '<rect class="b" x="-14" y="-54" width="28" height="86" rx="4"/>' + HDR_NAMES.map((n, i) => svgTx(0, -36 + 20 * i, n, 9, 'middle')).join('');
@@ -179,6 +183,10 @@ const DEFS = {
   LAMP:{fa:'لامپ',pre:'LA',val:'6V',lab:'two',pins:[[-40,0,'1'],[40,0,'2']],box:[-40,-16,40,16],edge:'load',
     draw:'<path class="b" d="M-40 0H-16M16 0H40"/><circle class="b" r="16"/><path class="b" d="M-11.3 -11.3L11.3 11.3M-11.3 11.3L11.3 -11.3"/>',
     lit:'<circle r="15" fill="#ffd95a" opacity=".92"/>', glow:'#ffd95a'},
+  BUZ:{fa:'بازر (Buzzer)',pre:'BZ',val:'42Ω',lab:'two',pins:[[-40,0,'+'],[40,0,'−']],box:[-40,-20,40,20],edge:'load',
+    draw:'<path class="b" d="M-40 0H-18M18 0H40"/><circle class="b" r="18"/><path class="b" d="M-9 -4H-4L2 -9V9L-4 4H-9Z"/><path class="b t" d="M6 -5Q10 0 6 5M9 -9Q16 0 9 9"/>' +
+      '<text x="-27" y="-6" text-anchor="middle" font-size="13" font-weight="700" font-family="monospace" fill="#ff8a80" stroke="#0b1426" stroke-width="2.6" paint-order="stroke">+</text>',
+    lit:'<circle r="17" fill="#57d8a3" opacity=".3"/>'},
   VCC:{fa:'تغذیه (VCC)',pre:'',val:'VCC',lab:'top',power:true,pins:[[0,0,'VCC']],box:[-10,-30,10,0],
     draw:'<path class="b" d="M0 0V-28M-9 -14L0 -28L9 -14"/>'},
 
@@ -201,6 +209,7 @@ const GROUPS = [
   ['قطعات پایه', ['R','C','CP']],
   ['نیمه‌هادی', ['D','LED','LEDY','LEDG','NPN','PNP']],
   ['منبع و کلید', ['BC','SW','PB','VCC','GND']],
+  ['خروجی صدا', ['BUZ']],
   ['آردوینو و برد', ['UNO','NANO','ESP32','BLUEPILL','HDR4']]
 ];
 const HINTS = {
@@ -616,6 +625,14 @@ const REAL = {
     return bluePillBoardReal(hi) + chipSvg(BP_CHIP_REAL, c);
   }
 };
+REAL.BUZ = (c, st) => {      // بازر پسیو ۱۲میلی‌متری: بدنهٔ مشکی با سوراخ وسط؛ با فعال بودن، موج صدا دورش دیده می‌شود
+  const on = st === 'on';
+  return mLead(-40, -17) + mLead(17, 40) +
+    '<circle r="18" fill="#1d1e22" stroke="#000" stroke-width="1.2"/><circle r="13.5" fill="none" stroke="#33363e" stroke-width="1"/><circle r="3.2" fill="#0a0b0d"/>' +
+    '<path d="M-14 -9A16 16 0 0 1 -5 -15" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="2" stroke-linecap="round"/>' +
+    '<text x="-27" y="-6" text-anchor="middle" font-size="13" font-weight="700" font-family="monospace" fill="#ff8a80" stroke="#0b1426" stroke-width="2.6" paint-order="stroke">+</text>' +
+    (on ? '<g fill="none" stroke="#57d8a3" stroke-width="2" stroke-linecap="round"><path d="M-8 -26Q0 -32 8 -26"/><path d="M-13 -31Q0 -41 13 -31"/></g>' : '');
+};
 REAL.PNP = REAL.NPN;
 REAL.LEDY = REAL.LED; REAL.LEDG = REAL.LED;
 let realCssDone = false;
@@ -681,6 +698,7 @@ function create(root, opts){
   const POV_MS = 70, ledSeen = new Map();   // ماندگاری دید: LED اسکن‌شده (ماتریس) تا ۷۰ms بعد از خاموش‌شدن هم روشن دیده می‌شود
   let povT = 0, sampleT = 0;
   const capMem = new Map(), hasCap = () => S.comps.some(c => c.t === 'C' || c.t === 'CP'); let capNext = new Map();   // ولتاژ هر خازن؛ فقط تایمرِ خازن آن را جلو می‌برد
+  let pianoInfo = {keys:[], note:-1}, pianoHi = [], heldKey = null;      // پیانو: کلیدها به ترتیب نت، نتِ در حال پخش، و کلیدی که با ماوس نگه داشته شده
   const pointers = new Map(), bjtMem = new Map(), burntSet = new Set();   // LEDِ منفجرشده تا اولین ویرایش مدار خراب می‌ماند
   const cleanup = [];
   const on = (t, ev, fn, o) => { t.addEventListener(ev, fn, o); cleanup.push(() => t.removeEventListener(ev, fn, o)); };
@@ -848,6 +866,7 @@ function create(root, opts){
       const nc = {id:out.seq++, t:c.t, x, y, r:(Number(c.r)|0)&3, ref:String(c.ref||'').slice(0,12), val:String(c.val||'').slice(0,24), on:!!c.on && c.t !== 'PB'};
       if(isMcu(c.t)) nc.cid = String(c.cid || '').replace(/[^\w-]/g, '').slice(0, 24) || newCid();
       if(isMcu(c.t) && c.task === 'traffic') nc.task = 'traffic';      // کد آمادهٔ چراغ راهنما
+      if(isMcu(c.t) && c.fw === 'piano' && PIANO_FW[c.t]) nc.fw = 'piano';      // برنامهٔ داخلی پیانو
       if(isMcu(c.t) && typeof c.code === 'string' && c.code) nc.code = c.code.slice(0, 8000);      // کد آمادهٔ پروژه‌های آماده (مثلاً ماتریس LED)
       out.comps.push(nc);
     });
@@ -868,7 +887,7 @@ function create(root, opts){
     S = {comps:[], wires:[], seq:1};
     spec.comps.forEach(a => {
       const c = newComp(a.t, a.x, a.y, a.r || 0);
-      if(a.ref) c.ref = a.ref; if(a.val) c.val = a.val; if(a.on) c.on = true; if(a.task && isMcu(a.t)) c.task = a.task; if(a.code && isMcu(a.t)) c.code = a.code;
+      if(a.ref) c.ref = a.ref; if(a.val) c.val = a.val; if(a.on) c.on = true; if(a.task && isMcu(a.t)) c.task = a.task; if(a.code && isMcu(a.t)) c.code = a.code; if(a.fw === 'piano' && PIANO_FW[a.t]) c.fw = 'piano';
       S.comps.push(c);
     });
     spec.wires.forEach(a => S.wires.push({id:S.seq++, x1:a[0], y1:a[1], x2:a[2], y2:a[3]}));
@@ -976,11 +995,27 @@ function create(root, opts){
     gnd.forEach(c => uni(key(P.get(c.id)[0].x, P.get(c.id)[0].y), key(P.get(gnd[0].id)[0].x, P.get(gnd[0].id)[0].y)));
     const unos = S.comps.filter(c => isBoard(c.t));
     const hiNow = new Set(ext ? Object.keys(ext).filter(k => ext[k]) : unos.length ? UNO_PROG[unoPhase()].hi : []);
-    const hiOf = eachCfg ? (u => new Set(hiList(u))) : (() => hiNow);     // طراحی آزاد: هر Uno پایه‌های HIGHِ خودش را دارد
+    let fwU = null, fwHi = null;      // بردی که برنامهٔ داخلیِ «پیانو» را اجرا می‌کند و پایه‌های HIGHِ آن
+    const hiOf = u => (fwU && u === fwU) ? fwHi : eachCfg ? new Set(hiList(u)) : hiNow;     // طراحی آزاد: هر Uno پایه‌های HIGHِ خودش را دارد
     const unoGndKey = u => { const q = P.get(u.id)[MCU[u.t].pins.indexOf('GND')]; return key(q.x, q.y); };
     unos.forEach(u => { if(gnd.length) uni(unoGndKey(u), key(P.get(gnd[0].id)[0].x, P.get(gnd[0].id)[0].y)); else if(u !== unos[0]) uni(unoGndKey(u), unoGndKey(unos[0])); });
     unos.forEach(u => MCU[u.t].pins.forEach((n, i) => { if(n === 'GND'){ const q = P.get(u.id)[i]; uni(key(q.x, q.y), unoGndKey(u)); } else if(n === '3V3_'){ const q = P.get(u.id)[i], f = P.get(u.id)[MCU[u.t].pins.indexOf('3V3')]; uni(key(q.x, q.y), key(f.x, f.y)); } else if(n === 'RST'){ const q = P.get(u.id)[i], f = P.get(u.id)[MCU[u.t].pins.indexOf('RST')]; uni(key(q.x, q.y), key(f.x, f.y)); } }));   // همهٔ پایه‌های GND یکی‌اند
     S.comps.forEach(c => { if(c.t === 'HDR4') DEFS.HDR4.link.forEach(l => { const a = P.get(c.id)[l[0]], b = P.get(c.id)[l[1]]; uni(key(a.x, a.y), key(b.x, b.y)); }); });   // هدر: پایهٔ بیرونی = پایهٔ برد
+    /* برنامهٔ داخلی پیانو: کلید = PB بین پایهٔ برد و GND؛ بازر = BUZ بین پایهٔ بازر و GND. هر کلیدِ فشرده نتش را می‌زند */
+    pianoInfo = {keys:[], note:-1}; pianoHi = [];
+    fwU = (!mission && !opts.unoCode) ? unos.find(u => u.fw === 'piano' && PIANO_FW[u.t]) || null : null;      // فقط در طراحی آزاد
+    if(fwU){
+      const map = PIANO_FW[fwU.t], gk = find(unoGndKey(fwU)), pn = n => node(fwU, MCU[fwU.t].pins.indexOf(n));
+      map.keys.forEach((n, i) => {
+        const nk = pn(n);
+        pianoInfo.keys[i] = S.comps.find(c => DEFS[c.t].push && ((node(c,0) === nk && node(c,1) === gk) || (node(c,1) === nk && node(c,0) === gk))) || null;
+      });
+      const nb = pn(map.buz), bz = S.comps.some(c => c.t === 'BUZ' && ((node(c,0) === nb && node(c,1) === gk) || (node(c,1) === nb && node(c,0) === gk)));
+      const down = pianoInfo.keys.findIndex(k => k && k.on);
+      pianoInfo.note = bz ? down : -1;
+      fwHi = new Set(pianoInfo.note >= 0 ? [map.buz] : []);
+      pianoHi = [...fwHi];
+    }
     const vcc = {};
     S.comps.filter(c => c.t === 'VCC').forEach(c => {
       const k = key(P.get(c.id)[0].x, P.get(c.id)[0].y);
@@ -1018,7 +1053,7 @@ function create(root, opts){
         else if(d.edge === 'diode') els.push({k:'D', id:c.id, comp:c, a:node(c,0), b:node(c,1), vf:0.65, g:1/5});
         else if(d.edge === 'load' || d.edge === 'wire'){
           if(d.sw && !c.on) return;
-          els.push({k:'R', id:c.id, comp:c, a:node(c,0), b:node(c,1), g:d.sw ? 1e3 : 1 / (c.t === 'R' ? ohm(c.val) : 20)});
+          els.push({k:'R', id:c.id, comp:c, a:node(c,0), b:node(c,1), g:d.sw ? 1e3 : 1 / ((c.t === 'R' || c.t === 'BUZ') ? ohm(c.val) : 20)});
         }
       });
       sources.forEach((s,i) => els.push({k:'V', id:'V' + i, comp:s.comp, p:s.pos, n:s.neg, v:s.v}));
@@ -1203,6 +1238,7 @@ function create(root, opts){
     const A = analyze();
     unoHiNow = A.hasUno && ext ? A.hi : null;
     touch3d(A);
+    setTone(isActive() && pianoInfo.note >= 0 ? PIANO_HZ[pianoInfo.note] : 0);
     unoChipNow = codePanel ? (codeRunning ? 'run' : 'idle') : null;
     setUnoMaps();
     let h = '', outH = '', inH = '';
@@ -1378,6 +1414,10 @@ function create(root, opts){
       const cu = chipAt(w);
       if(cu){ drag = null; sel.clear(); sel.add('c' + cu.id); renderProps(); render(); openCode(cu); return; }
     }
+    if(e.button === 0 && !spaceDown && (tool === 'pan' || tool === 'select') && fwOn()){      // پیانو: کلید فشاری را تا وقتی نگه داشته‌ای فشرده بماند
+      const hh = hitTest(w), hc = hh && hh.k === 'c' && S.comps.find(x => x.id === hh.id);
+      if(hc && DEFS[hc.t].push){ heldKey = hc; hc.on = true; render(); return; }
+    }
     if(e.button === 1 || tool === 'pan' || spaceDown){
       drag = {kind:'pan', sx:e.clientX, sy:e.clientY, vx:view.x, vy:view.y};
       stage.classList.add('panning'); return;
@@ -1422,6 +1462,7 @@ function create(root, opts){
   }
   function onUp(e){
     pointers.delete(e.pointerId);
+    if(heldKey){ heldKey.on = false; heldKey = null; render(); return; }
     if(pinch){ if(pointers.size < 2) pinch = null; drag = null; return; }
     const w = toWorld(e), sp = {x:snap(w.x), y:snap(w.y)};
     const d = drag; drag = null;
@@ -1433,6 +1474,7 @@ function create(root, opts){
   }
   function onCancel(e){
     pointers.delete(e.pointerId);
+    if(heldKey){ heldKey.on = false; heldKey = null; }
     if(drag && drag.kind === 'move' && drag.moved){ S = JSON.parse(drag.orig); undoStack.pop(); }
     drag = null; pinch = null; stage.classList.remove('panning'); sync();
   }
@@ -1510,11 +1552,38 @@ function create(root, opts){
     unoHiBy = new Map(); unoChipBy = new Map();
     S.comps.forEach(c => {
       if(!isMcu(c.t)) return;
-      unoHiBy.set(c.id, hiList(c));
+      unoHiBy.set(c.id, c.fw === 'piano' ? pianoHi : hiList(c));
       if(!forExport) unoChipBy.set(c.id, runBy.get(c.cid) ? 'run' : 'idle');
     });
   }
   cleanup.push(() => { clearTimeout(povT); clearTimeout(sampleT); });
+
+  /* ---- صدای بازر (پیانو): یک اسیلاتور مربعی با WebAudio؛ فقط بعد از اولین کلیک/کلید کاربر شروع می‌شود (قانون مرورگر) ---- */
+  let actx = null, osc = null, gainN = null, curHz = 0;
+  function setTone(hz){
+    if(hz === curHz) return;
+    curHz = hz;
+    try{
+      if(!hz){ if(gainN) gainN.gain.setTargetAtTime(0, actx.currentTime, .015); return; }
+      if(!actx){ const AC = window.AudioContext || window.webkitAudioContext; if(!AC) return; actx = new AC(); }
+      if(actx.state === 'suspended') actx.resume();
+      if(!osc){
+        osc = actx.createOscillator(); gainN = actx.createGain();
+        osc.type = 'square'; gainN.gain.value = 0;
+        osc.connect(gainN); gainN.connect(actx.destination); osc.start();
+      }
+      osc.frequency.setValueAtTime(hz, actx.currentTime);
+      gainN.gain.setTargetAtTime(.08, actx.currentTime, .005);
+    }catch(_){}
+  }
+  cleanup.push(() => { curHz = 0; try{ if(osc) osc.stop(); if(actx) actx.close(); }catch(_){} osc = gainN = actx = null; });
+  const fwOn = () => S.comps.some(c => c.fw === 'piano');
+  function pianoKey(i, down){
+    const c = pianoInfo.keys[i];
+    if(!c || c.on === down) return;
+    c.on = down; render();
+  }
+  const DIGIT = /^(?:Digit|Numpad)([1-7])$/;
   if(eachCfg) cleanup.push(() => { if(eachRaf) cancelAnimationFrame(eachRaf); docks.forEach(d => d.destroy()); docks.clear(); });
   function openCode(cu){
     if(codePanel){ codePanel.open(); return; }
@@ -1788,6 +1857,8 @@ function create(root, opts){
     const tg = e.target && e.target.tagName;
     if(tg === 'INPUT' || tg === 'TEXTAREA' || tg === 'SELECT'){ if(e.code === 'Escape') e.target.blur(); return; }
     const ctrl = e.ctrlKey || e.metaKey;
+    const dk = DIGIT.exec(e.code);
+    if(dk && !ctrl && fwOn()){ e.preventDefault(); if(!e.repeat) pianoKey(+dk[1] - 1, true); return; }      // پیانو: کلیدهای ۱ تا ۷ = Do تا Si
     if(e.code === 'Space'){ spaceDown = true; e.preventDefault(); return; }
     if(ctrl && e.code === 'KeyZ'){ e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
     if(ctrl && e.code === 'KeyY'){ e.preventDefault(); redo(); return; }
@@ -1805,7 +1876,11 @@ function create(root, opts){
       else if(sel.size){ sel.clear(); sync(); }
     }
   });
-  on(document, 'keyup', e => { if(e.code === 'Space') spaceDown = false; });
+  on(document, 'keyup', e => {
+    if(e.code === 'Space') spaceDown = false;
+    const dk = DIGIT.exec(e.code);
+    if(dk && fwOn()) pianoKey(+dk[1] - 1, false);
+  });
 
   if(window.ResizeObserver){
     const ro = new ResizeObserver(() => {

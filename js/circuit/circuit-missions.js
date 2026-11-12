@@ -180,6 +180,95 @@ const cktCapacitor = {
   ]
 };
 
+// ESP32: دو LED که به‌نوبت چشمک می‌زنند (قرمز ← D27، سبز ← D26) + LED روی خود برد (D2) هم‌زمان با قرمز؛ منطق ۳٫۳ ولت
+const ESP32_BLINK_CODE = `// ESP32: دو LED چشمک‌زن (به‌نوبت)
+// روی ESP32 شمارهٔ پایه = شمارهٔ GPIO است؛ پس D27 یعنی GPIO27
+// ولتاژ پایه‌ها ۳٫۳ ولت است (نه ۵ ولتِ آردوینو)؛ با مقاومت ۳۳۰Ω جریان LED حدود ۴ میلی‌آمپر می‌شود
+
+const int REDLED   = 27;   // LED قرمز
+const int GREENLED = 26;   // LED سبز
+const int ONBOARD  = 2;    // LED آبیِ روی خود برد
+
+void setup() {
+  pinMode(REDLED, OUTPUT);
+  pinMode(GREENLED, OUTPUT);
+  pinMode(ONBOARD, OUTPUT);
+}
+
+void loop() {
+  // قرمز روشن، سبز خاموش
+  digitalWrite(REDLED, HIGH);
+  digitalWrite(ONBOARD, HIGH);
+  digitalWrite(GREENLED, LOW);
+  delay(500);
+
+  // سبز روشن، قرمز خاموش
+  digitalWrite(REDLED, LOW);
+  digitalWrite(ONBOARD, LOW);
+  digitalWrite(GREENLED, HIGH);
+  delay(500);
+}
+`;
+
+// ESP32 (۳۸ پین، بدون برد جدا): D27 ← مقاومت ← LED قرمز، D26 ← مقاومت ← LED سبز؛ کاتد هر دو به GND برد
+const cktEsp32Blink = {
+  comps:[
+    {t:'ESP32', x:-200, y:0, ref:'U1', code:ESP32_BLINK_CODE},
+    {t:'R', x:20, y:-40, ref:'R1', val:'330Ω'}, {t:'LED', x:140, y:-40, ref:'D1'},
+    {t:'R', x:20, y:40, ref:'R2', val:'330Ω'}, {t:'LEDG', x:140, y:40, ref:'D2'}
+  ],
+  wires:[
+    [-100, -20, -60, -20], [-60, -20, -60, -40], [-60, -40, -20, -40], [60, -40, 100, -40], [180, -40, 220, -40],      // D27 ← R1 ← LED قرمز
+    [-100, 0, -80, 0], [-80, 0, -80, 40], [-80, 40, -20, 40], [60, 40, 100, 40], [180, 40, 220, 40],                  // D26 ← R2 ← LED سبز
+    [-100, -80, -60, -80], [-60, -80, -60, -100], [-60, -100, 220, -100], [220, -100, 220, -40], [220, -40, 220, 40]   // کاتدها ← GND
+  ]
+};
+
+const ESP32_PIANO_CODE = `// ESP32: پیانوی ۷ کلید با بازر
+// هر کلید بین یک پایه و GND است؛ INPUT_PULLUP یعنی وقتی کلید فشرده نشده پایه HIGH است و با فشردن LOW می‌شود.
+// بازر روی D23 است و tone() روی آن نت می‌زند (فرکانس‌ها بر حسب هرتز).
+
+const int KEYS[7]  = {13, 14, 27, 26, 25, 33, 32};        // Do Re Mi Fa Sol La Si
+const int NOTES[7] = {262, 294, 330, 349, 392, 440, 494};
+const int BUZZER   = 23;
+
+void setup() {
+  for (int i = 0; i < 7; i++) pinMode(KEYS[i], INPUT_PULLUP);
+  pinMode(BUZZER, OUTPUT);
+}
+
+void loop() {
+  bool played = false;
+  for (int i = 0; i < 7; i++) {
+    if (digitalRead(KEYS[i]) == LOW) {   // کلید فشرده شده
+      tone(BUZZER, NOTES[i]);
+      played = true;
+      break;                              // هر بار فقط یک نت
+    }
+  }
+  if (!played) noTone(BUZZER);
+}
+`;
+
+// پیانوی ESP32: ۷ کلید فشاری (D13 D14 D27 D26 D25 D33 D32) هرکدام بین پایه و GND، بازر روی D23. برنامهٔ داخلیِ ادیتور (fw:'piano') کلیدها را می‌خواند و نت می‌زند
+const cktEsp32Piano = (() => {
+  const KP = [-100, -40, -20, 0, 20, 40, 60], KY = [-120, -70, -20, 30, 80, 130, 180], CH = [-80, -80, null, -20, -40, -60, -80];
+  const comps = [{t:'ESP32', x:-200, y:0, ref:'U1', fw:'piano'}], wires = [];
+  KY.forEach((ky, i) => {
+    comps.push({t:'PB', x:60, y:ky, ref:'SW' + (i + 1)});
+    if(CH[i] === null) wires.push([-100, KP[i], 20, ky]);
+    else wires.push([-100, KP[i], CH[i], KP[i]], [CH[i], KP[i], CH[i], ky], [CH[i], ky, 20, ky]);
+    wires.push([100, ky, 140, ky]);
+    if(i) wires.push([140, KY[i - 1], 140, ky]);
+  });
+  wires.push([140, KY[6], 140, 240]);
+  comps.push({t:'GND', x:140, y:240, r:2});
+  // بازر: + ← D23 (ستون چپ)، − ← GND
+  comps.push({t:'BUZ', x:-400, y:160, r:2, ref:'BZ1', val:'100Ω'}, {t:'GND', x:-440, y:220, r:2});
+  wires.push([-360, 160, -300, 160], [-440, 160, -440, 220]);
+  return {comps, wires};
+})();
+
 const CIRCUIT_PRESETS = [
   {
     id:'traffic_uno', title:'چراغ راهنما با آردوینو Uno',
@@ -202,6 +291,20 @@ const CIRCUIT_PRESETS = [
     code:MATRIX_CODE,
     hint:'روی Nano دوبار کلیک کن؛ کد از قبل آنجاست. ▶ اجرا کن را بزن.',
     spec:cktMatrix5
+  },
+  {
+    id:'esp32_blink', title:'ESP32: چشمک‌زن دو LED',
+    desc:'اولین مدار با ESP32 (برد ۳۸پین). پایه‌های ESP32 به‌جای ۵ ولتِ آردوینو، ۳٫۳ ولت می‌دهند؛ برای همین یک مقاومت ۳۳۰Ω برای هر LED کافی است (جریان حدود ۴ میلی‌آمپر). روی ESP32 نام پایه همان شمارهٔ GPIO است: LED قرمز ← D27 و LED سبز ← D26، و کاتد هر دو به GND برد می‌رود. کد، دو LED را به‌نوبت روشن می‌کند و LED آبیِ روی خود برد (D2) هم‌زمان با قرمز چشمک می‌زند. نکته: پایه‌های D6 تا D11 به حافظهٔ فلش وصل‌اند و D34 تا D39 فقط ورودی‌اند؛ برای LED از آن‌ها استفاده نکن.',
+    boards:['ESP32 (۳۸ پین)', 'LED ×2', 'R ×2'], code:ESP32_BLINK_CODE,
+    hint:'روی ESP32 دوبار کلیک کن؛ کد از قبل آنجاست. ▶ اجرا کن را بزن و در نمای «واقعی» LED روی برد را هم ببین.',
+    spec:cktEsp32Blink
+  },
+  {
+    id:'esp32_piano', title:'ESP32: پیانوی ۷ کلید با بازر',
+    desc:'یک پیانوی کوچک! هفت کلید فشاری نت‌های Do Re Mi Fa Sol La Si را می‌زنند و بازر آن را پخش می‌کند. هر کلید بین یک پایهٔ ESP32 (D13، D14، D27، D26، D25، D33، D32) و GND وصل است. پایه‌ها INPUT_PULLUP هستند: کلید فشرده نباشد HIGH می‌خواند و با فشردن LOW می‌شود. بازر روی D23 است و دستور tone() نت را با فرکانسش روی آن می‌زند (Do = ۲۶۲ هرتز … Si = ۴۹۴ هرتز). روی کلیدها نگه دار یا از دکمه‌های ۱ تا ۷ صفحه‌کلید استفاده کن. نکته: صدا بعد از اولین کلیک شما در صفحه شروع می‌شود (قانون مرورگر). این پروژه با برنامهٔ داخلیِ پیانو اجرا می‌شود؛ کد کامل را با «کپی کد نمونه» برای ESP32 واقعی ببر.',
+    boards:['ESP32 (۳۸ پین)', 'کلید فشاری ×7', 'بازر ×1'], code:ESP32_PIANO_CODE,
+    hint:'روی یکی از کلیدها نگه دار یا دکمه‌های ۱ تا ۷ صفحه‌کلید را بزن و صدا را بشنو.',
+    spec:cktEsp32Piano
   },
   {
     id:'cap_led', title:'LED با تأخیر خاموشی (خازن)',
