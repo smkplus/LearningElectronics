@@ -37,6 +37,14 @@
 })();
 </script>
 
+<!-- i18n: core + one file per language (add a language = add one line here). Must stay before every other script. -->
+<script src="js/i18n/i18n.js?v=1"></script>
+<script src="js/i18n/locales/fa.js?v=1"></script>
+<script src="js/i18n/locales/en.js?v=1"></script>
+<script src="js/i18n/locales/en.quests.circuit.js?v=1"></script>
+<script src="js/i18n/locales/en.arduino.js?v=1"></script>
+<script>I18n.init();</script>
+
 <!-- PostHog analytics — tracks page visits -->
 <script>
     !function(t,e){var o,n,p,r;e.__SV||(window.posthog && window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}p||((p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",p.onerror=function(){p=null},(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r));var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="Tl Ml El Il Al init Xl tu Jl Kl nu ho Yl au Gl capture getExtension eu xl vu calculateEventProperties du register register_once register_for_session unregister unregister_for_session gu Ql cu getFeatureFlag getFeatureFlagPayload getFeatureFlagResult getAllFeatureFlags isFeatureEnabled reloadFeatureFlags updateFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey displaySurvey cancelPendingSurvey canRenderSurvey canRenderSurveyAsync mu identify setPersonProperties unsetPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset yu shutdown setIdentity clearIdentity get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException addExceptionStep captureLog startExceptionAutocapture stopExceptionAutocapture loadToolbar get_property getSessionProperty fu uu createPersonProfile setInternalOrTestUser pu Fl Ol opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing get_explicit_consent_status is_capturing clear_opt_in_out_capturing ou debug do ts getPageViewId captureTraceFeedback captureTraceMetric zl".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
@@ -76,7 +84,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/common.css?v=2">
+<link rel="stylesheet" href="css/common.css?v=3">
 <link rel="stylesheet" href="css/dialogue.css?v=1">
 <link rel="stylesheet" href="css/quest.css?v=18">
 <link rel="stylesheet" href="css/arduino-blocks.css?v=1">
@@ -307,15 +315,16 @@
 <div class="hud">
   <div class="hud-title">
     <svg viewBox="0 0 24 24" fill="none"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z" stroke="#c97c3d" stroke-width="1.6"/><path d="M8.5 11.5 11 14l4.5-5" stroke="#57d8a3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    سفر به دنیای الکترونیک
+    <span data-i18n="hud.title">سفر به دنیای الکترونیک</span>
   </div>
+  <div class="lang-switch" id="langSwitch"></div>
   <div class="hud-stats">
     <div class="xp-wrap">
       <div class="xp-label"><span class="mono" id="xpText">0 / 0 XP</span><span id="pctText">0%</span></div>
       <div class="xp-bar"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
       <div class="xp-total" id="completionText">تکمیل مسیر: ۰%</div>
     </div>
-    <div class="level-badge">⚜️ سطح <span class="mono" id="levelNum">۰</span></div>
+    <div class="level-badge">⚜️ <span data-i18n="hud.level">سطح</span> <span class="mono" id="levelNum">۰</span></div>
   </div>
 
 </div>
@@ -323,24 +332,24 @@
 <div class="tab-nav">
   <button class="tab-btn active" id="tabQuestBtn">
     <svg viewBox="0 0 24 24" fill="none"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z" stroke="currentColor" stroke-width="1.6"/></svg>
-    مسیر مأموریت
+    <span data-i18n="tab.quest">مسیر مأموریت</span>
   </button>
   <button class="tab-btn" id="tabLabBtn">
     <svg viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
-    آزمایشگاه الکترونیک
+    <span data-i18n="tab.lab">آزمایشگاه الکترونیک</span>
   </button>
   <button class="tab-btn" id="tabCircuitBtn">
     <svg viewBox="0 0 24 24" fill="none"><path d="M3 12h4l2-5 4 10 2-5h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    طراحی مدار
+    <span data-i18n="tab.circuit">طراحی مدار</span>
   </button>
 </div>
 
 <div class="knight-section" id="knightSection">
   <div class="knight-avatar">
-    <img id="knightImg" class="knight-img" src="assets/images/knight-happy.png" alt="استاد اهم">
+    <img id="knightImg" class="knight-img" src="assets/images/knight-happy.png" alt="استاد اهم" data-i18n-attr="alt:char.knight">
   </div>
   <div class="speech">
-    <div class="name">استاد اهم</div>
+    <div class="name" data-i18n="char.knight">استاد اهم</div>
 <div class="line" id="knightLine">
   ⚔️ سلام ماجراجو! این نقشه مسیر یادگیری توست🗺️
   هر ایستگاه یک چالش جدید دارد، از روشن‌کردن اولین LED 💡 تا ساخت یک ربات 🤖
@@ -370,8 +379,8 @@
   <div class="lab-intro">
     <div class="lab-intro-icon">⚡</div>
     <div>
-      <div class="lab-intro-title">آزمایشگاه الکترونیک</div>
-      <div class="lab-intro-sub">اینجا فرمول حفظ نمی‌کنیم — می‌بینیم که الکترون‌ها چطور می‌دوند، مقاومت چطور رمزگذاری می‌شود، و خازن چطور نفس می‌کشد.</div>
+      <div class="lab-intro-title" data-i18n="lab.intro.title">آزمایشگاه الکترونیک</div>
+      <div class="lab-intro-sub" data-i18n="lab.intro.sub">اینجا فرمول حفظ نمی‌کنیم — می‌بینیم که الکترون‌ها چطور می‌دوند، مقاومت چطور رمزگذاری می‌شود، و خازن چطور نفس می‌کشد.</div>
     </div>
   </div>
 
@@ -379,24 +388,24 @@
     <div class="lab-card-head">
       <div class="lab-icon">🔋</div>
       <div>
-        <div class="lab-title">قانون اهم زنده</div>
-        <div class="lab-sub">ولتاژ و مقاومت را جابه‌جا کن و ببین الکترون‌ها چطور واکنش نشان می‌دهند</div>
+        <div class="lab-title" data-i18n="lab.ohm.title">قانون اهم زنده</div>
+        <div class="lab-sub" data-i18n="lab.ohm.sub">ولتاژ و مقاومت را جابه‌جا کن و ببین الکترون‌ها چطور واکنش نشان می‌دهند</div>
       </div>
     </div>
     <canvas id="ohmCanvas" class="ohm-canvas"></canvas>
     <div class="ohm-mode-tabs" id="ohmModeTabs">
-      <button class="ohm-mode-btn active" data-mode="single">تک مقاومت</button>
-      <button class="ohm-mode-btn" data-mode="series">سری (متوالی)</button>
-      <button class="ohm-mode-btn" data-mode="parallel">موازی</button>
+      <button class="ohm-mode-btn active" data-mode="single" data-i18n="lab.ohm.single">تک مقاومت</button>
+      <button class="ohm-mode-btn" data-mode="series" data-i18n="lab.ohm.series">سری (متوالی)</button>
+      <button class="ohm-mode-btn" data-mode="parallel" data-i18n="lab.ohm.parallel">موازی</button>
     </div>
     <div class="ohm-switch-row" id="ohmSwitchRow">
       <button class="lab-btn switch-btn on" id="ohmSwitchBtn">🔌 کلید: <span id="ohmSwitchLabel">وصل</span></button>
       <button class="lab-btn no-resistor-btn" id="ohmNoResistorBtn">🚫 مقاومت‌ها را بردار</button>
-      <button class="lab-btn replace-led-btn" id="ohmReplaceBtn" style="display:none;">🔧 LED سوخته را تعویض کن</button>
+      <button class="lab-btn replace-led-btn" id="ohmReplaceBtn" style="display:none;" data-i18n="lab.ohm.replaceLed">🔧 LED سوخته را تعویض کن</button>
     </div>
     <div class="lab-controls">
       <div class="slider-group">
-        <label>ولتاژ باتری <span class="mono" id="voltageVal">۵ V</span></label>
+        <label><span data-i18n="lab.ohm.voltage">ولتاژ باتری</span> <span class="mono" id="voltageVal">۵ V</span></label>
         <input type="range" id="voltageRange" min="1" max="12" step="0.5" value="5">
       </div>
       <div class="slider-group">
@@ -409,8 +418,8 @@
       </div>
     </div>
     <div class="ohm-readout" id="ohmReadoutRow">
-      <div class="readout-item"><span class="ro-label">جریان &nbsp;I = V ÷ R</span><span class="ro-val mono" id="currentVal">—</span></div>
-      <div class="readout-item"><span class="ro-label">توان &nbsp;P = V × I</span><span class="ro-val mono" id="powerVal">—</span></div>
+      <div class="readout-item"><span class="ro-label" data-i18n-html="lab.ohm.current">جریان &nbsp;I = V ÷ R</span><span class="ro-val mono" id="currentVal">—</span></div>
+      <div class="readout-item"><span class="ro-label" data-i18n-html="lab.ohm.power">توان &nbsp;P = V × I</span><span class="ro-val mono" id="powerVal">—</span></div>
     </div>
     <div class="ohm-readout" id="ohmReadoutRow2" style="display:none;"></div>
     <div class="lab-note" id="ohmNote">هرچه ولتاژ بیشتر یا مقاومت کمتر باشد، جریان بزرگ‌تر می‌شود و الکترون‌ها تندتر حرکت می‌کنند — لامپ هم داغ‌تر می‌درخشد.</div>
@@ -420,15 +429,15 @@
     <div class="lab-card-head">
       <div class="lab-icon">📖</div>
       <div>
-        <div class="lab-title">راهنما و رمزگشای رنگ مقاومت</div>
-        <div class="lab-sub">جدول مرجع رنگ‌ها را ببین، بعد روی هر نوار بزن و مقدار را آنی بساز</div>
+        <div class="lab-title" data-i18n="lab.resistor.title">راهنما و رمزگشای رنگ مقاومت</div>
+        <div class="lab-sub" data-i18n="lab.resistor.sub">جدول مرجع رنگ‌ها را ببین، بعد روی هر نوار بزن و مقدار را آنی بساز</div>
       </div>
     </div>
-    <div class="resistor-guide-note">مقاومت معمولاً ۴ نوار رنگی دارد: <b>نوار ۱ و ۲</b> دو رقم اول عدد را می‌سازند، <b>نوار ۳</b> عدد را در یک ضریب (توان ده) ضرب می‌کند، و <b>نوار ۴</b> میزان خطای مجاز (تلورانس) را نشان می‌دهد.</div>
+    <div class="resistor-guide-note" data-i18n-html="lab.resistor.note">مقاومت معمولاً ۴ نوار رنگی دارد: <b>نوار ۱ و ۲</b> دو رقم اول عدد را می‌سازند، <b>نوار ۳</b> عدد را در یک ضریب (توان ده) ضرب می‌کند، و <b>نوار ۴</b> میزان خطای مجاز (تلورانس) را نشان می‌دهد.</div>
     <div class="resistor-guide-table" id="resistorGuideTable"></div>
     <div class="resistor-guide-example" id="resistorGuideExample"></div>
 
-    <div class="lab-subhead">🎨 رمزگشای رنگ مقاومت</div>
+    <div class="lab-subhead" data-i18n="lab.resistor.decoder">🎨 رمزگشای رنگ مقاومت</div>
 
     <!-- Widget (SVG body + dropdowns + LCD readout) is built by
          ResistorDecoder.mount() in resistor-decoder.js — same widget the
@@ -441,8 +450,8 @@
     <div class="lab-card-head">
       <div class="lab-icon">🧩</div>
       <div>
-        <div class="lab-title">با قطعات آشنا شو</div>
-        <div class="lab-sub">یک خانواده و بعد یک نوع را انتخاب کن — هرکدام آزمایش تعاملی خودش را دارد</div>
+        <div class="lab-title" data-i18n="lab.parts.title">با قطعات آشنا شو</div>
+        <div class="lab-sub" data-i18n="lab.parts.sub">یک خانواده و بعد یک نوع را انتخاب کن — هرکدام آزمایش تعاملی خودش را دارد</div>
       </div>
     </div>
     <div class="component-grid" id="componentGrid"></div>
@@ -452,46 +461,46 @@
     <div class="lab-card-head">
       <div class="lab-icon">🪫</div>
       <div>
-        <div class="lab-title">خازن: شارژ و دشارژ</div>
-        <div class="lab-sub">خازن مثل یک سطل کوچک برای ذخیره‌ی بار الکتریکی است</div>
+        <div class="lab-title" data-i18n="lab.cap.title">خازن: شارژ و دشارژ</div>
+        <div class="lab-sub" data-i18n="lab.cap.sub">خازن مثل یک سطل کوچک برای ذخیره‌ی بار الکتریکی است</div>
       </div>
     </div>
     <canvas id="capCanvas" class="cap-canvas"></canvas>
     <div class="lab-controls">
       <div class="slider-group">
-        <label>مقاومت مسیر <span class="mono" id="capRVal">۱٬۰۰۰ Ω</span></label>
+        <label><span data-i18n="lab.cap.r">مقاومت مسیر</span> <span class="mono" id="capRVal">۱٬۰۰۰ Ω</span></label>
         <input type="range" id="capRRange" min="100" max="10000" step="100" value="1000">
       </div>
       <div class="slider-group">
-        <label>ظرفیت خازن <span class="mono" id="capCVal">۱٬۰۰۰ µF</span></label>
+        <label><span data-i18n="lab.cap.c">ظرفیت خازن</span> <span class="mono" id="capCVal">۱٬۰۰۰ µF</span></label>
         <input type="range" id="capCRange" min="10" max="4700" step="10" value="1000">
       </div>
     </div>
     <div class="ohm-readout">
-      <div class="readout-item"><span class="ro-label">ثابت زمانی &nbsp;τ = R × C</span><span class="ro-val mono" id="capTauVal">—</span></div>
-      <div class="readout-item"><span class="ro-label">وضعیت</span><span class="ro-val mono" id="capStateVal">خالی</span></div>
+      <div class="readout-item"><span class="ro-label" data-i18n-html="lab.cap.tau">ثابت زمانی &nbsp;τ = R × C</span><span class="ro-val mono" id="capTauVal">—</span></div>
+      <div class="readout-item"><span class="ro-label" data-i18n="lab.cap.state">وضعیت</span><span class="ro-val mono" id="capStateVal">خالی</span></div>
     </div>
     <div class="cap-buttons">
-      <button class="lab-btn charge" id="capChargeBtn">⚡ شارژ کن</button>
-      <button class="lab-btn discharge" id="capDischargeBtn">💨 دشارژ کن</button>
+      <button class="lab-btn charge" id="capChargeBtn" data-i18n="lab.cap.charge">⚡ شارژ کن</button>
+      <button class="lab-btn discharge" id="capDischargeBtn" data-i18n="lab.cap.discharge">💨 دشارژ کن</button>
     </div>
-    <div class="lab-note">τ (تاو) یعنی چقدر طول می‌کشد خازن تقریباً ۶۳٪ شارژ شود. مقاومت یا ظرفیت بیشتر → پر و خالی شدن کندتر.</div>
+    <div class="lab-note" data-i18n="lab.cap.note">τ (تاو) یعنی چقدر طول می‌کشد خازن تقریباً ۶۳٪ شارژ شود. مقاومت یا ظرفیت بیشتر → پر و خالی شدن کندتر.</div>
   </div>
 
   <div class="lab-card" data-unlock="6">
     <div class="lab-card-head">
       <div class="lab-icon">📈</div>
       <div>
-        <div class="lab-title">اسیلوسکوپ</div>
-        <div class="lab-sub">شکل موج سیگنال را زنده تماشا کن — دامنه، فرکانس و شکل موج را تغییر بده</div>
+        <div class="lab-title" data-i18n="lab.scope.title">اسیلوسکوپ</div>
+        <div class="lab-sub" data-i18n="lab.scope.sub">شکل موج سیگنال را زنده تماشا کن — دامنه، فرکانس و شکل موج را تغییر بده</div>
       </div>
     </div>
     <canvas id="scopeCanvas" class="scope-canvas"></canvas>
     <div class="ohm-mode-tabs" id="scopeWaveTabs">
-      <button class="ohm-mode-btn active" data-wave="sine">سینوسی</button>
-      <button class="ohm-mode-btn" data-wave="square">مربعی</button>
-      <button class="ohm-mode-btn" data-wave="triangle">مثلثی</button>
-      <button class="ohm-mode-btn" data-wave="sawtooth">دندانه‌اره‌ای</button>
+      <button class="ohm-mode-btn active" data-wave="sine" data-i18n="lab.scope.sine">سینوسی</button>
+      <button class="ohm-mode-btn" data-wave="square" data-i18n="lab.scope.square">مربعی</button>
+      <button class="ohm-mode-btn" data-wave="triangle" data-i18n="lab.scope.triangle">مثلثی</button>
+      <button class="ohm-mode-btn" data-wave="sawtooth" data-i18n="lab.scope.sawtooth">دندانه‌اره‌ای</button>
     </div>
     <div class="ohm-switch-row">
       <button class="lab-btn switch-btn on" id="scopeNoiseBtn">📡 نویز خط: <span id="scopeNoiseLabel">خاموش</span></button>
@@ -499,36 +508,36 @@
     </div>
     <div class="lab-controls">
       <div class="slider-group">
-        <label>فرکانس <span class="mono" id="scopeFreqVal">۱ Hz</span></label>
+        <label><span data-i18n="lab.scope.freq">فرکانس</span> <span class="mono" id="scopeFreqVal">۱ Hz</span></label>
         <input type="range" id="scopeFreqRange" min="0.5" max="20" step="0.5" value="1">
       </div>
       <div class="slider-group">
-        <label>دامنه (ولتاژ اوج) <span class="mono" id="scopeAmpVal">۳ V</span></label>
+        <label><span data-i18n="lab.scope.amp">دامنه (ولتاژ اوج)</span> <span class="mono" id="scopeAmpVal">۳ V</span></label>
         <input type="range" id="scopeAmpRange" min="0.5" max="6" step="0.5" value="3">
       </div>
       <div class="slider-group">
-        <label>آفست DC <span class="mono" id="scopeOffsetVal">۰ V</span></label>
+        <label><span data-i18n="lab.scope.offset">آفست DC</span> <span class="mono" id="scopeOffsetVal">۰ V</span></label>
         <input type="range" id="scopeOffsetRange" min="-4" max="4" step="0.5" value="0">
       </div>
       <div class="slider-group">
-        <label>مقیاس زمان — Time/Div <span class="mono" id="scopeTimeDivVal">۱۰۰ ms</span></label>
+        <label><span data-i18n="lab.scope.timeDiv">مقیاس زمان — Time/Div</span> <span class="mono" id="scopeTimeDivVal">۱۰۰ ms</span></label>
         <input type="range" id="scopeTimeDivRange" min="20" max="500" step="10" value="100">
       </div>
     </div>
     <div class="ohm-readout">
-      <div class="readout-item"><span class="ro-label">دوره تناوب &nbsp;T = 1/f</span><span class="ro-val mono" id="scopePeriodVal">—</span></div>
-      <div class="readout-item"><span class="ro-label">اوج‌به‌اوج &nbsp;Vpp</span><span class="ro-val mono" id="scopeVppVal">—</span></div>
-      <div class="readout-item"><span class="ro-label">مؤثر &nbsp;Vrms</span><span class="ro-val mono" id="scopeRmsVal">—</span></div>
+      <div class="readout-item"><span class="ro-label" data-i18n-html="lab.scope.period">دوره تناوب &nbsp;T = 1/f</span><span class="ro-val mono" id="scopePeriodVal">—</span></div>
+      <div class="readout-item"><span class="ro-label" data-i18n-html="lab.scope.vpp">اوج‌به‌اوج &nbsp;Vpp</span><span class="ro-val mono" id="scopeVppVal">—</span></div>
+      <div class="readout-item"><span class="ro-label" data-i18n-html="lab.scope.vrms">مؤثر &nbsp;Vrms</span><span class="ro-val mono" id="scopeRmsVal">—</span></div>
     </div>
-    <div class="lab-note">محور افقی زمان و محور عمودی ولتاژ است؛ خط زرد وسط، صفر ولت (تریگر) را نشان می‌دهد. با کم‌کردن Time/Div موج‌ها را «باز» و با زیادکردن آن، فشرده می‌بینی — دقیقاً کاری که دکمه‌ی SEC/DIV روی یک اسیلوسکوپ واقعی انجام می‌دهد.</div>
+    <div class="lab-note" data-i18n="lab.scope.note">محور افقی زمان و محور عمودی ولتاژ است؛ خط زرد وسط، صفر ولت (تریگر) را نشان می‌دهد. با کم‌کردن Time/Div موج‌ها را «باز» و با زیادکردن آن، فشرده می‌بینی — دقیقاً کاری که دکمه‌ی SEC/DIV روی یک اسیلوسکوپ واقعی انجام می‌دهد.</div>
   </div>
 
   <div class="lab-card" data-unlock="8">
     <div class="lab-card-head">
       <div class="lab-icon">🗼</div>
       <div>
-        <div class="lab-title">برج تسلا</div>
-        <div class="lab-sub">موس را نزدیک برج ببر، یا یک جسم را با انگشت بکش کنارش — رسانا بودن یا نبودنش را با جرقه کشف کن</div>
+        <div class="lab-title" data-i18n="lab.tesla.title">برج تسلا</div>
+        <div class="lab-sub" data-i18n="lab.tesla.sub">موس را نزدیک برج ببر، یا یک جسم را با انگشت بکش کنارش — رسانا بودن یا نبودنش را با جرقه کشف کن</div>
       </div>
     </div>
     <canvas id="teslaCanvas" class="tesla-canvas"></canvas>
@@ -549,14 +558,14 @@
     <div class="lab-card-head">
       <div class="lab-icon">🧲</div>
       <div>
-        <div class="lab-title">آهنربای الکتریکی (الکترومغناطیس)</div>
-        <div class="lab-sub">سیم‌پیچ را روشن کن، میدان مغناطیسی و قطب‌ها را ببین — اجسام را نزدیکش بکش</div>
+        <div class="lab-title" data-i18n="lab.magnet.title">آهنربای الکتریکی (الکترومغناطیس)</div>
+        <div class="lab-sub" data-i18n="lab.magnet.sub">سیم‌پیچ را روشن کن، میدان مغناطیسی و قطب‌ها را ببین — اجسام را نزدیکش بکش</div>
       </div>
     </div>
     <canvas id="magnetCanvas" class="magnet-canvas"></canvas>
     <div class="ohm-switch-row">
       <button class="lab-btn switch-btn on" id="magnetSwitchBtn">⚡ سیم‌پیچ: <span id="magnetSwitchLabel">روشن</span></button>
-      <button class="lab-btn" id="magnetPolarityBtn">🔄 عوض کردن قطب‌ها</button>
+      <button class="lab-btn" id="magnetPolarityBtn" data-i18n="lab.magnet.polarity">🔄 عوض کردن قطب‌ها</button>
 
 
     <div class="tesla-objects" id="magnetObjects">
@@ -583,18 +592,18 @@
         </div>
     <div class="lab-controls">
       <div class="slider-group">
-        <label>جریان سیم‌پیچ <span class="mono" id="magnetCurrentVal">2.0 A</span></label>
+        <label><span data-i18n="lab.magnet.current">جریان سیم‌پیچ</span> <span class="mono" id="magnetCurrentVal">2.0 A</span></label>
         <input type="range" id="magnetCurrentRange" min="0" max="5" step="0.1" value="2">
       </div>
       <div class="slider-group">
-        <label>تعداد دور سیم‌پیچ <span class="mono" id="magnetTurnsVal">۲۰۰ دور</span></label>
+        <label><span data-i18n="lab.magnet.turns">تعداد دور سیم‌پیچ</span> <span class="mono" id="magnetTurnsVal">۲۰۰ دور</span></label>
         <input type="range" id="magnetTurnsRange" min="50" max="400" step="10" value="200">
       </div>
     </div>
         <div class="ohm-readout">
-      <div class="readout-item"><span class="ro-label">شدت میدان (نسبی) &nbsp;B ∝ N × I</span><span class="ro-val mono" id="magnetFieldVal">—</span></div>
-      <div class="readout-item"><span class="ro-label">قطب چپ</span><span class="ro-val mono" id="magnetPoleLeftVal">—</span></div>
-      <div class="readout-item"><span class="ro-label">قطب راست</span><span class="ro-val mono" id="magnetPoleRightVal">—</span></div>
+      <div class="readout-item"><span class="ro-label" data-i18n-html="lab.magnet.field">شدت میدان (نسبی) &nbsp;B ∝ N × I</span><span class="ro-val mono" id="magnetFieldVal">—</span></div>
+      <div class="readout-item"><span class="ro-label" data-i18n="lab.magnet.poleLeft">قطب چپ</span><span class="ro-val mono" id="magnetPoleLeftVal">—</span></div>
+      <div class="readout-item"><span class="ro-label" data-i18n="lab.magnet.poleRight">قطب راست</span><span class="ro-val mono" id="magnetPoleRightVal">—</span></div>
     </div>
     <div class="lab-note" id="magnetNote">سیم‌پیچ را روشن نگه‌دار و جریان یا تعداد دورها را زیاد کن تا میدان مغناطیسی قوی‌تر شود. گیره‌کاغذ و پیچ «آهنی»ند و به قطب‌ها جذب می‌شوند؛ بادکنک و سکه‌ی مسی بی‌اثرند. قطب‌نما را هم دور تا دور آهنربا بگردان و ببین عقربه‌اش همیشه هم‌جهت با خط‌های میدان می‌ایستد!</div>
   </div>
@@ -603,14 +612,14 @@
 
 <div id="circuitTab" class="circuit-tab"></div>
 
-<footer class="credit">سفر به دنیای الکترونیک — اثری از سید مرتضی کمالی</footer>
+<footer class="credit" data-i18n="footer.credit">سفر به دنیای الکترونیک — اثری از سید مرتضی کمالی</footer>
 
 <div class="support-wrap">
   <a class="support-card" href="https://daramet.com/ElectroQuest" target="_blank" rel="noopener">
-    <div class="support-icon"><img src="assets/images/knight-wink.png" alt="استاد اهم"></div>
+    <div class="support-icon"><img src="assets/images/knight-wink.png" alt="استاد اهم" data-i18n-attr="alt:char.knight"></div>
     <div class="support-text">
-      <span class="support-title">از سازنده حمایت کن ⚜️</span>
-      <span class="support-sub">این پروژه رایگان و با عشق ساخته شده — با یه حمایت کوچیک به ادامه‌اش کمک کن</span>
+      <span class="support-title" data-i18n="support.title">از سازنده حمایت کن ⚜️</span>
+      <span class="support-sub" data-i18n="support.sub">این پروژه رایگان و با عشق ساخته شده — با یه حمایت کوچیک به ادامه‌اش کمک کن</span>
     </div>
     <div class="support-arrow">⟵</div>
   </a>
@@ -637,20 +646,20 @@
   <div class="modal welcome-modal">
     <button class="modal-close" id="welcomeClose">✕</button>
     <div class="welcome-avatar">
-      <img src="assets/images/knight-happy.png" alt="استاد اُهم" class="welcome-img">
+      <img src="assets/images/knight-happy.png" alt="استاد اهم" data-i18n-attr="alt:char.knight" class="welcome-img">
     </div>
-<div class="modal-eyebrow">⚜️ خوش‌آمدگویی استاد اُهم</div>
-<h2 class="modal-title">به الکتروکوئست خوش آمدی!</h2>
+<div class="modal-eyebrow" data-i18n="welcome.eyebrow">⚜️ خوش‌آمدگویی استاد اُهم</div>
+<h2 class="modal-title" data-i18n="welcome.title">به الکتروکوئست خوش آمدی!</h2>
 <div class="modal-desc">
-  الکتروکوئست یک ماجراجویی تعاملی برای یادگیری و ساخت مدارهای الکترونیکی است.اینجا در قالب مأموریت‌های گام‌به‌گام پیش می‌روی و با حل هر معما و تکمیل هر مدار، قطعات و ابزارهای تازه‌ای در «آزمایشگاه» برایت باز می‌شود.
+  <span data-i18n="welcome.desc">الکتروکوئست یک ماجراجویی تعاملی برای یادگیری و ساخت مدارهای الکترونیکی است.اینجا در قالب مأموریت‌های گام‌به‌گام پیش می‌روی و با حل هر معما و تکمیل هر مدار، قطعات و ابزارهای تازه‌ای در «آزمایشگاه» برایت باز می‌شود.</span>
 </div>
 
     <ul class="steps">
-      <li><span class="num mono">۱</span><span>از تب «مسیر مأموریت» شروع کن و اولین گره را باز کن.</span></li>
-      <li><span class="num mono">۲</span><span>مأموریت‌ها را به ترتیب کامل کن تا XP و سطح بگیری.</span></li>
-      <li><span class="num mono">۳</span><span>هر چند مأموریت، یک بخش جدید در «آزمایشگاه الکترونیک» باز می‌شود.</span></li>
+      <li><span class="num mono" data-i18n="welcome.num1">۱</span><span data-i18n="welcome.step1">از تب «مسیر مأموریت» شروع کن و اولین گره را باز کن.</span></li>
+      <li><span class="num mono" data-i18n="welcome.num2">۲</span><span data-i18n="welcome.step2">مأموریت‌ها را به ترتیب کامل کن تا XP و سطح بگیری.</span></li>
+      <li><span class="num mono" data-i18n="welcome.num3">۳</span><span data-i18n="welcome.step3">هر چند مأموریت، یک بخش جدید در «آزمایشگاه الکترونیک» باز می‌شود.</span></li>
     </ul>
-    <button class="complete-btn" id="welcomeStartBtn">ماجراجویی را شروع کن ⚔️</button>
+    <button class="complete-btn" id="welcomeStartBtn" data-i18n="welcome.start">ماجراجویی را شروع کن ⚔️</button>
   </div>
 </div>
 

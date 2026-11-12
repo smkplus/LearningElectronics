@@ -180,6 +180,50 @@ const cktCapacitor = {
   ]
 };
 
+// ESP32: دو LED که به‌نوبت چشمک می‌زنند (قرمز ← D27، سبز ← D26) + LED روی خود برد (D2) هم‌زمان با قرمز؛ منطق ۳٫۳ ولت
+const ESP32_BLINK_CODE = `// ESP32: دو LED چشمک‌زن (به‌نوبت)
+// روی ESP32 شمارهٔ پایه = شمارهٔ GPIO است؛ پس D27 یعنی GPIO27
+// ولتاژ پایه‌ها ۳٫۳ ولت است (نه ۵ ولتِ آردوینو)؛ با مقاومت ۳۳۰Ω جریان LED حدود ۴ میلی‌آمپر می‌شود
+
+const int REDLED   = 27;   // LED قرمز
+const int GREENLED = 26;   // LED سبز
+const int ONBOARD  = 2;    // LED آبیِ روی خود برد
+
+void setup() {
+  pinMode(REDLED, OUTPUT);
+  pinMode(GREENLED, OUTPUT);
+  pinMode(ONBOARD, OUTPUT);
+}
+
+void loop() {
+  // قرمز روشن، سبز خاموش
+  digitalWrite(REDLED, HIGH);
+  digitalWrite(ONBOARD, HIGH);
+  digitalWrite(GREENLED, LOW);
+  delay(500);
+
+  // سبز روشن، قرمز خاموش
+  digitalWrite(REDLED, LOW);
+  digitalWrite(ONBOARD, LOW);
+  digitalWrite(GREENLED, HIGH);
+  delay(500);
+}
+`;
+
+// ESP32 (۳۸ پین، بدون برد جدا): D27 ← مقاومت ← LED قرمز، D26 ← مقاومت ← LED سبز؛ کاتد هر دو به GND برد
+const cktEsp32Blink = {
+  comps:[
+    {t:'ESP32', x:-200, y:0, ref:'U1', code:ESP32_BLINK_CODE},
+    {t:'R', x:20, y:-40, ref:'R1', val:'330Ω'}, {t:'LED', x:140, y:-40, ref:'D1'},
+    {t:'R', x:20, y:40, ref:'R2', val:'330Ω'}, {t:'LEDG', x:140, y:40, ref:'D2'}
+  ],
+  wires:[
+    [-100, -20, -60, -20], [-60, -20, -60, -40], [-60, -40, -20, -40], [60, -40, 100, -40], [180, -40, 220, -40],      // D27 ← R1 ← LED قرمز
+    [-100, 0, -80, 0], [-80, 0, -80, 40], [-80, 40, -20, 40], [60, 40, 100, 40], [180, 40, 220, 40],                  // D26 ← R2 ← LED سبز
+    [-100, -80, -60, -80], [-60, -80, -60, -100], [-60, -100, 220, -100], [220, -100, 220, -40], [220, -40, 220, 40]   // کاتدها ← GND
+  ]
+};
+
 const CIRCUIT_PRESETS = [
   {
     id:'traffic_uno', title:'چراغ راهنما با آردوینو Uno',
@@ -202,6 +246,13 @@ const CIRCUIT_PRESETS = [
     code:MATRIX_CODE,
     hint:'روی Nano دوبار کلیک کن؛ کد از قبل آنجاست. ▶ اجرا کن را بزن.',
     spec:cktMatrix5
+  },
+  {
+    id:'esp32_blink', title:'ESP32: چشمک‌زن دو LED',
+    desc:'اولین مدار با ESP32 (برد ۳۸پین). پایه‌های ESP32 به‌جای ۵ ولتِ آردوینو، ۳٫۳ ولت می‌دهند؛ برای همین یک مقاومت ۳۳۰Ω برای هر LED کافی است (جریان حدود ۴ میلی‌آمپر). روی ESP32 نام پایه همان شمارهٔ GPIO است: LED قرمز ← D27 و LED سبز ← D26، و کاتد هر دو به GND برد می‌رود. کد، دو LED را به‌نوبت روشن می‌کند و LED آبیِ روی خود برد (D2) هم‌زمان با قرمز چشمک می‌زند. نکته: پایه‌های D6 تا D11 به حافظهٔ فلش وصل‌اند و D34 تا D39 فقط ورودی‌اند؛ برای LED از آن‌ها استفاده نکن.',
+    boards:['ESP32 (۳۸ پین)', 'LED ×2', 'R ×2'], code:ESP32_BLINK_CODE,
+    hint:'روی ESP32 دوبار کلیک کن؛ کد از قبل آنجاست. ▶ اجرا کن را بزن و در نمای «واقعی» LED روی برد را هم ببین.',
+    spec:cktEsp32Blink
   },
   {
     id:'cap_led', title:'LED با تأخیر خاموشی (خازن)',

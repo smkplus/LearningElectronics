@@ -96,9 +96,9 @@ const ArduinoBlocks = (() => {
     try {
       res = await fetch(url);
     } catch (e) {
-      throw new Error('اتصال به «' + url + '» ناموفق بود (اینترنت یا درست‌بودنِ مسیرِ فایل روی سرور را بررسی کن).');
+      throw new Error(__('اتصال به «') + url + __('» ناموفق بود (اینترنت یا درست‌بودنِ مسیرِ فایل روی سرور را بررسی کن).'));
     }
-    if (!res.ok) throw new Error('بارگذاریِ «' + url + '» ناموفق بود (HTTP ' + res.status + ').');
+    if (!res.ok) throw new Error(__('بارگذاریِ «') + url + __('» ناموفق بود (HTTP ') + res.status + ').');
     return res.text();
   }
   // کدِ UMD را با module/exports/require تحتِ کنترلِ خودمان اجرا می‌کند —
@@ -114,7 +114,7 @@ const ArduinoBlocks = (() => {
     const code = await corePromise;
     const core = runUmdModule(code);
     if (!core || typeof core.defineBlocksWithJsonArray !== 'function') {
-      throw new Error('فایلِ اصلیِ Blockly درست اجرا نشد.');
+      throw new Error(__('فایلِ اصلیِ Blockly درست اجرا نشد.'));
     }
     window.Blockly = core;
   }
@@ -156,10 +156,10 @@ const ArduinoBlocks = (() => {
         const code = await fetchScriptText(url);
         const lang = runUmdModule(code);
         if (lang && typeof lang.parse === 'function') { window.ArduinoLang = lang; return; }
-        lastErr = new Error('فایلِ «' + url + '» درست اجرا نشد.');
+        lastErr = new Error(__('فایلِ «') + url + __('» درست اجرا نشد.'));
       } catch (e) { lastErr = e; }
     }
-    throw new Error('فایلِ arduino-lang.js پیدا نشد؛ مطمئن شو کنارِ arduino-blocks.js روی سرور هست.'
+    throw new Error(__('فایلِ arduino-lang.js پیدا نشد؛ مطمئن شو کنارِ arduino-blocks.js روی سرور هست.')
       + (lastErr && lastErr.message ? ' (' + lastErr.message + ')' : ''));
   }
 
@@ -199,16 +199,16 @@ const ArduinoBlocks = (() => {
         // اضافه‌کردنِ کلیدواژه‌ی انگلیسیِ متناظر، کنارِ برچسبِ فارسیِ همان
         // بلوکِ داخلیِ Blockly — بدونِ دست‌زدن به ساختار یا موتاتورِ خودِ بلوک
         // (مثلاً موتاتورِ elseif/else در controls_if دست‌نخورده می‌ماند).
-        window.Blockly.Msg.CONTROLS_IF_MSG_IF = 'اگر (if)';
-        window.Blockly.Msg.CONTROLS_IF_MSG_ELSE = 'در غیر این صورت';
-        window.Blockly.Msg.CONTROLS_WHILEUNTIL_OPERATOR_WHILE = 'تکرار (while) در حالی که';
-        window.Blockly.Msg.CONTROLS_FLOW_STATEMENTS_OPERATOR_BREAK = 'خروج از (break) حلقه';
-        window.Blockly.Msg.CONTROLS_FLOW_STATEMENTS_OPERATOR_CONTINUE = 'ادامه (continue) حلقه';
+        window.Blockly.Msg.CONTROLS_IF_MSG_IF = __('اگر (if)');
+        window.Blockly.Msg.CONTROLS_IF_MSG_ELSE = __('در غیر این صورت');
+        window.Blockly.Msg.CONTROLS_WHILEUNTIL_OPERATOR_WHILE = __('تکرار (while) در حالی که');
+        window.Blockly.Msg.CONTROLS_FLOW_STATEMENTS_OPERATOR_BREAK = __('خروج از (break) حلقه');
+        window.Blockly.Msg.CONTROLS_FLOW_STATEMENTS_OPERATOR_CONTINUE = __('ادامه (continue) حلقه');
         // ترجمه‌ی پیش‌فرضِ فایلِ پیام برای بلوکِ داخلیِ «مقداردهیِ متغیر»
         // (variables_set) خراب/نامفهوم است (چیزی شبیهِ «مجموعه %1 به %2»)؛
         // این‌جا با یک برچسبِ روشنِ فارسی جایگزینش می‌کنیم — دقیقاً همان کاری
         // که برایِ CONTROLS_IF و بقیه‌ی کلیدهایِ بالا کردیم.
-        window.Blockly.Msg.VARIABLES_SET = 'مقداردهیِ متغیرِ %1 به %2';
+        window.Blockly.Msg.VARIABLES_SET = __('مقداردهیِ متغیرِ %1 به %2');
         // بلوکِ داخلیِ «تعریفِ تابع» (procedures_defnoreturn/defreturn) با
         // ترجمه‌ی پیش‌فرضِ فایلِ پیام، چیزی مثلِ «به [انجام چیزی] با:» نشان
         // می‌دهد — که هم نامِ پیش‌فرضِ تابع («انجام چیزی») گیج‌کننده است، هم
@@ -217,16 +217,16 @@ const ArduinoBlocks = (() => {
         // می‌شود «تابعی به نامِ»، نامِ پیش‌فرضِ ویرایش‌پذیرِ تابع می‌شود
         // «کارِ من»، و برچسبِ جلویِ لیستِ ورودی‌ها (هم در تعریف و هم در
         // فراخوانی) می‌شود «با ورودی‌های:».
-        window.Blockly.Msg.PROCEDURES_DEFNORETURN_TITLE = 'تابعی به نامِ';
-        window.Blockly.Msg.PROCEDURES_DEFNORETURN_PROCEDURE = 'کارِ من';
+        window.Blockly.Msg.PROCEDURES_DEFNORETURN_TITLE = __('تابعی به نامِ');
+        window.Blockly.Msg.PROCEDURES_DEFNORETURN_PROCEDURE = __('کارِ من');
         // فایلِ پیامِ فارسی، کلیدهایِ DEFRETURN (تابعِ با خروجی) را همان لحظه‌ی
         // بارگذاری، از رویِ DEFNORETURN کپی می‌کند؛ چون این اتفاق قبل از خطوطِ
         // بالا افتاده، خودمان باید DEFRETURN را هم جدا و صریح ست کنیم، وگرنه
         // فقط تابعِ بدونِ خروجی برچسبِ تازه را می‌گیرد.
-        window.Blockly.Msg.PROCEDURES_DEFRETURN_TITLE = 'تابعی به نامِ';
-        window.Blockly.Msg.PROCEDURES_DEFRETURN_PROCEDURE = 'کارِ من';
-        window.Blockly.Msg.PROCEDURES_BEFORE_PARAMS = 'با ورودی‌های:';
-        window.Blockly.Msg.PROCEDURES_CALL_BEFORE_PARAMS = 'با ورودی‌های:';
+        window.Blockly.Msg.PROCEDURES_DEFRETURN_TITLE = __('تابعی به نامِ');
+        window.Blockly.Msg.PROCEDURES_DEFRETURN_PROCEDURE = __('کارِ من');
+        window.Blockly.Msg.PROCEDURES_BEFORE_PARAMS = __('با ورودی‌های:');
+        window.Blockly.Msg.PROCEDURES_CALL_BEFORE_PARAMS = __('با ورودی‌های:');
         defineCustomBlocks();
         if (!generatorBuilt) { buildGenerator(); generatorBuilt = true; }
       } catch (e) {
@@ -312,7 +312,7 @@ const ArduinoBlocks = (() => {
     /* منطق */
     logic_compare: { A: numDef(0), B: numDef(0) },
     /* متن و سریال */
-    ard_serial_print: { VALUE: txtDef('پیام من') },
+    ard_serial_print: { VALUE: txtDef(__('پیام من')) },
     /* سروو */
     ard_servo_attach: { PIN: pinDef(9) },
     ard_servo_write: { ANGLE: numDef(90) },
@@ -373,40 +373,40 @@ const ArduinoBlocks = (() => {
       /* ---------- رویدادها ---------- */
       {
         type: 'ard_setup',
-        message0: '🔌 هنگام شروع %1 %2',
+        message0: __('🔌 هنگام شروع %1 %2'),
         args0: [{ type: 'input_dummy' }, { type: 'input_statement', name: 'DO' }],
         colour: COLOR.event,
-        tooltip: 'کدهای این‌جا فقط یک‌بار، درست در ابتدای اجرای برنامه، اجرا می‌شوند.',
+        tooltip: __('کدهای این‌جا فقط یک‌بار، درست در ابتدای اجرای برنامه، اجرا می‌شوند.'),
         helpUrl: ''
       },
       {
         type: 'ard_loop',
-        message0: '🔁 همیشه تکرار کن %1 %2',
+        message0: __('🔁 همیشه تکرار کن %1 %2'),
         args0: [{ type: 'input_dummy' }, { type: 'input_statement', name: 'DO' }],
         colour: COLOR.event,
-        tooltip: 'کدهای این‌جا بارها و بارها، تا وقتی که برنامه روشن است، تکرار می‌شوند.',
+        tooltip: __('کدهای این‌جا بارها و بارها، تا وقتی که برنامه روشن است، تکرار می‌شوند.'),
         helpUrl: ''
       },
       {
         type: 'ard_global',
-        message0: '🌐 سراسری (Global) %1 %2',
+        message0: __('🌐 سراسری (Global) %1 %2'),
         args0: [{ type: 'input_dummy' }, { type: 'input_statement', name: 'DO' }],
         colour: COLOR.event,
-        tooltip: 'جایی برای متغیرها، آرایه‌ها، سرووها و یادداشت‌هایی که باید بیرونِ «هنگامِ شروع» و «همیشه تکرار کن» تعریف شوند — همه‌شان اینجا نگه داشته می‌شوند تا هیچ بلوکی تنها و رهاشده روی بومِ کار نماند.',
+        tooltip: __('جایی برای متغیرها، آرایه‌ها، سرووها و یادداشت‌هایی که باید بیرونِ «هنگامِ شروع» و «همیشه تکرار کن» تعریف شوند — همه‌شان اینجا نگه داشته می‌شوند تا هیچ بلوکی تنها و رهاشده روی بومِ کار نماند.'),
         helpUrl: ''
       },
       {
         type: 'ard_comment',
-        message0: '📝 یادداشت: %1',
-        args0: [{ type: 'field_input', name: 'TEXT', text: 'توضیح' }],
+        message0: __('📝 یادداشت: %1'),
+        args0: [{ type: 'field_input', name: 'TEXT', text: __('توضیح') }],
         previousStatement: null,
         nextStatement: null,
         colour: '#5b6270',
-        tooltip: 'یک یادداشت برای خودت — روی اجرای برنامه هیچ اثری ندارد.'
+        tooltip: __('یک یادداشت برای خودت — روی اجرای برنامه هیچ اثری ندارد.')
       },
       {
         type: 'ard_raw_code',
-        message0: '🧩 کدِ خام %1',
+        message0: __('🧩 کدِ خام %1'),
         // توجه: از field_multilinetext استفاده نمی‌کنیم — آن یک فیلدِ
         // جداگانه‌ست (بستهٔ @blockly/field-multilineinput) که در بسته‌ی
         // پایه‌ی Blockly ثبت نشده؛ اگر همین‌جا استفاده می‌شد، این بلوک به‌طور
@@ -417,28 +417,28 @@ const ArduinoBlocks = (() => {
         previousStatement: null,
         nextStatement: null,
         colour: COLOR.raw,
-        tooltip: 'این تکه‌کد هنوز به بلوک تبدیل نشده (یک ساختارِ پیچیده یا پشتیبانی‌نشده است) — عینِ همان متنی که در حالتِ متنی نوشته بودی، این‌جا نگه‌داشته شده تا چیزی گم نشود. می‌توانی مستقیماً همین‌جا ویرایشش کنی؛ موقعِ برگشتن به حالتِ متنی، دقیقاً همین متن در کد ظاهر می‌شود. برای دستورهای چندخطی، ویرایش در حالتِ متنی راحت‌تر است.',
+        tooltip: __('این تکه‌کد هنوز به بلوک تبدیل نشده (یک ساختارِ پیچیده یا پشتیبانی‌نشده است) — عینِ همان متنی که در حالتِ متنی نوشته بودی، این‌جا نگه‌داشته شده تا چیزی گم نشود. می‌توانی مستقیماً همین‌جا ویرایشش کنی؛ موقعِ برگشتن به حالتِ متنی، دقیقاً همین متن در کد ظاهر می‌شود. برای دستورهای چندخطی، ویرایش در حالتِ متنی راحت‌تر است.'),
         helpUrl: ''
       },
 
       /* ---------- کنترل ---------- */
       {
         type: 'ard_wait',
-        message0: '⏱️ صبر کن %1 میلی‌ثانیه',
+        message0: __('⏱️ صبر کن %1 میلی‌ثانیه'),
         args0: [{ type: 'input_value', name: 'MS', check: 'Number' }],
         previousStatement: null,
         nextStatement: null,
         colour: COLOR.control,
-        tooltip: 'اجرای برنامه را برای این‌مقدار میلی‌ثانیه متوقف می‌کند (delay).'
+        tooltip: __('اجرای برنامه را برای این‌مقدار میلی‌ثانیه متوقف می‌کند (delay).')
       },
       {
         type: 'ard_wait_micro',
-        message0: '⏱️ صبر کن %1 میکروثانیه',
+        message0: __('⏱️ صبر کن %1 میکروثانیه'),
         args0: [{ type: 'input_value', name: 'US', check: 'Number' }],
         previousStatement: null,
         nextStatement: null,
         colour: COLOR.control,
-        tooltip: 'مثل «صبر کن»، اما خیلی خیلی کوتاه‌تر (delayMicroseconds).'
+        tooltip: __('مثل «صبر کن»، اما خیلی خیلی کوتاه‌تر (delayMicroseconds).')
       },
       // این دو بلوک، بلوک‌های داخلیِ خودِ Blockly هستند (controls_repeat_ext و
       // controls_for) که این‌جا عمداً با همان نامِ نوع، دوباره تعریف می‌شوند تا
@@ -450,7 +450,7 @@ const ArduinoBlocks = (() => {
       // بلوک هیچ‌کدام از آن دو را خراب نمی‌کند.
       {
         type: 'controls_repeat_ext',
-        message0: '🔁 تکرار (repeat) %1 بار %2',
+        message0: __('🔁 تکرار (repeat) %1 بار %2'),
         args0: [
           { type: 'input_value', name: 'TIMES', check: 'Number' },
           { type: 'input_statement', name: 'DO' }
@@ -459,11 +459,11 @@ const ArduinoBlocks = (() => {
         nextStatement: null,
         inputsInline: true,
         colour: COLOR.control,
-        tooltip: 'کدهای داخلش را دقیقاً همین‌تعداد بار تکرار می‌کند.'
+        tooltip: __('کدهای داخلش را دقیقاً همین‌تعداد بار تکرار می‌کند.')
       },
       {
         type: 'controls_for',
-        message0: '🔁 با تعداد (for) %1 از %2 به %3 با گام‌های %4 %5',
+        message0: __('🔁 با تعداد (for) %1 از %2 به %3 با گام‌های %4 %5'),
         args0: [
           { type: 'field_variable', name: 'VAR', variable: 'k' },
           { type: 'input_value', name: 'FROM', check: 'Number' },
@@ -475,64 +475,64 @@ const ArduinoBlocks = (() => {
         nextStatement: null,
         inputsInline: true,
         colour: COLOR.control,
-        tooltip: 'یک متغیرِ شمارنده را از یک عدد تا عددِ دیگر، با گام‌هایِ مشخص، پیش می‌برد و کدهای داخلش را هر بار تکرار می‌کند. هر سه‌ی این سه‌تا (از/به/گام) می‌توانند به‌جای عددِ ثابت، هر بلوکِ دیگری (متغیر، حاصلِ جمع و ...) باشند.'
+        tooltip: __('یک متغیرِ شمارنده را از یک عدد تا عددِ دیگر، با گام‌هایِ مشخص، پیش می‌برد و کدهای داخلش را هر بار تکرار می‌کند. هر سه‌ی این سه‌تا (از/به/گام) می‌توانند به‌جای عددِ ثابت، هر بلوکِ دیگری (متغیر، حاصلِ جمع و ...) باشند.')
       },
 
       /* ---------- پایه‌ها ---------- */
       {
         type: 'ard_pin_mode',
-        message0: '⚙️ پینِ %1 را %2 کن',
+        message0: __('⚙️ پینِ %1 را %2 کن'),
         args0: [
           { type: 'input_value', name: 'PIN', check: 'Number' },
-          { type: 'field_dropdown', name: 'MODE', options: [['خروجی (OUTPUT)', 'OUTPUT'], ['ورودی (INPUT)', 'INPUT'], ['ورودی با مقاومتِ داخلی (INPUT_PULLUP)', 'INPUT_PULLUP']] }
+          { type: 'field_dropdown', name: 'MODE', options: [[__('خروجی (OUTPUT)'), 'OUTPUT'], [__('ورودی (INPUT)'), 'INPUT'], [__('ورودی با مقاومتِ داخلی (INPUT_PULLUP)'), 'INPUT_PULLUP']] }
         ],
         previousStatement: null,
         nextStatement: null,
         inputsInline: true,
         colour: COLOR.pin,
-        tooltip: 'مشخص می‌کند این پایه قرار است ورودی باشد یا خروجی (pinMode).'
+        tooltip: __('مشخص می‌کند این پایه قرار است ورودی باشد یا خروجی (pinMode).')
       },
       {
         type: 'ard_digital_write',
-        message0: '💡 پینِ %1 را %2 کن',
+        message0: __('💡 پینِ %1 را %2 کن'),
         args0: [
           { type: 'input_value', name: 'PIN', check: 'Number' },
-          { type: 'field_dropdown', name: 'STATE', options: [['روشن (HIGH)', 'HIGH'], ['خاموش (LOW)', 'LOW']] }
+          { type: 'field_dropdown', name: 'STATE', options: [[__('روشن (HIGH)'), 'HIGH'], [__('خاموش (LOW)'), 'LOW']] }
         ],
         previousStatement: null,
         nextStatement: null,
         inputsInline: true,
         colour: COLOR.pin,
-        tooltip: 'یک پایه‌ی دیجیتال را روشن یا خاموش می‌کند (digitalWrite).'
+        tooltip: __('یک پایه‌ی دیجیتال را روشن یا خاموش می‌کند (digitalWrite).')
       },
       {
         type: 'ard_digital_read',
-        message0: '📥 مقدارِ دیجیتالِ پینِ %1',
+        message0: __('📥 مقدارِ دیجیتالِ پینِ %1'),
         args0: [{ type: 'input_value', name: 'PIN', check: 'Number' }],
         output: 'Number',
         colour: COLOR.pin,
-        tooltip: 'مقدارِ فعلیِ یک پایه‌ی ورودی را می‌خواند (digitalRead) — ۰ یا ۱.'
+        tooltip: __('مقدارِ فعلیِ یک پایه‌ی ورودی را می‌خواند (digitalRead) — ۰ یا ۱.')
       },
       {
         type: 'ard_if_pin',
-        message0: '❓ اگر پینِ %1 %2 بود',
+        message0: __('❓ اگر پینِ %1 %2 بود'),
         args0: [
           { type: 'input_value', name: 'PIN', check: 'Number' },
-          { type: 'field_dropdown', name: 'STATE', options: [['HIGH (روشن)', 'HIGH'], ['LOW (خاموش)', 'LOW']] }
+          { type: 'field_dropdown', name: 'STATE', options: [[__('HIGH (روشن)'), 'HIGH'], [__('LOW (خاموش)'), 'LOW']] }
         ],
         message1: '%1',
         args1: [{ type: 'input_statement', name: 'DO' }],
-        message2: 'در غیر این صورت %1',
+        message2: __('در غیر این صورت %1'),
         args2: [{ type: 'input_statement', name: 'ELSE' }],
         previousStatement: null,
         nextStatement: null,
         inputsInline: true,
         colour: COLOR.pin,
-        tooltip: 'بررسی می‌کند مقدارِ فعلیِ یک پایه‌ی ورودی برابرِ HIGH است یا LOW، و بر اساسِ آن یکی از دو بخش را اجرا می‌کند — پینِ موردنظر می‌تواند یک عددِ ثابت یا یک متغیر (مثلِ نامِ پینِ ذخیره‌شده در یک متغیر) باشد.\n\n🛠️ برای دیدنِ اینکه این بلوک از چه بلوک‌های ساده‌تری ساخته شده، رویِ آیکونِ 🛠️ کنارِ بلوک کلیک کن.'
+        tooltip: __('بررسی می‌کند مقدارِ فعلیِ یک پایه‌ی ورودی برابرِ HIGH است یا LOW، و بر اساسِ آن یکی از دو بخش را اجرا می‌کند — پینِ موردنظر می‌تواند یک عددِ ثابت یا یک متغیر (مثلِ نامِ پینِ ذخیره‌شده در یک متغیر) باشد.\n\n🛠️ برای دیدنِ اینکه این بلوک از چه بلوک‌های ساده‌تری ساخته شده، رویِ آیکونِ 🛠️ کنارِ بلوک کلیک کن.')
       },
       {
         type: 'ard_analog_write',
-        message0: '🔆 پینِ %1 را با شدتِ %2 (از ۰ تا ۲۵۵) روشن کن',
+        message0: __('🔆 پینِ %1 را با شدتِ %2 (از ۰ تا ۲۵۵) روشن کن'),
         args0: [
           { type: 'input_value', name: 'PIN', check: 'Number' },
           { type: 'input_value', name: 'VALUE', check: 'Number' }
@@ -541,15 +541,15 @@ const ArduinoBlocks = (() => {
         nextStatement: null,
         inputsInline: true,
         colour: COLOR.pin,
-        tooltip: 'روشناییِ یک پایه‌ی PWM را بین ۰ (خاموش) تا ۲۵۵ (تمام‌روشن) تنظیم می‌کند (analogWrite).'
+        tooltip: __('روشناییِ یک پایه‌ی PWM را بین ۰ (خاموش) تا ۲۵۵ (تمام‌روشن) تنظیم می‌کند (analogWrite).')
       },
       {
         type: 'ard_analog_read',
-        message0: '📊 مقدارِ آنالوگِ پینِ %1',
+        message0: __('📊 مقدارِ آنالوگِ پینِ %1'),
         args0: [{ type: 'input_value', name: 'PIN', check: 'Number' }],
         output: 'Number',
         colour: COLOR.pin,
-        tooltip: 'مقدارِ یک پایه‌ی آنالوگ (مثلِ A0) را بین ۰ تا ۱۰۲۳ می‌خواند (analogRead).'
+        tooltip: __('مقدارِ یک پایه‌ی آنالوگ (مثلِ A0) را بین ۰ تا ۱۰۲۳ می‌خواند (analogRead).')
       },
       {
         // بلوکِ اختصاصیِ مأموریتِ «کنترلِ روشنایی با ولوم»: برای اینکه به این
@@ -560,7 +560,7 @@ const ArduinoBlocks = (() => {
         // analogWrite را پشتِ‌صحنه انجام می‌دهد — دقیقاً معادلِ:
         //   analogWrite(ledPin, map(analogRead(potPin), 0, 1023, 0, 255));
         type: 'ard_pot_led',
-        message0: '🎚️ روشناییِ LEDِ پینِ %1 را با ولومِ پینِ %2 کنترل کن',
+        message0: __('🎚️ روشناییِ LEDِ پینِ %1 را با ولومِ پینِ %2 کنترل کن'),
         args0: [
           { type: 'input_value', name: 'LED_PIN', check: 'Number' },
           { type: 'input_value', name: 'POT_PIN', check: 'Number' }
@@ -569,17 +569,17 @@ const ArduinoBlocks = (() => {
         nextStatement: null,
         inputsInline: true,
         colour: COLOR.pin,
-        tooltip: 'مقدارِ آنالوگِ ولوم (پتانسیومتر) را می‌خواند، آن را از بازه‌ی ۰ تا ۱۰۲۳ به بازه‌ی PWM (۰ تا ۲۵۵) تبدیل می‌کند، و همان لحظه روشناییِ LED را با آن هماهنگ می‌کند — یعنی analogRead + map + analogWrite هر سه با هم، در یک بلوک. باید داخلِ loop() گذاشته شود تا هر بار دوباره اجرا شود.\n\n🛠️ برای دیدنِ اینکه این بلوک از چه بلوک‌های ساده‌تری ساخته شده، رویش راست‌کلیک کن و «نشان‌بده این بلوک از چی ساخته شده» را بزن.'
+        tooltip: __('مقدارِ آنالوگِ ولوم (پتانسیومتر) را می‌خواند، آن را از بازه‌ی ۰ تا ۱۰۲۳ به بازه‌ی PWM (۰ تا ۲۵۵) تبدیل می‌کند، و همان لحظه روشناییِ LED را با آن هماهنگ می‌کند — یعنی analogRead + map + analogWrite هر سه با هم، در یک بلوک. باید داخلِ loop() گذاشته شود تا هر بار دوباره اجرا شود.\n\n🛠️ برای دیدنِ اینکه این بلوک از چه بلوک‌های ساده‌تری ساخته شده، رویش راست‌کلیک کن و «نشان‌بده این بلوک از چی ساخته شده» را بزن.')
       },
       {
         type: 'ard_pin_state',
         message0: '%1',
         args0: [
-          { type: 'field_dropdown', name: 'STATE', options: [['HIGH (روشن)', 'HIGH'], ['LOW (خاموش)', 'LOW']] }
+          { type: 'field_dropdown', name: 'STATE', options: [[__('HIGH (روشن)'), 'HIGH'], [__('LOW (خاموش)'), 'LOW']] }
         ],
         output: 'Number',
         colour: COLOR.pin,
-        tooltip: 'مقدارِ ثابتِ HIGH یا LOW — برای مقایسه با نتیجه‌ی digitalRead یا متغیری که آن را در خودش ذخیره کرده (مثلاً «اگر دکمه برابرِ LOW بود»).'
+        tooltip: __('مقدارِ ثابتِ HIGH یا LOW — برای مقایسه با نتیجه‌ی digitalRead یا متغیری که آن را در خودش ذخیره کرده (مثلاً «اگر دکمه برابرِ LOW بود»).')
       },
       {
         // شماره‌ی پین، به‌شکلِ یک بازشوی آماده (۰..۱۳ و A0..A5) به‌جای یک
@@ -592,87 +592,87 @@ const ArduinoBlocks = (() => {
         args0: [{ type: 'field_dropdown', name: 'PIN', options: PIN_OPTIONS }],
         output: 'Number',
         colour: COLOR.pin,
-        tooltip: 'شماره‌ی پین — پین‌های دیجیتالِ ۰ تا ۱۳ و پین‌های آنالوگِ A0 تا A5.'
+        tooltip: __('شماره‌ی پین — پین‌های دیجیتالِ ۰ تا ۱۳ و پین‌های آنالوگِ A0 تا A5.')
       },
 
       /* ---------- متغیرها ---------- */
       {
         type: 'ard_var_declare',
-        message0: '📦 تعریفِ متغیرِ %1 به نامِ %2 با مقدارِ اولیه‌ی %3',
+        message0: __('📦 تعریفِ متغیرِ %1 به نامِ %2 با مقدارِ اولیه‌ی %3'),
         args0: [
-          { type: 'field_dropdown', name: 'TYPE', options: function () { return varTypeOptions(this, [['عدد صحیح (int)', 'int'], ['عدد اعشاری (float)', 'float'], ['درست/غلط (bool)', 'bool'], ['متن (String)', 'String'], ['عدد صحیحِ بزرگ (long)', 'long'], ['عددِ کوچک (byte)', 'byte']]); } },
-          { type: 'field_variable', name: 'NAME', variable: 'متغیر' },
+          { type: 'field_dropdown', name: 'TYPE', options: function () { return varTypeOptions(this, [[__('عدد صحیح (int)'), 'int'], [__('عدد اعشاری (float)'), 'float'], [__('درست/غلط (bool)'), 'bool'], [__('متن (String)'), 'String'], [__('عدد صحیحِ بزرگ (long)'), 'long'], [__('عددِ کوچک (byte)'), 'byte']]); } },
+          { type: 'field_variable', name: 'NAME', variable: __('متغیر') },
           { type: 'input_value', name: 'VALUE' }
         ],
         previousStatement: null,
         nextStatement: null,
         colour: COLOR.variable,
-        tooltip: 'یک متغیرِ جدید با یک نوع مشخص و یک مقدارِ اولیه می‌سازد (مثلاً int a = 2;).'
+        tooltip: __('یک متغیرِ جدید با یک نوع مشخص و یک مقدارِ اولیه می‌سازد (مثلاً int a = 2;).')
       },
 
       /* ---------- آرایه‌ها ---------- */
       {
         type: 'ard_array_declare',
-        message0: '🧺 یک آرایه‌ی %1 بساز به نامِ %2 با اندازه‌ی %3',
+        message0: __('🧺 یک آرایه‌ی %1 بساز به نامِ %2 با اندازه‌ی %3'),
         args0: [
-          { type: 'field_dropdown', name: 'TYPE', options: [['عدد صحیح (int)', 'int'], ['عدد اعشاری (float)', 'float'], ['عددِ کوچک (byte)', 'byte']] },
-          { type: 'field_variable', name: 'NAME', variable: 'آرایه' },
+          { type: 'field_dropdown', name: 'TYPE', options: [[__('عدد صحیح (int)'), 'int'], [__('عدد اعشاری (float)'), 'float'], [__('عددِ کوچک (byte)'), 'byte']] },
+          { type: 'field_variable', name: 'NAME', variable: __('آرایه') },
           { type: 'input_value', name: 'SIZE', check: 'Number' }
         ],
         previousStatement: null,
         nextStatement: null,
         colour: COLOR.array,
-        tooltip: 'یک آرایه (لیستی از عددها) با اندازه‌ی مشخص می‌سازد؛ همه‌ی خانه‌ها اول صفر هستند.'
+        tooltip: __('یک آرایه (لیستی از عددها) با اندازه‌ی مشخص می‌سازد؛ همه‌ی خانه‌ها اول صفر هستند.')
       },
       {
         type: 'ard_array_get',
-        message0: '🧺 خانه‌یِ شماره‌ی %1 از آرایه‌ی %2',
+        message0: __('🧺 خانه‌یِ شماره‌ی %1 از آرایه‌ی %2'),
         args0: [
           { type: 'input_value', name: 'INDEX', check: 'Number' },
-          { type: 'field_variable', name: 'NAME', variable: 'آرایه' }
+          { type: 'field_variable', name: 'NAME', variable: __('آرایه') }
         ],
         output: null,
         colour: COLOR.array,
-        tooltip: 'مقدارِ یک خانه‌ی مشخص از آرایه را برمی‌گرداند (شماره‌ها از ۰ شروع می‌شوند).'
+        tooltip: __('مقدارِ یک خانه‌ی مشخص از آرایه را برمی‌گرداند (شماره‌ها از ۰ شروع می‌شوند).')
       },
       {
         type: 'ard_array_set',
-        message0: '🧺 خانه‌یِ شماره‌ی %1 از آرایه‌ی %2 را برابرِ %3 کن',
+        message0: __('🧺 خانه‌یِ شماره‌ی %1 از آرایه‌ی %2 را برابرِ %3 کن'),
         args0: [
           { type: 'input_value', name: 'INDEX', check: 'Number' },
-          { type: 'field_variable', name: 'NAME', variable: 'آرایه' },
+          { type: 'field_variable', name: 'NAME', variable: __('آرایه') },
           { type: 'input_value', name: 'VALUE' }
         ],
         previousStatement: null,
         nextStatement: null,
         colour: COLOR.array,
-        tooltip: 'مقدارِ یک خانه‌ی مشخص از آرایه را تغییر می‌دهد.'
+        tooltip: __('مقدارِ یک خانه‌ی مشخص از آرایه را تغییر می‌دهد.')
       },
       {
         type: 'ard_array_length',
-        message0: '🧺 تعدادِ خانه‌های آرایه‌ی %1',
-        args0: [{ type: 'field_variable', name: 'NAME', variable: 'آرایه' }],
+        message0: __('🧺 تعدادِ خانه‌های آرایه‌ی %1'),
+        args0: [{ type: 'field_variable', name: 'NAME', variable: __('آرایه') }],
         output: 'Number',
         colour: COLOR.array,
-        tooltip: 'تعدادِ خانه‌های آرایه را برمی‌گرداند.'
+        tooltip: __('تعدادِ خانه‌های آرایه را برمی‌گرداند.')
       },
 
       /* ---------- ریاضیِ سفارشی ---------- */
       {
         type: 'ard_math_single',
-        message0: '%1 عددِ %2',
+        message0: __('%1 عددِ %2'),
         args0: [
-          { type: 'field_dropdown', name: 'FUNC', options: [['قدرِ مطلقِ', 'abs'], ['جذرِ', 'sqrt'], ['مربعِ', 'sq']] },
+          { type: 'field_dropdown', name: 'FUNC', options: [[__('قدرِ مطلقِ'), 'abs'], [__('جذرِ'), 'sqrt'], [__('مربعِ'), 'sq']] },
           { type: 'input_value', name: 'A', check: 'Number' }
         ],
         inputsInline: true,
         output: 'Number',
         colour: COLOR.math,
-        tooltip: 'قدرِ مطلق، جذر، یا مربعِ یک عدد را حساب می‌کند.'
+        tooltip: __('قدرِ مطلق، جذر، یا مربعِ یک عدد را حساب می‌کند.')
       },
       {
         type: 'ard_math_map',
-        message0: '🧮 نگاشتِ %1 از بازه‌ی [%2 .. %3] به بازه‌ی [%4 .. %5]',
+        message0: __('🧮 نگاشتِ %1 از بازه‌ی [%2 .. %3] به بازه‌ی [%4 .. %5]'),
         args0: [
           { type: 'input_value', name: 'X', check: 'Number' },
           { type: 'input_value', name: 'IN_MIN', check: 'Number' },
@@ -682,23 +682,23 @@ const ArduinoBlocks = (() => {
         ],
         output: 'Number',
         colour: COLOR.math,
-        tooltip: 'یک عدد را از یک بازه به بازه‌ی دیگر تبدیل می‌کند — مثلاً مقدارِ ولوم (۰..۱۰۲۳) را به روشناییِ LED (۰..۲۵۵) (map).',
+        tooltip: __('یک عدد را از یک بازه به بازه‌ی دیگر تبدیل می‌کند — مثلاً مقدارِ ولوم (۰..۱۰۲۳) را به روشناییِ LED (۰..۲۵۵) (map).'),
         inputsInline: true
       },
 
       /* ---------- متن/سریال ---------- */
       {
         type: 'ard_serial_begin',
-        message0: '🖥️ مانیتورِ سریال را با سرعتِ %1 شروع کن',
+        message0: __('🖥️ مانیتورِ سریال را با سرعتِ %1 شروع کن'),
         args0: [{ type: 'field_dropdown', name: 'BAUD', options: [['9600', '9600'], ['19200', '19200'], ['38400', '38400'], ['57600', '57600'], ['115200', '115200']] }],
         previousStatement: null,
         nextStatement: null,
         colour: COLOR.text,
-        tooltip: 'ارتباطِ سریال را فعال می‌کند (Serial.begin) — همیشه اولین کاری که در «هنگامِ شروع» انجام می‌دهی.'
+        tooltip: __('ارتباطِ سریال را فعال می‌کند (Serial.begin) — همیشه اولین کاری که در «هنگامِ شروع» انجام می‌دهی.')
       },
       {
         type: 'ard_serial_print',
-        message0: '🖨️ در مانیتورِ سریال چاپ کن %1 برو خطِ بعد %2',
+        message0: __('🖨️ در مانیتورِ سریال چاپ کن %1 برو خطِ بعد %2'),
         args0: [
           { type: 'input_value', name: 'VALUE' },
           { type: 'field_checkbox', name: 'NEWLINE', checked: true }
@@ -707,44 +707,44 @@ const ArduinoBlocks = (() => {
         previousStatement: null,
         nextStatement: null,
         colour: COLOR.text,
-        tooltip: 'مقدارِ وصل‌شده به این بازشو را در مانیتورِ سریال چاپ می‌کند. به‌طورِ پیش‌فرض یک بلوکِ متنِ ثابت این‌جا جا افتاده — می‌توانی همان را ویرایش کنی، یا بردارَیش و به‌جایش هر بلوکِ دیگری (متغیر، عدد، حاصلِ جمع، و…) بگذاری.',
+        tooltip: __('مقدارِ وصل‌شده به این بازشو را در مانیتورِ سریال چاپ می‌کند. به‌طورِ پیش‌فرض یک بلوکِ متنِ ثابت این‌جا جا افتاده — می‌توانی همان را ویرایش کنی، یا بردارَیش و به‌جایش هر بلوکِ دیگری (متغیر، عدد، حاصلِ جمع، و…) بگذاری.'),
         helpUrl: ''
       },
       /* ---------- سروو موتور ---------- */
       {
         type: 'ard_servo_declare',
-        message0: '🦾 یک موتورِ سروو بساز به نامِ %1',
-        args0: [{ type: 'field_variable', name: 'NAME', variable: 'سروو' }],
+        message0: __('🦾 یک موتورِ سروو بساز به نامِ %1'),
+        args0: [{ type: 'field_variable', name: 'NAME', variable: __('سروو') }],
         previousStatement: null,
         nextStatement: null,
         colour: COLOR.servo,
-        tooltip: 'یک موتورِ سروو تعریف می‌کند (Servo). این را بیرونِ «هنگامِ شروع» و «همیشه تکرار کن» بگذار.'
+        tooltip: __('یک موتورِ سروو تعریف می‌کند (Servo). این را بیرونِ «هنگامِ شروع» و «همیشه تکرار کن» بگذار.')
       },
       {
         type: 'ard_servo_attach',
-        message0: '🦾 سرووی %1 را به پینِ %2 وصل کن',
+        message0: __('🦾 سرووی %1 را به پینِ %2 وصل کن'),
         args0: [
-          { type: 'field_variable', name: 'NAME', variable: 'سروو' },
+          { type: 'field_variable', name: 'NAME', variable: __('سروو') },
           { type: 'input_value', name: 'PIN', check: 'Number' }
         ],
         previousStatement: null,
         nextStatement: null,
         inputsInline: true,
         colour: COLOR.servo,
-        tooltip: 'سروو را به یک پینِ مشخص وصل می‌کند (attach) — قبل از استفاده لازم است.'
+        tooltip: __('سروو را به یک پینِ مشخص وصل می‌کند (attach) — قبل از استفاده لازم است.')
       },
       {
         type: 'ard_servo_write',
-        message0: '🦾 سرووی %1 را به زاویه‌یِ %2 درجه ببر',
+        message0: __('🦾 سرووی %1 را به زاویه‌یِ %2 درجه ببر'),
         args0: [
-          { type: 'field_variable', name: 'NAME', variable: 'سروو' },
+          { type: 'field_variable', name: 'NAME', variable: __('سروو') },
           { type: 'input_value', name: 'ANGLE', check: 'Number' }
         ],
         previousStatement: null,
         nextStatement: null,
         inputsInline: true,
         colour: COLOR.servo,
-        tooltip: 'زاویه‌ی سروو را بین ۰ تا ۱۸۰ درجه تنظیم می‌کند (write).'
+        tooltip: __('زاویه‌ی سروو را بین ۰ تا ۱۸۰ درجه تنظیم می‌کند (write).')
       },
       {
         // بلوکِ اختصاصیِ مأموریتِ «کنترلِ زاویه‌ی سروو»: طبقِ گام‌های همان
@@ -755,33 +755,33 @@ const ArduinoBlocks = (() => {
         // سروو (که باید قبلاً attach شده باشد) و مدتِ تأخیرِ هر گام را
         // می‌گیرد و خودش هر دو حلقه‌ی رفت‌وبرگشت را پشتِ‌صحنه می‌سازد.
         type: 'ard_servo_sweep',
-        message0: '🔄 سرووی %1 را بینِ ۰ تا ۱۸۰ درجه نوسان بده (هر گام %2 میلی‌ثانیه)',
+        message0: __('🔄 سرووی %1 را بینِ ۰ تا ۱۸۰ درجه نوسان بده (هر گام %2 میلی‌ثانیه)'),
         args0: [
-          { type: 'field_variable', name: 'NAME', variable: 'سروو' },
+          { type: 'field_variable', name: 'NAME', variable: __('سروو') },
           { type: 'input_value', name: 'MS', check: 'Number' }
         ],
         previousStatement: null,
         nextStatement: null,
         inputsInline: true,
         colour: COLOR.servo,
-        tooltip: 'سرووِ موردنظر (که قبلاً attach شده) را یک‌بار کامل از ۰ تا ۱۸۰ درجه و برمی‌گردد به ۰ می‌چرخاند — دقیقاً معادلِ دو حلقه‌ی for با یک servo.write + delay داخلِ هرکدام. اگر می‌خواهی این چرخش همیشه تکرار شود، این بلوک را داخلِ «همیشه تکرار کن» بگذار.\n\n🛠️ برای دیدنِ اینکه این بلوک از چه بلوک‌های ساده‌تری ساخته شده، رویِ آیکونِ 🛠️ کنارِ بلوک کلیک کن.'
+        tooltip: __('سرووِ موردنظر (که قبلاً attach شده) را یک‌بار کامل از ۰ تا ۱۸۰ درجه و برمی‌گردد به ۰ می‌چرخاند — دقیقاً معادلِ دو حلقه‌ی for با یک servo.write + delay داخلِ هرکدام. اگر می‌خواهی این چرخش همیشه تکرار شود، این بلوک را داخلِ «همیشه تکرار کن» بگذار.\n\n🛠️ برای دیدنِ اینکه این بلوک از چه بلوک‌های ساده‌تری ساخته شده، رویِ آیکونِ 🛠️ کنارِ بلوک کلیک کن.')
       },
       {
         type: 'ard_servo_read',
-        message0: '🦾 زاویه‌ی فعلیِ سرووی %1',
-        args0: [{ type: 'field_variable', name: 'NAME', variable: 'سروو' }],
+        message0: __('🦾 زاویه‌ی فعلیِ سرووی %1'),
+        args0: [{ type: 'field_variable', name: 'NAME', variable: __('سروو') }],
         output: 'Number',
         colour: COLOR.servo,
-        tooltip: 'آخرین زاویه‌ای که به این سروو داده شده را برمی‌گرداند (read).'
+        tooltip: __('آخرین زاویه‌ای که به این سروو داده شده را برمی‌گرداند (read).')
       },
       {
         type: 'ard_servo_detach',
-        message0: '🦾 اتصالِ سرووی %1 را قطع کن',
-        args0: [{ type: 'field_variable', name: 'NAME', variable: 'سروو' }],
+        message0: __('🦾 اتصالِ سرووی %1 را قطع کن'),
+        args0: [{ type: 'field_variable', name: 'NAME', variable: __('سروو') }],
         previousStatement: null,
         nextStatement: null,
         colour: COLOR.servo,
-        tooltip: 'کنترلِ سروو را آزاد می‌کند (detach).'
+        tooltip: __('کنترلِ سروو را آزاد می‌کند (detach).')
       }
     ]);
 
@@ -789,16 +789,16 @@ const ArduinoBlocks = (() => {
     Blockly.defineBlocksWithJsonArray([
       {
         type: 'ard_server_declare',
-        message0: '🌐 یک وب‌سرور بساز (نامش server) روی پورتِ %1',
+        message0: __('🌐 یک وب‌سرور بساز (نامش server) روی پورتِ %1'),
         args0: [{ type: 'field_number', name: 'PORT', value: 80, min: 1, max: 65535, precision: 1 }],
         previousStatement: null,
         nextStatement: null,
         colour: COLOR.wifi,
-        tooltip: 'یک وب‌سرورِ کوچک روی برد تعریف می‌کند (WebServer server(80);). این را داخلِ بلوکِ «سراسری» بگذار؛ پورتِ ۸۰ همان پورتِ معمولیِ وب است.'
+        tooltip: __('یک وب‌سرورِ کوچک روی برد تعریف می‌کند (WebServer server(80);). این را داخلِ بلوکِ «سراسری» بگذار؛ پورتِ ۸۰ همان پورتِ معمولیِ وب است.')
       },
       {
         type: 'ard_wifi_begin',
-        message0: '📶 به Wi-Fi با نامِ %1 و رمزِ %2 وصل شو',
+        message0: __('📶 به Wi-Fi با نامِ %1 و رمزِ %2 وصل شو'),
         args0: [
           { type: 'input_value', name: 'SSID' },
           { type: 'input_value', name: 'PASS' }
@@ -807,28 +807,28 @@ const ArduinoBlocks = (() => {
         previousStatement: null,
         nextStatement: null,
         colour: COLOR.wifi,
-        tooltip: 'برد را به مودم وصل می‌کند (WiFi.begin). اتصال چند لحظه طول می‌کشد؛ بعدش از بلوکِ «صبر کن تا وصل شود» استفاده کن.'
+        tooltip: __('برد را به مودم وصل می‌کند (WiFi.begin). اتصال چند لحظه طول می‌کشد؛ بعدش از بلوکِ «صبر کن تا وصل شود» استفاده کن.')
       },
       {
         type: 'ard_wifi_wait',
-        message0: '⏳ تا وصل‌شدنِ Wi-Fi صبر کن (هر %1 میلی‌ثانیه دوباره بررسی کن)',
+        message0: __('⏳ تا وصل‌شدنِ Wi-Fi صبر کن (هر %1 میلی‌ثانیه دوباره بررسی کن)'),
         args0: [{ type: 'field_number', name: 'MS', value: 500, min: 1, max: 5000, precision: 1 }],
         inputsInline: true,
         previousStatement: null,
         nextStatement: null,
         colour: COLOR.wifi,
-        tooltip: 'تا وقتی برد به Wi-Fi وصل نشده، هر چند میلی‌ثانیه یک‌بار دوباره می‌پرسد — معادلِ while (WiFi.status() != WL_CONNECTED) delay(500);'
+        tooltip: __('تا وقتی برد به Wi-Fi وصل نشده، هر چند میلی‌ثانیه یک‌بار دوباره می‌پرسد — معادلِ while (WiFi.status() != WL_CONNECTED) delay(500);')
       },
       {
         type: 'ard_wifi_ip',
-        message0: '🔢 آدرسِ IPِ برد',
+        message0: __('🔢 آدرسِ IPِ برد'),
         output: 'String',
         colour: COLOR.wifi,
-        tooltip: 'آدرسی که مودم به برد داده (WiFi.localIP()). آن را در مانیتورِ سریال چاپ کن تا بدانی گوشی باید به کجا وصل شود.'
+        tooltip: __('آدرسی که مودم به برد داده (WiFi.localIP()). آن را در مانیتورِ سریال چاپ کن تا بدانی گوشی باید به کجا وصل شود.')
       },
       {
         type: 'ard_server_on',
-        message0: '🌐 وقتی مرورگر آدرسِ %1 را باز کرد، تابعِ %2 را اجرا کن',
+        message0: __('🌐 وقتی مرورگر آدرسِ %1 را باز کرد، تابعِ %2 را اجرا کن'),
         args0: [
           { type: 'field_input', name: 'PATH', text: '/on' },
           { type: 'field_input', name: 'FUNC', text: 'handleOn' }
@@ -837,36 +837,36 @@ const ArduinoBlocks = (() => {
         previousStatement: null,
         nextStatement: null,
         colour: COLOR.wifi,
-        tooltip: 'یک آدرس را به یک تابع وصل می‌کند (server.on). نامِ تابع را دقیقاً مثلِ نامِ تابعی بنویس که در «توابعِ من» ساخته‌ای.'
+        tooltip: __('یک آدرس را به یک تابع وصل می‌کند (server.on). نامِ تابع را دقیقاً مثلِ نامِ تابعی بنویس که در «توابعِ من» ساخته‌ای.')
       },
       {
         type: 'ard_server_begin',
-        message0: '▶️ وب‌سرور را راه بینداز',
+        message0: __('▶️ وب‌سرور را راه بینداز'),
         previousStatement: null,
         nextStatement: null,
         colour: COLOR.wifi,
-        tooltip: 'وب‌سرور را روشن می‌کند (server.begin()) — بعد از ثبتِ آدرس‌ها و یک‌بار در «هنگامِ شروع».'
+        tooltip: __('وب‌سرور را روشن می‌کند (server.begin()) — بعد از ثبتِ آدرس‌ها و یک‌بار در «هنگامِ شروع».')
       },
       {
         type: 'ard_server_handle',
-        message0: '👂 به درخواست‌های مرورگر گوش بده',
+        message0: __('👂 به درخواست‌های مرورگر گوش بده'),
         previousStatement: null,
         nextStatement: null,
         colour: COLOR.wifi,
-        tooltip: 'اگر مرورگر یا گوشی درخواستی فرستاده باشد، تابعِ مربوط به آن اجرا می‌شود (server.handleClient()). این را داخلِ «همیشه تکرار کن» بگذار، وگرنه برد به درخواست‌ها گوش نمی‌دهد.'
+        tooltip: __('اگر مرورگر یا گوشی درخواستی فرستاده باشد، تابعِ مربوط به آن اجرا می‌شود (server.handleClient()). این را داخلِ «همیشه تکرار کن» بگذار، وگرنه برد به درخواست‌ها گوش نمی‌دهد.')
       },
       {
         type: 'ard_server_send',
-        message0: '📨 به مرورگر جواب بده: کدِ %1 ، متنِ %2',
+        message0: __('📨 به مرورگر جواب بده: کدِ %1 ، متنِ %2'),
         args0: [
-          { type: 'field_dropdown', name: 'CODE', options: [['200 (موفق)', '200'], ['404 (پیدا نشد)', '404']] },
+          { type: 'field_dropdown', name: 'CODE', options: [[__('200 (موفق)'), '200'], [__('404 (پیدا نشد)'), '404']] },
           { type: 'input_value', name: 'TEXT' }
         ],
         inputsInline: true,
         previousStatement: null,
         nextStatement: null,
         colour: COLOR.wifi,
-        tooltip: 'جوابی را که مرورگر/گوشی منتظرش است می‌فرستد (server.send). هر تابعِ آدرس باید در آخر یک جواب بدهد.'
+        tooltip: __('جوابی را که مرورگر/گوشی منتظرش است می‌فرستد (server.send). هر تابعِ آدرس باید در آخر یک جواب بدهد.')
       }
     ]);
 
@@ -885,7 +885,7 @@ const ArduinoBlocks = (() => {
         originalVarGetInit.call(this);
         const input = this.inputList[0];
         if (input && typeof input.insertFieldAt === 'function') {
-          input.insertFieldAt(0, 'مقدارِ متغیرِ');
+          input.insertFieldAt(0, __('مقدارِ متغیرِ'));
         }
       };
     }
@@ -981,7 +981,7 @@ const ArduinoBlocks = (() => {
       if (!newBlock) return;
       const undoField = new Blockly.FieldImage(
         COLLAPSE_ICON_SRC, 18, 18, '↪️',
-        () => setTimeout(() => replaceBlockWithState(newBlock, compactState, 'بازگرداندنِ بلوکِ فشرده شکست خورد:'), 0)
+        () => setTimeout(() => replaceBlockWithState(newBlock, compactState, __('بازگرداندنِ بلوکِ فشرده شکست خورد:')), 0)
       );
       if (typeof undoField.setTooltip === 'function') undoField.setTooltip(tooltipText);
       newBlock.appendDummyInput('COLLAPSE_ICON').appendField(undoField);
@@ -1029,8 +1029,8 @@ const ArduinoBlocks = (() => {
           } }
         }
       });
-      const newBlock = replaceBlockWithState(potLedBlock, chainState, 'ساختِ بلوک‌های معادل برای ard_pot_led شکست خورد:');
-      attachCollapseIcon(newBlock, compactState, 'بازگشت به بلوکِ فشرده‌ی «کنترلِ روشناییِ LED با ولوم»');
+      const newBlock = replaceBlockWithState(potLedBlock, chainState, __('ساختِ بلوک‌های معادل برای ard_pot_led شکست خورد:'));
+      attachCollapseIcon(newBlock, compactState, __('بازگشت به بلوکِ فشرده‌ی «کنترلِ روشناییِ LED با ولوم»'));
     }
     if (Blockly.Blocks['ard_pot_led']) {
       const originalPotLedInit = Blockly.Blocks['ard_pot_led'].init;
@@ -1041,7 +1041,7 @@ const ArduinoBlocks = (() => {
           POT_LED_ICON_SRC, 18, 18, '🛠️', () => setTimeout(() => expandPotLedBlock(potLedBlock), 0)
         );
         if (typeof wrenchField.setTooltip === 'function') {
-          wrenchField.setTooltip('نشان‌بده این بلوک از چی ساخته شده (analogRead + map + analogWrite)');
+          wrenchField.setTooltip(__('نشان‌بده این بلوک از چی ساخته شده (analogRead + map + analogWrite)'));
         }
         potLedBlock.appendDummyInput('EXPAND_ICON').appendField(wrenchField);
         // بومِ کار RTL است: اولین ورودیِ لیستِ inputList سمتِ راستِ بلوک
@@ -1089,8 +1089,8 @@ const ArduinoBlocks = (() => {
         extraState: { elseIfCount: 0, hasElse: true },
         inputs: ifInputs
       });
-      const newBlock = replaceBlockWithState(ifPinBlock, chainState, 'ساختِ بلوک‌های معادل برای ard_if_pin شکست خورد:');
-      attachCollapseIcon(newBlock, compactState, 'بازگشت به بلوکِ فشرده‌ی «اگر پین ... بود»');
+      const newBlock = replaceBlockWithState(ifPinBlock, chainState, __('ساختِ بلوک‌های معادل برای ard_if_pin شکست خورد:'));
+      attachCollapseIcon(newBlock, compactState, __('بازگشت به بلوکِ فشرده‌ی «اگر پین ... بود»'));
     }
     if (Blockly.Blocks['ard_if_pin']) {
       const originalIfPinInit = Blockly.Blocks['ard_if_pin'].init;
@@ -1101,7 +1101,7 @@ const ArduinoBlocks = (() => {
           POT_LED_ICON_SRC, 18, 18, '🛠️', () => setTimeout(() => expandIfPinBlock(ifPinBlock), 0)
         );
         if (typeof wrenchField.setTooltip === 'function') {
-          wrenchField.setTooltip('نشان‌بده این بلوک از چی ساخته شده (اگر + مقایسه‌ی منطقی + خواندنِ پین)');
+          wrenchField.setTooltip(__('نشان‌بده این بلوک از چی ساخته شده (اگر + مقایسه‌ی منطقی + خواندنِ پین)'));
         }
         ifPinBlock.appendDummyInput('EXPAND_ICON').appendField(wrenchField);
       };
@@ -1137,7 +1137,7 @@ const ArduinoBlocks = (() => {
       // برایِ آیکونِ بازگشت، خودِ بلوکِ فشرده را — پیش از حذف‌شدنش — عیناً
       // سریالایز می‌کنیم تا بعداً بشود دقیقاً همینش را دوباره ساخت.
       const compactState = stripBlockIds(Blockly.serialization.blocks.save(sweepBlock));
-      const angleVarId = ensureLoopVar(workspace, 'زاویه');
+      const angleVarId = ensureLoopVar(workspace, __('زاویه'));
       // بدنه‌ی هر حلقه: یک servo.write با مقدارِ همان متغیرِ شمارنده، و
       // بعدش یک delay با همان مقداری که کاربر روی خودِ بلوکِ فشرده گذاشته
       // بود (برایِ هر حلقه یک کپیِ جدا، چون نمی‌شود یک شیِ واحد را در دو
@@ -1165,8 +1165,8 @@ const ArduinoBlocks = (() => {
       const chainState = applyShadowDefaults(Object.assign(forLoop(0, 180), {
         next: { block: forLoop(180, 0) }
       }));
-      const newBlock = replaceBlockWithState(sweepBlock, chainState, 'ساختِ بلوک‌های معادل برای ard_servo_sweep شکست خورد:');
-      attachCollapseIcon(newBlock, compactState, 'بازگشت به بلوکِ فشرده‌ی «نوسانِ سروو»');
+      const newBlock = replaceBlockWithState(sweepBlock, chainState, __('ساختِ بلوک‌های معادل برای ard_servo_sweep شکست خورد:'));
+      attachCollapseIcon(newBlock, compactState, __('بازگشت به بلوکِ فشرده‌ی «نوسانِ سروو»'));
     }
     if (Blockly.Blocks['ard_servo_sweep']) {
       const originalServoSweepInit = Blockly.Blocks['ard_servo_sweep'].init;
@@ -1177,7 +1177,7 @@ const ArduinoBlocks = (() => {
           POT_LED_ICON_SRC, 18, 18, '🛠️', () => setTimeout(() => expandServoSweepBlock(sweepBlock), 0)
         );
         if (typeof wrenchField.setTooltip === 'function') {
-          wrenchField.setTooltip('نشان‌بده این بلوک از چی ساخته شده (دو حلقه‌ی for + servo.write + delay)');
+          wrenchField.setTooltip(__('نشان‌بده این بلوک از چی ساخته شده (دو حلقه‌ی for + servo.write + delay)'));
         }
         sweepBlock.appendDummyInput('EXPAND_ICON').appendField(wrenchField);
         // بومِ کار RTL است: آیکون را جلوی ورودیِ MS (تنها ورودیِ واقعیِ این
@@ -1612,30 +1612,30 @@ const ArduinoBlocks = (() => {
     // extraState را برای دستوراتِ if/else می‌سازد.
     const blkIfElse = () => ({ kind: 'block', type: 'controls_if', extraState: { hasElse: true } });
     return [
-      cat('شروع', COLOR.event, [blk('ard_setup'), blk('ard_loop'), blk('ard_global'), blk('ard_comment')]),
-      cat('کنترل', COLOR.control, [
+      cat(__('شروع'), COLOR.event, [blk('ard_setup'), blk('ard_loop'), blk('ard_global'), blk('ard_comment')]),
+      cat(__('کنترل'), COLOR.control, [
         blk('controls_if'), blkIfElse(), blk('controls_repeat_ext'), blk('controls_whileUntil'),
         blk('controls_for'), blk('controls_flow_statements'), blk('ard_wait'), blk('ard_wait_micro')
       ]),
-      cat('پایه‌ها (پین‌ها)', COLOR.pin, [
+      cat(__('پایه‌ها (پین‌ها)'), COLOR.pin, [
         blk('ard_pin_mode'), blk('ard_digital_write'), blk('ard_digital_read'), blk('ard_if_pin'),
         blk('ard_analog_write'), blk('ard_analog_read'), blk('ard_pot_led'), blk('ard_pin_state'), blk('ard_pin_number')
       ]),
-      cat('متغیرها', COLOR.variable, [blk('ard_var_declare'), blk('variables_get'), blk('variables_set')]),
-      cat('آرایه‌ها', COLOR.array, [blk('ard_array_declare'), blk('ard_array_get'), blk('ard_array_set'), blk('ard_array_length')]),
-      cat('ریاضی', COLOR.math, [
+      cat(__('متغیرها'), COLOR.variable, [blk('ard_var_declare'), blk('variables_get'), blk('variables_set')]),
+      cat(__('آرایه‌ها'), COLOR.array, [blk('ard_array_declare'), blk('ard_array_get'), blk('ard_array_set'), blk('ard_array_length')]),
+      cat(__('ریاضی'), COLOR.math, [
         blk('math_number'), blk('math_arithmetic'), blk('ard_math_single'),
         blk('math_modulo'), blk('math_constrain'), blk('math_random_int'), blk('ard_math_map')
       ]),
-      cat('منطق', COLOR.logic, [blk('logic_compare'), blk('logic_operation'), blk('logic_negate'), blk('logic_boolean')]),
-      cat('متن و سریال', COLOR.text, [blk('ard_serial_begin'), blk('ard_serial_print')]),
-      cat('سروو موتور', COLOR.servo, [blk('ard_servo_declare'), blk('ard_servo_attach'), blk('ard_servo_write'), blk('ard_servo_sweep'), blk('ard_servo_read'), blk('ard_servo_detach')]),
-      cat('Wi-Fi و وب‌سرور', COLOR.wifi, [
+      cat(__('منطق'), COLOR.logic, [blk('logic_compare'), blk('logic_operation'), blk('logic_negate'), blk('logic_boolean')]),
+      cat(__('متن و سریال'), COLOR.text, [blk('ard_serial_begin'), blk('ard_serial_print')]),
+      cat(__('سروو موتور'), COLOR.servo, [blk('ard_servo_declare'), blk('ard_servo_attach'), blk('ard_servo_write'), blk('ard_servo_sweep'), blk('ard_servo_read'), blk('ard_servo_detach')]),
+      cat(__('Wi-Fi و وب‌سرور'), COLOR.wifi, [
         blk('ard_server_declare'), blk('ard_wifi_begin'), blk('ard_wifi_wait'), blk('ard_wifi_ip'),
         blk('ard_server_on'), blk('ard_server_begin'), blk('ard_server_handle'), blk('ard_server_send')
       ]),
-      cat('کدِ خام', COLOR.raw, [blk('ard_raw_code')]),
-      { kind: 'category', name: 'توابعِ من', colour: COLOR.func, custom: 'PROCEDURE' }
+      cat(__('کدِ خام'), COLOR.raw, [blk('ard_raw_code')]),
+      { kind: 'category', name: __('توابعِ من'), colour: COLOR.func, custom: 'PROCEDURE' }
     ];
   }
 
@@ -1798,7 +1798,7 @@ const ArduinoBlocks = (() => {
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     const span = document.createElement('span');
-    span.textContent = 'دیدنِ همه‌ی بلوک‌ها';
+    span.textContent = __('دیدنِ همه‌ی بلوک‌ها');
     label.appendChild(checkbox);
     label.appendChild(span);
     wrap.appendChild(label);
@@ -1860,7 +1860,7 @@ const ArduinoBlocks = (() => {
     }
     out += 'void loop() {\n' + loopCode + '}\n';
     if (strayBlocks.length) {
-      out += '\n// ⚠️ این بلوک‌ها باید داخل «هنگام شروع» یا «همیشه تکرار کن» باشند:\n';
+      out += __('\n// ⚠️ این بلوک‌ها باید داخل «هنگام شروع» یا «همیشه تکرار کن» باشند:\n');
       for (const b of strayBlocks) {
         const c = gen.blockToCode(b);
         out += Array.isArray(c) ? c[0] : c;
@@ -1974,7 +1974,7 @@ const ArduinoBlocks = (() => {
         const text = src.slice(node.range[0], node.range[1]).trim();
         if (text) return text;
       }
-      return '/* این بخش از کد بازیابی نشد */';
+      return __('/* این بخش از کد بازیابی نشد */');
     }
     // یک بلوکِ «کدِ خام» می‌سازد که متنِ اصلیِ همان دستور را نگه می‌دارد —
     // برای دستورهایی که هنوز بلوکی برایشان نساخته‌ایم (به‌جای صرف‌نظر از
@@ -1983,7 +1983,7 @@ const ArduinoBlocks = (() => {
     function rawCodeBlock(node, reason) {
       const id = nid();
       const code = sliceSrc(node);
-      warnings.push({ id, code, reason: reason || 'این ساختار هنوز به بلوک تبدیل نمی‌شود.' });
+      warnings.push({ id, code, reason: reason || __('این ساختار هنوز به بلوک تبدیل نمی‌شود.') });
       return { type: 'ard_raw_code', id, fields: { CODE: code } };
     }
     const servoNames = new Set();
@@ -2002,7 +2002,7 @@ const ArduinoBlocks = (() => {
     function numField(node) {
       if (node.type === 'Num') return node.value;
       if (node.type === 'Ident' && constMap.has(node.name)) return constMap.get(node.name);
-      throw new UnsupportedError('این مقدار باید یک عددِ ساده باشد (یا یکی از متغیرهای ثابتی که در بالای کد تعریف کرده‌ای).');
+      throw new UnsupportedError(__('این مقدار باید یک عددِ ساده باشد (یا یکی از متغیرهای ثابتی که در بالای کد تعریف کرده‌ای).'));
     }
     function tailOf(node) {
       let n = node;
@@ -2061,7 +2061,7 @@ const ArduinoBlocks = (() => {
           if (node.operator === '-') {
             return { type: 'math_arithmetic', id: nid(), fields: { OP: 'MINUS' }, inputs: { A: { block: numBlock(0) }, B: { block: expr(node.argument) } } };
           }
-          throw new UnsupportedError('این عملگرِ یکانی هنوز پشتیبانی نمی‌شود.');
+          throw new UnsupportedError(__('این عملگرِ یکانی هنوز پشتیبانی نمی‌شود.'));
         }
         case 'Binary': {
           const op = node.operator;
@@ -2077,20 +2077,20 @@ const ArduinoBlocks = (() => {
             return { type: 'math_arithmetic', id: nid(), fields: { OP: ar[op] }, inputs: { A: { block: expr(node.left) }, B: { block: expr(node.right) } } };
           }
           if (op === '%') return { type: 'math_modulo', id: nid(), inputs: { DIVIDEND: { block: expr(node.left) }, DIVISOR: { block: expr(node.right) } } };
-          throw new UnsupportedError('عملگرِ «' + op + '» هنوز در حالتِ بلوکی پشتیبانی نمی‌شود.');
+          throw new UnsupportedError(__('عملگرِ «') + op + __('» هنوز در حالتِ بلوکی پشتیبانی نمی‌شود.'));
         }
         case 'Index':
-          if (node.object.type !== 'Ident') throw new UnsupportedError('این آرایه خیلی پیچیده است.');
+          if (node.object.type !== 'Ident') throw new UnsupportedError(__('این آرایه خیلی پیچیده است.'));
           return { type: 'ard_array_get', id: nid(), fields: { NAME: ensureVar(node.object.name) }, inputs: { INDEX: { block: expr(node.index) } } };
         case 'Member':
           if (node.object.type === 'Ident' && node.property === 'length') {
             return { type: 'ard_array_length', id: nid(), fields: { NAME: ensureVar(node.object.name) } };
           }
-          throw new UnsupportedError('این ویژگی هنوز پشتیبانی نمی‌شود.');
+          throw new UnsupportedError(__('این ویژگی هنوز پشتیبانی نمی‌شود.'));
         case 'Call':
           return callExpr(node);
         default:
-          throw new UnsupportedError('این نوع عبارت هنوز به بلوک تبدیل نمی‌شود.');
+          throw new UnsupportedError(__('این نوع عبارت هنوز به بلوک تبدیل نمی‌شود.'));
       }
     }
 
@@ -2117,22 +2117,22 @@ const ArduinoBlocks = (() => {
           return { type: 'math_random_int', id: nid(), inputs: { FROM: { block: expr(a[0]) }, TO: { block: { type: 'math_arithmetic', id: nid(), fields: { OP: 'MINUS' }, inputs: { A: { block: expr(a[1]) }, B: { block: numBlock(1) } } } } } };
         }
         if (funcDefs && funcDefs[name]) return callUser(name, a, true);
-        throw new UnsupportedError('فراخوانیِ «' + name + '()» هنوز به بلوک تبدیل نمی‌شود.');
+        throw new UnsupportedError(__('فراخوانیِ «') + name + __('()» هنوز به بلوک تبدیل نمی‌شود.'));
       }
-      throw new UnsupportedError('این فراخوانی هنوز پشتیبانی نمی‌شود.');
+      throw new UnsupportedError(__('این فراخوانی هنوز پشتیبانی نمی‌شود.'));
     }
 
     // HAL_GPIO_*(GPIOx, GPIO_PIN_n, ...) → «PXn»؛ هر چیزِ دیگر (مثلاً پایه از متغیر) کدِ خام می‌ماند.
     function halPinFromArgs(a) {
       const port = a[0] && a[0].type === 'Ident' && /^GPIO([A-D])$/.exec(a[0].name);
       const pin = a[1] && a[1].type === 'Ident' && /^GPIO_PIN_(\d{1,2})$/.exec(a[1].name);
-      if (!port || !pin || +pin[1] > 15) throw new UnsupportedError('پورت و پایه باید مثل GPIOC و GPIO_PIN_13 نوشته شده باشند.');
+      if (!port || !pin || +pin[1] > 15) throw new UnsupportedError(__('پورت و پایه باید مثل GPIOC و GPIO_PIN_13 نوشته شده باشند.'));
       return 'P' + port[1] + (+pin[1]);
     }
     function halTimArgs(a) {
       const t = a[0] && a[0].type === 'Ident' && /^htim([1-4])$/.exec(a[0].name);
       const c = a[1] && a[1].type === 'Ident' && /^TIM_CHANNEL_([1-4])$/.exec(a[1].name);
-      if (!t || !c) throw new UnsupportedError('تایمر و کانال باید مثل htim1 و TIM_CHANNEL_1 باشند.');
+      if (!t || !c) throw new UnsupportedError(__('تایمر و کانال باید مثل htim1 و TIM_CHANNEL_1 باشند.'));
       return [t[1], c[1]];
     }
     function callUser(name, args, expectsValue) {
@@ -2149,22 +2149,22 @@ const ArduinoBlocks = (() => {
       if (objName === 'Serial') {
         if (c.property === 'begin') {
           const v = a[0];
-          if (v.type !== 'Num') throw new UnsupportedError('سرعتِ Serial.begin باید یک عددِ ساده باشد.');
+          if (v.type !== 'Num') throw new UnsupportedError(__('سرعتِ Serial.begin باید یک عددِ ساده باشد.'));
           return { type: 'ard_serial_begin', id: nid(), fields: { BAUD: String(v.value) } };
         }
         if (c.property === 'print' || c.property === 'println') {
           const arg = a[0];
           const newline = c.property === 'println' ? 'TRUE' : 'FALSE';
-          if (!arg) throw new UnsupportedError('این ورودی به یک مقدار برای چاپ کردن نیاز دارد.');
+          if (!arg) throw new UnsupportedError(__('این ورودی به یک مقدار برای چاپ کردن نیاز دارد.'));
           // هر عبارتی (متنِ ثابت، متغیر، عدد، حاصلِ جمع و…) می‌تواند به
           // بازشوی VALUE وصل شود — دیگر لازم نیست فقط متنِ ثابت یا نامِ
           // یک متغیرِ ساده باشد.
           return { type: 'ard_serial_print', id: nid(), fields: { NEWLINE: newline }, inputs: { VALUE: { block: expr(arg) } } };
         }
-        throw new UnsupportedError('این متدِ Serial هنوز پشتیبانی نمی‌شود.');
+        throw new UnsupportedError(__('این متدِ Serial هنوز پشتیبانی نمی‌شود.'));
       }
       if (objName === 'WiFi' && c.property === 'begin') {
-        if (a.length !== 2) throw new UnsupportedError('WiFi.begin در حالتِ بلوکی باید هم نام و هم رمزِ Wi-Fi را بگیرد.');
+        if (a.length !== 2) throw new UnsupportedError(__('WiFi.begin در حالتِ بلوکی باید هم نام و هم رمزِ Wi-Fi را بگیرد.'));
         return { type: 'ard_wifi_begin', id: nid(), inputs: { SSID: { block: expr(a[0]) }, PASS: { block: expr(a[1]) } } };
       }
       if (objName === 'server') {
@@ -2172,14 +2172,14 @@ const ArduinoBlocks = (() => {
         if (c.property === 'handleClient' && !a.length) return { type: 'ard_server_handle', id: nid() };
         if (c.property === 'on') {
           if (a.length !== 2 || a[0].type !== 'Str' || a[1].type !== 'Ident') {
-            throw new UnsupportedError('server.on باید یک آدرسِ متنی و نامِ یک تابع بگیرد، مثل server.on("/on", handleOn).');
+            throw new UnsupportedError(__('server.on باید یک آدرسِ متنی و نامِ یک تابع بگیرد، مثل server.on("/on", handleOn).'));
           }
           return { type: 'ard_server_on', id: nid(), fields: { PATH: a[0].value, FUNC: a[1].name } };
         }
         if (c.property === 'send') {
           const code = a[0] && a[0].type === 'Num' ? String(a[0].value) : '';
           if (a.length !== 3 || (code !== '200' && code !== '404') || a[1].type !== 'Str' || a[1].value !== 'text/plain') {
-            throw new UnsupportedError('server.send در حالتِ بلوکی باید مثلِ server.send(200, "text/plain", "...") نوشته شود.');
+            throw new UnsupportedError(__('server.send در حالتِ بلوکی باید مثلِ server.send(200, "text/plain", "...") نوشته شود.'));
           }
           return { type: 'ard_server_send', id: nid(), fields: { CODE: code }, inputs: { TEXT: { block: expr(a[2]) } } };
         }
@@ -2189,9 +2189,9 @@ const ArduinoBlocks = (() => {
         if (c.property === 'attach') return { type: 'ard_servo_attach', id: nid(), fields: { NAME: nameId }, inputs: { PIN: { block: pinExpr(a[0]) } } };
         if (c.property === 'write') return { type: 'ard_servo_write', id: nid(), fields: { NAME: nameId }, inputs: { ANGLE: { block: expr(a[0]) } } };
         if (c.property === 'detach') return { type: 'ard_servo_detach', id: nid(), fields: { NAME: nameId } };
-        throw new UnsupportedError('این متدِ سروو هنوز پشتیبانی نمی‌شود.');
+        throw new UnsupportedError(__('این متدِ سروو هنوز پشتیبانی نمی‌شود.'));
       }
-      throw new UnsupportedError('این فراخوانی هنوز پشتیبانی نمی‌شود.');
+      throw new UnsupportedError(__('این فراخوانی هنوز پشتیبانی نمی‌شود.'));
     }
 
     // اگر خودِ شرطِ if دقیقاً «digitalRead(x) == HIGH/LOW» (یا برعکس) باشد،
@@ -2281,7 +2281,7 @@ const ArduinoBlocks = (() => {
         case 'Break': return { type: 'controls_flow_statements', id: nid(), fields: { FLOW: 'BREAK' } };
         case 'Continue': return { type: 'controls_flow_statements', id: nid(), fields: { FLOW: 'CONTINUE' } };
         default:
-          throw new UnsupportedError('این نوع دستور («' + node.type + '») هنوز به بلوک تبدیل نمی‌شود.');
+          throw new UnsupportedError(__('این نوع دستور («') + node.type + __('») هنوز به بلوک تبدیل نمی‌شود.'));
       }
     }
     // نسخه‌ی «امن»ِ stmtRaw: اگر تبدیلِ همین یک دستور (هرچقدر هم که تو در
@@ -2302,7 +2302,7 @@ const ArduinoBlocks = (() => {
       if (d.varType === 'WebServer') {
         const port = d.ctorArgs && d.ctorArgs.length === 1 ? d.ctorArgs[0] : null;
         if (d.name !== 'server' || !port || port.type !== 'Num') {
-          throw new UnsupportedError('وب‌سرور در حالتِ بلوکی باید دقیقاً مثلِ WebServer server(80); نوشته شود.');
+          throw new UnsupportedError(__('وب‌سرور در حالتِ بلوکی باید دقیقاً مثلِ WebServer server(80); نوشته شود.'));
         }
         return { type: 'ard_server_declare', id: nid(), fields: { PORT: port.value } };
       }
@@ -2312,14 +2312,14 @@ const ArduinoBlocks = (() => {
       }
       if (d.arraySize) {
         const TYPES = new Set(['int', 'float', 'byte']);
-        if (!TYPES.has(d.varType)) throw new UnsupportedError('نوعِ آرایه‌ی «' + d.varType + '» هنوز پشتیبانی نمی‌شود.');
-        if (d.init) throw new UnsupportedError('مقداردهیِ اولیه‌ی آرایه با { } هنوز پشتیبانی نمی‌شود.');
+        if (!TYPES.has(d.varType)) throw new UnsupportedError(__('نوعِ آرایه‌ی «') + d.varType + __('» هنوز پشتیبانی نمی‌شود.'));
+        if (d.init) throw new UnsupportedError(__('مقداردهیِ اولیه‌ی آرایه با { } هنوز پشتیبانی نمی‌شود.'));
         return { type: 'ard_array_declare', id: nid(), fields: { TYPE: d.varType, NAME: ensureVar(d.name) }, inputs: { SIZE: { block: expr(d.arraySize) } } };
       }
       const TYPES = new Set(['int', 'float', 'bool', 'boolean', 'String', 'long', 'byte', 'uint8_t', 'uint16_t', 'uint32_t', 'int32_t']);
-      if (!TYPES.has(d.varType)) throw new UnsupportedError('نوعِ متغیرِ «' + d.varType + '» هنوز پشتیبانی نمی‌شود.');
+      if (!TYPES.has(d.varType)) throw new UnsupportedError(__('نوعِ متغیرِ «') + d.varType + __('» هنوز پشتیبانی نمی‌شود.'));
       const type = d.varType === 'boolean' ? 'bool' : d.varType;
-      if (!d.init) throw new UnsupportedError('این بلوک به یک مقدارِ اولیه نیاز دارد؛ برای متغیرِ بدونِ مقدارِ اولیه فعلاً بلوکی نداریم.');
+      if (!d.init) throw new UnsupportedError(__('این بلوک به یک مقدارِ اولیه نیاز دارد؛ برای متغیرِ بدونِ مقدارِ اولیه فعلاً بلوکی نداریم.'));
       return { type: 'ard_var_declare', id: nid(), fields: { TYPE: type, NAME: ensureVar(d.name) }, inputs: { VALUE: { block: expr(d.init) } } };
     }
 
@@ -2327,21 +2327,21 @@ const ArduinoBlocks = (() => {
       if (e.type === 'Call') return callStmt(e);
       if (e.type === 'Assign') return assignStmt(e);
       if (e.type === 'UpdateExpr') {
-        if (e.argument.type !== 'Ident') throw new UnsupportedError('این ++/-- هنوز پشتیبانی نمی‌شود.');
+        if (e.argument.type !== 'Ident') throw new UnsupportedError(__('این ++/-- هنوز پشتیبانی نمی‌شود.'));
         const delta = e.operator === '++' ? 1 : -1;
         return { type: 'math_change', id: nid(), fields: { VAR: ensureVar(e.argument.name) }, inputs: { DELTA: { block: numBlock(delta) } } };
       }
-      throw new UnsupportedError('این دستور هنوز به بلوک تبدیل نمی‌شود.');
+      throw new UnsupportedError(__('این دستور هنوز به بلوک تبدیل نمی‌شود.'));
     }
 
     function callStmt(node) {
       const c = node.callee, a = node.arguments;
       if (c.type === 'Member') return memberCallStmt({ expression: node });
-      if (c.type !== 'Ident') throw new UnsupportedError('این فراخوانی هنوز پشتیبانی نمی‌شود.');
+      if (c.type !== 'Ident') throw new UnsupportedError(__('این فراخوانی هنوز پشتیبانی نمی‌شود.'));
       const name = c.name;
       if (name === 'HAL_GPIO_WritePin') {
         const lv = a[2] && a[2].type === 'Ident' && (a[2].name === 'GPIO_PIN_SET' || a[2].name === 'GPIO_PIN_RESET') ? a[2].name : (a[2] && a[2].type === 'Num' ? (a[2].value ? 'GPIO_PIN_SET' : 'GPIO_PIN_RESET') : null);
-        if (!lv) throw new UnsupportedError('مقدارِ سومِ HAL_GPIO_WritePin باید GPIO_PIN_SET یا GPIO_PIN_RESET باشد.');
+        if (!lv) throw new UnsupportedError(__('مقدارِ سومِ HAL_GPIO_WritePin باید GPIO_PIN_SET یا GPIO_PIN_RESET باشد.'));
         return { type: 'hal_write', id: nid(), fields: { PIN: halPinFromArgs(a), LEVEL: lv } };
       }
       if (name === 'HAL_GPIO_TogglePin') return { type: 'hal_toggle', id: nid(), fields: { PIN: halPinFromArgs(a) } };
@@ -2349,12 +2349,12 @@ const ArduinoBlocks = (() => {
       if (name === 'HAL_TIM_PWM_Start') { const tc = halTimArgs(a); return { type: 'hal_pwm_start', id: nid(), fields: { TIM: tc[0], CH: tc[1] } }; }
       if (name === '__HAL_TIM_SET_COMPARE') { const tc = halTimArgs(a); return { type: 'hal_set_compare', id: nid(), fields: { TIM: tc[0], CH: tc[1] }, inputs: { VAL: { block: expr(a[2]) } } }; }
       if (name === 'pinMode') {
-        if (a[1].type !== 'Ident') throw new UnsupportedError('حالتِ pinMode باید OUTPUT/INPUT/INPUT_PULLUP باشد.');
+        if (a[1].type !== 'Ident') throw new UnsupportedError(__('حالتِ pinMode باید OUTPUT/INPUT/INPUT_PULLUP باشد.'));
         return { type: 'ard_pin_mode', id: nid(), fields: { MODE: a[1].name }, inputs: { PIN: { block: pinExpr(a[0]) } } };
       }
       if (name === 'digitalWrite') {
         if (a[1].type !== 'Ident' || (a[1].name !== 'HIGH' && a[1].name !== 'LOW')) {
-          throw new UnsupportedError('مقدارِ دومِ digitalWrite باید HIGH یا LOW باشد.');
+          throw new UnsupportedError(__('مقدارِ دومِ digitalWrite باید HIGH یا LOW باشد.'));
         }
         return { type: 'ard_digital_write', id: nid(), fields: { STATE: a[1].name }, inputs: { PIN: { block: pinExpr(a[0]) } } };
       }
@@ -2362,7 +2362,7 @@ const ArduinoBlocks = (() => {
       if (name === 'delay') return { type: 'ard_wait', id: nid(), inputs: { MS: { block: expr(a[0]) } } };
       if (name === 'delayMicroseconds') return { type: 'ard_wait_micro', id: nid(), inputs: { US: { block: expr(a[0]) } } };
       if (funcDefs && funcDefs[name]) return callUser(name, a, false);
-      throw new UnsupportedError('فراخوانیِ «' + name + '()» هنوز به بلوک تبدیل نمی‌شود.');
+      throw new UnsupportedError(__('فراخوانیِ «') + name + __('()» هنوز به بلوک تبدیل نمی‌شود.'));
     }
 
     function assignStmt(node) {
@@ -2374,12 +2374,12 @@ const ArduinoBlocks = (() => {
           const neg = { type: 'math_arithmetic', id: nid(), fields: { OP: 'MINUS' }, inputs: { A: { block: numBlock(0) }, B: { block: expr(node.value) } } };
           return { type: 'math_change', id: nid(), fields: { VAR: ensureVar(t.name) }, inputs: { DELTA: { block: neg } } };
         }
-        throw new UnsupportedError('عملگرِ انتساب «' + node.operator + '» هنوز پشتیبانی نمی‌شود.');
+        throw new UnsupportedError(__('عملگرِ انتساب «') + node.operator + __('» هنوز پشتیبانی نمی‌شود.'));
       }
       if (t.type === 'Index' && t.object.type === 'Ident' && node.operator === '=') {
         return { type: 'ard_array_set', id: nid(), fields: { NAME: ensureVar(t.object.name) }, inputs: { INDEX: { block: expr(t.index) }, VALUE: { block: expr(node.value) } } };
       }
-      throw new UnsupportedError('این انتساب هنوز پشتیبانی نمی‌شود.');
+      throw new UnsupportedError(__('این انتساب هنوز پشتیبانی نمی‌شود.'));
     }
 
     function hasTrailingReturnValue(bodyBlockNode) {
@@ -2387,19 +2387,19 @@ const ArduinoBlocks = (() => {
       for (let i = 0; i < body.length; i++) {
         const isLast = i === body.length - 1;
         const s = body[i];
-        if (s.type === 'Return' && s.argument && !isLast) throw new UnsupportedError('برگرداندنِ مقدار فقط در آخرینِ خطِ تابع پشتیبانی می‌شود.');
-        if (s.type === 'Return' && !s.argument && !isLast) throw new UnsupportedError('«return» زودهنگام هنوز پشتیبانی نمی‌شود.');
+        if (s.type === 'Return' && s.argument && !isLast) throw new UnsupportedError(__('برگرداندنِ مقدار فقط در آخرینِ خطِ تابع پشتیبانی می‌شود.'));
+        if (s.type === 'Return' && !s.argument && !isLast) throw new UnsupportedError(__('«return» زودهنگام هنوز پشتیبانی نمی‌شود.'));
       }
       const last = body[body.length - 1];
       return last && last.type === 'Return' && last.argument ? last.argument : null;
     }
 
     function forStmt(node) {
-      if (!node.init || node.init.type !== 'VarDecl' || node.init.decls.length !== 1) throw new UnsupportedError('این حلقه‌ی for خیلی پیچیده است.');
+      if (!node.init || node.init.type !== 'VarDecl' || node.init.decls.length !== 1) throw new UnsupportedError(__('این حلقه‌ی for خیلی پیچیده است.'));
       const d = node.init.decls[0];
-      if (!d.init) throw new UnsupportedError('این حلقه‌ی for خیلی پیچیده است.');
+      if (!d.init) throw new UnsupportedError(__('این حلقه‌ی for خیلی پیچیده است.'));
       if (!node.test || node.test.type !== 'Binary' || node.test.left.type !== 'Ident' || node.test.left.name !== d.name) {
-        throw new UnsupportedError('این حلقه‌ی for خیلی پیچیده است.');
+        throw new UnsupportedError(__('این حلقه‌ی for خیلی پیچیده است.'));
       }
       let by;
       if (node.update) {
@@ -2407,7 +2407,7 @@ const ArduinoBlocks = (() => {
           by = node.update.operator === '++' ? 1 : -1;
         } else if (node.update.type === 'Assign' && node.update.operator === '+=' && node.update.target.type === 'Ident' && node.update.target.name === d.name) {
           by = numField(node.update.value);
-        } else throw new UnsupportedError('این حلقه‌ی for خیلی پیچیده است.');
+        } else throw new UnsupportedError(__('این حلقه‌ی for خیلی پیچیده است.'));
       } else by = 1;
       const varId = ensureVar(d.name);
       return {
@@ -2609,10 +2609,10 @@ const ArduinoBlocks = (() => {
   function codeToWorkspace(code, workspace, storedLayout) {
     let pre, ast;
     if (typeof ArduinoLang === 'undefined' || !ArduinoLang) {
-      return { ok: false, message: (langLoadError && langLoadError.message) ? langLoadError.message : 'مفسرِ کد (ArduinoLang) در این صفحه بارگذاری نشده؛ مشکل از کدِ تو نیست.' };
+      return { ok: false, message: (langLoadError && langLoadError.message) ? langLoadError.message : __('مفسرِ کد (ArduinoLang) در این صفحه بارگذاری نشده؛ مشکل از کدِ تو نیست.') };
     }
     if (typeof code !== 'string') {
-      return { ok: false, message: 'کدی به ادیتورِ بلوکی نرسید؛ مشکل از کدِ تو نیست.' };
+      return { ok: false, message: __('کدی به ادیتورِ بلوکی نرسید؛ مشکل از کدِ تو نیست.') };
     }
     try {
       // «&htim1» در متنِ HAL: مفسر عملگرِ یکانیِ & را نمی‌شناسد؛ قبل از خواندن نامِ تایمر را بدونِ & می‌کنیم
@@ -2623,14 +2623,14 @@ const ArduinoBlocks = (() => {
       if (window.console && console.error) console.error('[ArduinoBlocks] تبدیلِ کد به AST شکست خورد:', e);
       const detail = (e && e.message) ? e.message : String(e);
       if (isInternalError(e)) {
-        return { ok: false, message: 'خطای داخلی هنگامِ خواندنِ کد (مشکل از کدِ تو نیست): ' + detail };
+        return { ok: false, message: __('خطای داخلی هنگامِ خواندنِ کد (مشکل از کدِ تو نیست): ') + detail };
       }
-      return { ok: false, message: 'کد خطای نحوی دارد: ' + detail };
+      return { ok: false, message: __('کد خطای نحوی دارد: ') + detail };
     }
     if (ast && ast.errors && ast.errors.length) {
       const first = ast.errors[0];
       const detail = (first && first.message) ? first.message : String(first);
-      return { ok: false, message: 'کد خطای نحوی دارد: ' + detail };
+      return { ok: false, message: __('کد خطای نحوی دارد: ') + detail };
     }
 
     const conv = makeConverter(workspace, ast.globals, pre);
@@ -2739,7 +2739,7 @@ const ArduinoBlocks = (() => {
       warnings.forEach((w) => {
         try {
           const b = workspace.getBlockById(w.id);
-          if (b && typeof b.setWarningText === 'function') b.setWarningText('این کد قابلِ تبدیل به بلوکی نیست: ' + w.reason);
+          if (b && typeof b.setWarningText === 'function') b.setWarningText(__('این کد قابلِ تبدیل به بلوکی نیست: ') + w.reason);
         } catch (e) { /* noop */ }
       });
       return { ok: true, warnings };
@@ -2748,10 +2748,10 @@ const ArduinoBlocks = (() => {
       // خطای داخلیِ برنامه (مثلاً Blockly کامل بارگذاری نشده) را نباید به‌عنوانِ
       // «کدِ تو پیچیده است» گزارش کرد؛ علتِ واقعی را نشان می‌دهیم.
       if (!(e instanceof UnsupportedError) && isInternalError(e)) {
-        return { ok: false, message: 'خطای داخلی هنگامِ ساختنِ بلوک‌ها (مشکل از کدِ تو نیست): ' + (e.message || e) };
+        return { ok: false, message: __('خطای داخلی هنگامِ ساختنِ بلوک‌ها (مشکل از کدِ تو نیست): ') + (e.message || e) };
       }
-      const msg = (e instanceof UnsupportedError) ? e.message : 'این کد برای حالتِ بلوکی خیلی پیچیده است.';
-      return { ok: false, message: msg + ' می‌تونی توی حالتِ متنی ادامه‌ش بدی.' };
+      const msg = (e instanceof UnsupportedError) ? e.message : __('این کد برای حالتِ بلوکی خیلی پیچیده است.');
+      return { ok: false, message: msg + __(' می‌تونی توی حالتِ متنی ادامه‌ش بدی.') };
     }
   }
 
@@ -2782,7 +2782,7 @@ const ArduinoBlocks = (() => {
     let b = null;
     try { b = field.getSourceBlock(); } catch (e) { /* noop */ }
     if (b && b.workspace && b.workspace.__halMode) {
-      return [['عدد کوچک (uint8_t)', 'uint8_t'], ['عدد صحیح (int)', 'int'], ['عدد (uint16_t)', 'uint16_t'], ['عدد بزرگ (uint32_t)', 'uint32_t']];
+      return [[__('عدد کوچک (uint8_t)'), 'uint8_t'], [__('عدد صحیح (int)'), 'int'], [__('عدد (uint16_t)'), 'uint16_t'], [__('عدد بزرگ (uint32_t)'), 'uint32_t']];
     }
     return arduinoOptions;
   }
@@ -2801,37 +2801,37 @@ const ArduinoBlocks = (() => {
   }
   function defineHalBlocks(Blockly) {
     const pinField = (kind) => ({ type: 'field_dropdown', name: 'PIN', options: function () { return halPinOptions(kind); } });
-    const tim = { type: 'field_dropdown', name: 'TIM', options: [['۱', '1'], ['۲', '2'], ['۳', '3'], ['۴', '4']] };
-    const ch = { type: 'field_dropdown', name: 'CH', options: [['۱', '1'], ['۲', '2'], ['۳', '3'], ['۴', '4']] };
+    const tim = { type: 'field_dropdown', name: 'TIM', options: [[__('۱'), '1'], [__('۲'), '2'], [__('۳'), '3'], [__('۴'), '4']] };
+    const ch = { type: 'field_dropdown', name: 'CH', options: [[__('۱'), '1'], [__('۲'), '2'], [__('۳'), '3'], [__('۴'), '4']] };
     const stmt = { previousStatement: null, nextStatement: null, inputsInline: true };
     Blockly.defineBlocksWithJsonArray([
-      Object.assign({ type: 'hal_write', message0: '📍 پایه‌ی %1 را %2',
-        args0: [pinField('out'), { type: 'field_dropdown', name: 'LEVEL', options: [['روشن کن (SET)', 'GPIO_PIN_SET'], ['خاموش کن (RESET)', 'GPIO_PIN_RESET']] }],
-        colour: COLOR.pin, tooltip: 'مقدارِ یک پایه‌ی خروجی را می‌نویسد (HAL_GPIO_WritePin). روی Blue Pill، پایه‌ی PC13 وارونه است: RESET یعنی LED روشن.' }, stmt),
-      Object.assign({ type: 'hal_toggle', message0: '🔄 حالتِ پایه‌ی %1 را برعکس کن',
-        args0: [pinField('out')], colour: COLOR.pin, tooltip: 'اگر روشن بود خاموش و اگر خاموش بود روشن می‌کند (HAL_GPIO_TogglePin).' }, stmt),
-      { type: 'hal_read', message0: '📥 مقدارِ پایه‌ی %1', args0: [pinField('in')], output: 'Number', colour: COLOR.pin,
-        tooltip: 'مقدارِ یک پایه‌ی ورودی را می‌خواند: ۱ (SET) یا ۰ (RESET) — HAL_GPIO_ReadPin.' },
-      { type: 'hal_level', message0: '%1', args0: [{ type: 'field_dropdown', name: 'LEVEL', options: [['SET (۱)', 'GPIO_PIN_SET'], ['RESET (۰)', 'GPIO_PIN_RESET']] }], output: 'Number', colour: COLOR.pin,
-        tooltip: 'مقدارِ ثابتِ GPIO_PIN_SET (۱) یا GPIO_PIN_RESET (۰) — برای مقایسه با «مقدارِ پایه».' },
-      Object.assign({ type: 'hal_delay', message0: '⏱️ صبر کن %1 میلی‌ثانیه', args0: [{ type: 'input_value', name: 'MS', check: 'Number' }],
-        colour: COLOR.control, tooltip: 'برنامه را برای این‌مقدار میلی‌ثانیه نگه می‌دارد (HAL_Delay).' }, stmt),
-      Object.assign({ type: 'hal_pwm_start', message0: '🎚️ PWM را روی تایمر %1 و کانال %2 شروع کن', args0: [tim, ch],
-        colour: COLOR.servo, tooltip: 'خروجیِ PWMِ یک کانالِ تایمر را روشن می‌کند (HAL_TIM_PWM_Start). اول باید همین کانال در Cube روی پایه تنظیم شده باشد.' }, stmt),
-      Object.assign({ type: 'hal_set_compare', message0: '⚡ در تایمر %1 و کانال %2، سرعت را روی %3 بگذار', args0: [tim, ch, { type: 'input_value', name: 'VAL', check: 'Number' }],
-        colour: COLOR.servo, tooltip: 'عددِ compare را می‌گذارد: ۰ ایست، ۵۰۰ نیمِ سرعت، ۹۹۹ سرعتِ کامل (__HAL_TIM_SET_COMPARE).' }, stmt)
+      Object.assign({ type: 'hal_write', message0: __('📍 پایه‌ی %1 را %2'),
+        args0: [pinField('out'), { type: 'field_dropdown', name: 'LEVEL', options: [[__('روشن کن (SET)'), 'GPIO_PIN_SET'], [__('خاموش کن (RESET)'), 'GPIO_PIN_RESET']] }],
+        colour: COLOR.pin, tooltip: __('مقدارِ یک پایه‌ی خروجی را می‌نویسد (HAL_GPIO_WritePin). روی Blue Pill، پایه‌ی PC13 وارونه است: RESET یعنی LED روشن.') }, stmt),
+      Object.assign({ type: 'hal_toggle', message0: __('🔄 حالتِ پایه‌ی %1 را برعکس کن'),
+        args0: [pinField('out')], colour: COLOR.pin, tooltip: __('اگر روشن بود خاموش و اگر خاموش بود روشن می‌کند (HAL_GPIO_TogglePin).') }, stmt),
+      { type: 'hal_read', message0: __('📥 مقدارِ پایه‌ی %1'), args0: [pinField('in')], output: 'Number', colour: COLOR.pin,
+        tooltip: __('مقدارِ یک پایه‌ی ورودی را می‌خواند: ۱ (SET) یا ۰ (RESET) — HAL_GPIO_ReadPin.') },
+      { type: 'hal_level', message0: '%1', args0: [{ type: 'field_dropdown', name: 'LEVEL', options: [[__('SET (۱)'), 'GPIO_PIN_SET'], [__('RESET (۰)'), 'GPIO_PIN_RESET']] }], output: 'Number', colour: COLOR.pin,
+        tooltip: __('مقدارِ ثابتِ GPIO_PIN_SET (۱) یا GPIO_PIN_RESET (۰) — برای مقایسه با «مقدارِ پایه».') },
+      Object.assign({ type: 'hal_delay', message0: __('⏱️ صبر کن %1 میلی‌ثانیه'), args0: [{ type: 'input_value', name: 'MS', check: 'Number' }],
+        colour: COLOR.control, tooltip: __('برنامه را برای این‌مقدار میلی‌ثانیه نگه می‌دارد (HAL_Delay).') }, stmt),
+      Object.assign({ type: 'hal_pwm_start', message0: __('🎚️ PWM را روی تایمر %1 و کانال %2 شروع کن'), args0: [tim, ch],
+        colour: COLOR.servo, tooltip: __('خروجیِ PWMِ یک کانالِ تایمر را روشن می‌کند (HAL_TIM_PWM_Start). اول باید همین کانال در Cube روی پایه تنظیم شده باشد.') }, stmt),
+      Object.assign({ type: 'hal_set_compare', message0: __('⚡ در تایمر %1 و کانال %2، سرعت را روی %3 بگذار'), args0: [tim, ch, { type: 'input_value', name: 'VAL', check: 'Number' }],
+        colour: COLOR.servo, tooltip: __('عددِ compare را می‌گذارد: ۰ ایست، ۵۰۰ نیمِ سرعت، ۹۹۹ سرعتِ کامل (__HAL_TIM_SET_COMPARE).') }, stmt)
     ]);
   }
   // هشدارِ روی بلوک وقتی پایه در Cube درست تنظیم نشده (آیکونِ ⚠️ خودِ Blockly)
   function refreshHal(workspace) {
     if (!workspace || !workspace.__halMode) return;
-    const need = { hal_write: ['GPIO_Output', 'خروجی'], hal_toggle: ['GPIO_Output', 'خروجی'], hal_read: ['GPIO_Input', 'ورودی'] };
+    const need = { hal_write: ['GPIO_Output', __('خروجی')], hal_toggle: ['GPIO_Output', __('خروجی')], hal_read: ['GPIO_Input', __('ورودی')] };
     const hasCfg = halCtx && halCtx.cfg && Object.keys(halCtx.cfg).length >= 0;
     workspace.getAllBlocks(false).forEach((b) => {
       const n = need[b.type];
       if (!n || !hasCfg || typeof b.setWarningText !== 'function') return;
       const pin = b.getFieldValue('PIN');
-      const text = halCtx.cfg[pin] === n[0] ? null : '«' + pin + '» در تبِ Cube هنوز ' + n[0] + ' (' + n[1] + ') نشده؛ اول همان‌جا تنظیمش کن.';
+      const text = halCtx.cfg[pin] === n[0] ? null : '«' + pin + __('» در تبِ Cube هنوز ') + n[0] + ' (' + n[1] + __(') نشده؛ اول همان‌جا تنظیمش کن.');
       if (b.__halWarn === text) return;
       b.__halWarn = text;
       try { b.setWarningText(text); } catch (e) { /* noop */ }
@@ -2854,20 +2854,20 @@ const ArduinoBlocks = (() => {
     const ifB = (els) => ({ kind: 'block', type: 'controls_if', extraState: els ? { hasElse: true } : undefined, inputs: { IF0: readSet() } });
     const start = [t.init ? blk('ard_setup') : null, blk('ard_loop'), blk('ard_comment')].filter(Boolean);
     const cats = [
-      cat('شروع', COLOR.event, start),
-      cat('پایه‌ها (HAL)', COLOR.pin, [
+      cat(__('شروع'), COLOR.event, start),
+      cat(__('پایه‌ها (HAL)'), COLOR.pin, [
         blk('hal_write', { PIN: outP, LEVEL: 'GPIO_PIN_SET' }), blk('hal_write', { PIN: outP, LEVEL: 'GPIO_PIN_RESET' }),
         blk('hal_toggle', { PIN: outP }), blk('hal_read', { PIN: inP }), blk('hal_level', { LEVEL: 'GPIO_PIN_SET' }), blk('hal_level', { LEVEL: 'GPIO_PIN_RESET' })
       ]),
-      cat('کنترل', COLOR.control, [ifB(false), ifB(true), blk('hal_delay')]),
-      cat('متغیرها', COLOR.variable, [
+      cat(__('کنترل'), COLOR.control, [ifB(false), ifB(true), blk('hal_delay')]),
+      cat(__('متغیرها'), COLOR.variable, [
         blk('ard_var_declare', { TYPE: 'uint8_t' }, { VALUE: { block: { type: 'hal_read', fields: { PIN: inP } } } }),
         blk('variables_get'), blk('variables_set'), blk('math_change')
       ]),
-      cat('ریاضی', COLOR.math, [blk('math_number'), blk('math_arithmetic')]),
-      cat('منطق', COLOR.logic, [blk('logic_compare'), blk('logic_operation'), blk('logic_negate')])
+      cat(__('ریاضی'), COLOR.math, [blk('math_number'), blk('math_arithmetic')]),
+      cat(__('منطق'), COLOR.logic, [blk('logic_compare'), blk('logic_operation'), blk('logic_negate')])
     ];
-    if (t.pwm) cats.splice(3, 0, cat('PWM (موتور)', COLOR.servo, [blk('hal_pwm_start'), blk('hal_set_compare')]));
+    if (t.pwm) cats.splice(3, 0, cat(__('PWM (موتور)'), COLOR.servo, [blk('hal_pwm_start'), blk('hal_set_compare')]));
     return { kind: 'categoryToolbox', contents: cats };
   }
   // وقتی Cube عوض شد: جعبه‌ابزار (پایه‌های پیش‌فرض) و هشدارها تازه می‌شوند.

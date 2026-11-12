@@ -40,12 +40,12 @@ const QUESTS = [
 ];
 
 const QUEST_GROUPS = [
-  { id: 'electronics', icon: '🔋', title: 'الکترونیک' },
-  { id: 'arduino',  icon: '⚡', title: 'آردوینو' },
+  { id: 'electronics', icon: '🔋', title: __('الکترونیک') },
+  { id: 'arduino',  icon: '⚡', title: __('آردوینو') },
   { id: 'esp32',    icon: '📡', title: 'ESP32' },
   { id: 'stm32',    icon: '🔵', title: 'STM32' },
-  { id: 'circuit', icon: '🔌', title: 'طراحی مدار' },
-  { id: 'robotics', icon: '🤖', title: 'رباتیک' }
+  { id: 'circuit', icon: '🔌', title: __('طراحی مدار') },
+  { id: 'robotics', icon: '🤖', title: __('رباتیک') }
 ];
 (function assignQuestGroups(){
   let g = 'electronics';
@@ -58,6 +58,8 @@ const QUEST_GROUPS = [
     q.group = g;
   });
 })();
+QUESTS.forEach(q => I18n.localizeTree(q, 'quest.' + q.id));
+QUEST_GROUPS.forEach(g => I18n.localizeTree(g, 'group.' + g.id));
 const QUEST_GROUP_KEY = 'shovalie-madar-quest-group-v1';
 let activeGroup = null;
 function saveActiveGroup(){ try{ localStorage.setItem(QUEST_GROUP_KEY, activeGroup); }catch(e){} }
@@ -65,10 +67,12 @@ function saveActiveGroup(){ try{ localStorage.setItem(QUEST_GROUP_KEY, activeGro
 /* مأموریت‌های بیشتر با حمایت بیشتر باز می‌شوند */
 const LOCKED_TEASER = {
   count: 6,
-  title: 'مأموریت‌های بیشتر در راه است',
-desc: 'با حمایت از سازنده، مراحل بعدیِ مسیر شامل پروژه‌های رباتیک بیشتر، ماژول ها و قطعات جدید، قسمت های جدید آزمایشگاه) باز می‌شوند.'
+  title: __('مأموریت‌های بیشتر در راه است'),
+desc: __('با حمایت از سازنده، مراحل بعدیِ مسیر شامل پروژه‌های رباتیک بیشتر، ماژول ها و قطعات جدید، قسمت های جدید آزمایشگاه) باز می‌شوند.')
 };
 
+
+I18n.localizeTree(LOCKED_TEASER, 'teaser');
 
 /* Runs fn at most once per animation frame, no matter how many times it's
    called in between — mobile browsers fire 'resize' repeatedly while the
@@ -260,7 +264,7 @@ const groupLockText = g => {
   const p = prevGroupOf(g);
   if(!p) return '';
   const left = groupNeed(g) - doneIn(p.id);
-  return `🔒 برای باز شدن این بخش ${toFa(left)} مأموریت دیگر از «${p.title}» را تمام کن (${toFa(doneIn(p.id))} از ${toFa(groupNeed(g))}).`;
+  return __f("🔒 برای باز شدن این بخش {0} مأموریت دیگر از «{1}» را تمام کن ({2} از {3}).", toFa(left), p.title, toFa(doneIn(p.id)), toFa(groupNeed(g)));
 };
 const groupsOpenedBy = (lockedBefore) => QUEST_GROUPS.filter(g => lockedBefore.has(g.id) && !groupLocked(g.id));
 
@@ -276,14 +280,14 @@ const container = document.getElementById('nodesContainer');
 const knightIntroText = knightLine.textContent.trim();
 
 const KNIGHT_LOCKED = [
-  '🔒 این راه هنوز برایت بسته است. اول مأموریت پیش از آن را کامل کن.',
-  '🔒 این ماموریت قفله. برای ادامه، ابتدا مأموریت قبلی را تکمیل کن.',
-  '🚧 مسیر مسدوده. ابتدا باید ماموریت قبل را با موفقیت پشت سر بگذاری.'
+  __('🔒 این راه هنوز برایت بسته است. اول مأموریت پیش از آن را کامل کن.'),
+  __('🔒 این ماموریت قفله. برای ادامه، ابتدا مأموریت قبلی را تکمیل کن.'),
+  __('🚧 مسیر مسدوده. ابتدا باید ماموریت قبل را با موفقیت پشت سر بگذاری.')
 ];
 const KNIGHT_AVAILABLE_TOASTS = [
-  '✅ خوب بود، شاگرد. راه بعدی روشن شد.',
-  '📈 مهارتت رشد کرد. آماده‌ی چالش بعدی هستی؟',
-  '⚡ مدار درونت قوی‌تر شد. ادامه بده!'
+  __('✅ خوب بود، شاگرد. راه بعدی روشن شد.'),
+  __('📈 مهارتت رشد کرد. آماده‌ی چالش بعدی هستی؟'),
+  __('⚡ مدار درونت قوی‌تر شد. ادامه بده!')
 ];
 
 /* ================= LAB UNLOCKS (based on mission progress) ================= */
@@ -293,9 +297,9 @@ labCards.forEach(card => {
   overlay.className = 'lab-lock-overlay';
   overlay.innerHTML = `
     <div class="lab-lock-badge">🔒</div>
-    <div class="lab-lock-title">این بخش هنوز قفل است</div>
+    <div class="lab-lock-title">${__("این بخش هنوز قفل است")}</div>
     <div class="lab-lock-sub"></div>
-    <button class="lab-lock-cta">رفتن به مسیر مأموریت</button>
+    <button class="lab-lock-cta">${__("رفتن به مسیر مأموریت")}</button>
   `;
   card.appendChild(overlay);
   overlay.querySelector('.lab-lock-cta').addEventListener('click', () => {
@@ -328,9 +332,9 @@ function updateLabLocks(){
       const sub = card.querySelector('.lab-lock-sub');
       if(reqMission){
         const m = QUESTS.find(x => x.id === reqMission);
-        sub.textContent = `با تکمیل مأموریت «${m ? m.title : reqMission}» در بخش الکترونیک باز می‌شود`;
+        sub.textContent = __f("با تکمیل مأموریت «{0}» در بخش الکترونیک باز می‌شود", m ? m.title : reqMission);
       } else {
-        sub.textContent = `با تکمیل ${toFa(need - done)} مأموریت دیگر از بخش الکترونیک باز می‌شود (${toFa(done)} از ${toFa(need)})`;
+        sub.textContent = __f("با تکمیل {0} مأموریت دیگر از بخش الکترونیک باز می‌شود ({1} از {2})", toFa(need - done), toFa(done), toFa(need));
       }
     }
   });
@@ -401,15 +405,13 @@ function buildLabUnlockOverlay(){
   ov.id = 'labUnlockOverlay';
   ov.innerHTML = `
     <div class="modal">
-      <button type="button" class="modal-close" aria-label="بستن">✕</button>
-      <div class="modal-eyebrow">🔓 قابلیت جدید باز شد</div>
-      <div class="modal-title">آزمایشگاه الکترونیک باز شد!</div>
+      <button type="button" class="modal-close" aria-label="${__("بستن")}">✕</button>
+      <div class="modal-eyebrow">${__("🔓 قابلیت جدید باز شد")}</div>
+      <div class="modal-title">${__("آزمایشگاه الکترونیک باز شد!")}</div>
       <div class="modal-desc">
-        آفرین! حالا بخش «آزمایشگاه» برایت باز شده. اینجا می‌تونی با شبیه‌سازهای
-        تعاملی — قانون اهم، خازن، اسیلوسکوپ، سیم‌پیچ و آهنربا — دست به دستگاه
-        ببری و مفاهیم مدار رو با چشم خودت زنده ببینی.
+        ${__("آفرین! حالا بخش «آزمایشگاه» برایت باز شده. اینجا می‌تونی با شبیه‌سازهای\n        تعاملی — قانون اهم، خازن، اسیلوسکوپ، سیم‌پیچ و آهنربا — دست به دستگاه\n        ببری و مفاهیم مدار رو با چشم خودت زنده ببینی.")}
       </div>
-      <button type="button" class="complete-btn" id="labUnlockGoBtn">🔬 برو به آزمایشگاه</button>
+      <button type="button" class="complete-btn" id="labUnlockGoBtn">${__("🔬 برو به آزمایشگاه")}</button>
     </div>
   `;
   document.body.appendChild(ov);
@@ -440,12 +442,12 @@ function closeLabUnlockOverlay(){
    Uses the same knight speech-banner (#knightSection, showKnightLine) as the
    rest of the game — not a popup — since knight-section was moved out of
    #questTab in the HTML so it can be reused on the Lab tab too. */
-const LAB_INTRO_TEXT = 'به آزمایشگاه الکترونیک خوش اومدی! 🔬 با شبیه‌سازها تمرین کن و با تکمیل مأموریت‌ها، قفل بخش‌های جدید رو باز کن! ⚡';
+const LAB_INTRO_TEXT = __('به آزمایشگاه الکترونیک خوش اومدی! 🔬 با شبیه‌سازها تمرین کن و با تکمیل مأموریت‌ها، قفل بخش‌های جدید رو باز کن! ⚡');
 // Shown right after the knight's line above finishes typing — Voltage
 // introduces itself as the lab's own guide (see maybeShowLabIntro below).
-const VOLTAGE_INTRO_TEXT = 'سلام! من ولتاژ هستم ⚡ از این به بعد تو آزمایشگاه کنارتم و کمکت می‌کنم مفهوم‌ها رو با چشم خودت حس کنی.';
+const VOLTAGE_INTRO_TEXT = __('سلام! من ولتاژ هستم ⚡ از این به بعد تو آزمایشگاه کنارتم و کمکت می‌کنم مفهوم‌ها رو با چشم خودت حس کنی.');
 
-const circuitTabLockText = () => groupLockText('circuit').replace('این بخش', 'تب «طراحی مدار»');
+const circuitTabLockText = () => groupLockText('circuit').replace(__('این بخش'), __('تب «طراحی مدار»'));
 function updateCircuitTabLock(){
   const locked = groupLocked('circuit');
   tabCircuitBtn.classList.toggle('locked', locked);
@@ -497,9 +499,9 @@ window.maybeShowLabIntro = maybeShowLabIntro;
    else, and so lab.js doesn't need to know about CHARACTERS/showKnightLine
    internals. */
 const VOLTAGE_PRAISE_LINES = [
-  '⚡ آفرین! ولتاژ رو زیاد کردی — جریان هم باهاش بیشتر میشه.',
-  '🔋 همینه! هرچی ولتاژ بیشتر بشه، الکترون‌ها تندتر می‌دوند.',
-  '🎓 آفرین، شاگرد برق! داری قانون اهم رو با دست خودت حس می‌کنی.'
+  __('⚡ آفرین! ولتاژ رو زیاد کردی — جریان هم باهاش بیشتر میشه.'),
+  __('🔋 همینه! هرچی ولتاژ بیشتر بشه، الکترون‌ها تندتر می‌دوند.'),
+  __('🎓 آفرین، شاگرد برق! داری قانون اهم رو با دست خودت حس می‌کنی.')
 ];
 function voltagePraise(){
   const line = VOLTAGE_PRAISE_LINES[Math.floor(Math.random() * VOLTAGE_PRAISE_LINES.length)];
@@ -510,7 +512,7 @@ window.voltagePraise = voltagePraise;
 // Warning line when the voltage climbs very high — even a resistor can't
 // always save the LED at that point. Takes priority over the praise line
 // above (see lab.js), since it's the more important thing to notice.
-const VOLTAGE_WARN_TEXT = '⚠️ مواظب باش! اگه ولتاژ خیلی زیاد بشه، حتی مقاومت هم نمی‌تونه جلوی سوختن LED رو بگیره.';
+const VOLTAGE_WARN_TEXT = __('⚠️ مواظب باش! اگه ولتاژ خیلی زیاد بشه، حتی مقاومت هم نمی‌تونه جلوی سوختن LED رو بگیره.');
 function voltageWarnHigh(){
   showKnightLine(VOLTAGE_WARN_TEXT, 'stern', 'voltage');
 }
@@ -519,7 +521,7 @@ window.voltageWarnHigh = voltageWarnHigh;
 // Apology line when the person fiddles with the voltage while the LED for
 // the current mode is already burned out — nudges them to fix the voltage
 // and actually replace the LED before it'll do anything.
-const VOLTAGE_BURNED_TEXT = '🔥 متأسفم! من وقتی قوی بشم ممکنه LED رو بسوزونم. دوباره تلاش کن: مقدار ولتاژ رو درست تنظیم کن و LED سوخته رو عوض کن.';
+const VOLTAGE_BURNED_TEXT = __('🔥 متأسفم! من وقتی قوی بشم ممکنه LED رو بسوزونم. دوباره تلاش کن: مقدار ولتاژ رو درست تنظیم کن و LED سوخته رو عوض کن.');
 let lastBurnApologyAt = 0;
 function voltageApologizeBurned(){
   const now = performance.now();
@@ -532,9 +534,9 @@ window.voltageApologizeBurned = voltageApologizeBurned;
 // Praise line for when the person replaces the burned LED and gets back to
 // work — the recovery moment after the apology above.
 const VOLTAGE_REPLACE_PRAISE_LINES = [
-  '💡 آفرین! LED رو عوض کردی — این‌بار با احتیاط بیشتر ولتاژ و مقاومت رو تنظیم کن.',
-  '✨ همینه! یه LED نو گذاشتی. یادت باشه: ولتاژ بالا با مقاومت کم، دوباره می‌سوزوندش.',
-  '🙌 دمت گرم! دوباره سرِ کار برگشتیم. این‌بار قبل از زیاد کردن ولتاژ، به مقاومت هم فکر کن.'
+  __('💡 آفرین! LED رو عوض کردی — این‌بار با احتیاط بیشتر ولتاژ و مقاومت رو تنظیم کن.'),
+  __('✨ همینه! یه LED نو گذاشتی. یادت باشه: ولتاژ بالا با مقاومت کم، دوباره می‌سوزوندش.'),
+  __('🙌 دمت گرم! دوباره سرِ کار برگشتیم. این‌بار قبل از زیاد کردن ولتاژ، به مقاومت هم فکر کن.')
 ];
 function voltageReplacePraise(){
   const line = VOLTAGE_REPLACE_PRAISE_LINES[Math.floor(Math.random() * VOLTAGE_REPLACE_PRAISE_LINES.length)];
@@ -546,7 +548,7 @@ window.voltageReplacePraise = voltageReplacePraise;
 // the person removed the resistors or turned them down too far — a
 // different cause than "voltage got too high" (Voltage's line above), so
 // the knight character explains this one, since resistance is his domain.
-const RESISTOR_BURNED_TEXT = '🧯 متأسفم! کار مقاومت اینه که جلوی جریان زیاد رو بگیره، ولی وقتی برش داشتی یا خیلی کمش کردی، دیگه نتونست جلوی سوختن LED رو بگیره. دوباره تلاش کن: یه مقاومت مناسب انتخاب کن و LED سوخته رو عوض کن.';
+const RESISTOR_BURNED_TEXT = __('🧯 متأسفم! کار مقاومت اینه که جلوی جریان زیاد رو بگیره، ولی وقتی برش داشتی یا خیلی کمش کردی، دیگه نتونست جلوی سوختن LED رو بگیره. دوباره تلاش کن: یه مقاومت مناسب انتخاب کن و LED سوخته رو عوض کن.');
 let lastResistorApologyAt = 0;
 function resistorApologizeBurned(){
   const now = performance.now();
@@ -585,7 +587,7 @@ function paintGroupBar(){
   groupBar.innerHTML = QUEST_GROUPS.map(gr => {
     const all = QUESTS.filter(q => q.group === gr.id), done = all.filter(q => progress[q.id]).length;
     const on = gr.id === activeGroup, lock = groupLocked(gr.id);
-    return `<button type="button" class="qg-tab${on ? ' on' : ''}${done === all.length ? ' full' : ''}${lock ? ' locked' : ''}${freshGroups.has(gr.id) ? ' fresh' : ''}" role="tab" aria-selected="${on}" data-g="${gr.id}"><span class="qg-ic" aria-hidden="true">${lock ? '🔒' : gr.icon}</span><span class="qg-t">${gr.title}</span><small class="qg-n">${lock ? 'قفل' : toFa(done) + '/' + toFa(all.length)}</small></button>`;
+    return `<button type="button" class="qg-tab${on ? ' on' : ''}${done === all.length ? ' full' : ''}${lock ? ' locked' : ''}${freshGroups.has(gr.id) ? ' fresh' : ''}" role="tab" aria-selected="${on}" data-g="${gr.id}"><span class="qg-ic" aria-hidden="true">${lock ? '🔒' : gr.icon}</span><span class="qg-t">${gr.title}</span><small class="qg-n">${lock ? __('قفل') : toFa(done) + '/' + toFa(all.length)}</small></button>`;
   }).join('');
 }
 
@@ -595,7 +597,7 @@ function showUnlockPopup(groups, level){
   const many = groups.length > 1;
   const pop = document.createElement('div');
   pop.id = 'ulPop'; pop.className = 'ul-pop'; pop.dir = 'rtl';
-  pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-modal', 'true'); pop.setAttribute('aria-label', 'بخش جدید باز شد');
+  pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-modal', 'true'); pop.setAttribute('aria-label', __('بخش جدید باز شد'));
   pop.innerHTML = `
     <div class="ul-card">
       <div class="ul-lock">
@@ -609,13 +611,13 @@ function showUnlockPopup(groups, level){
           </g>
         </svg>
       </div>
-      <div class="ul-eyebrow">آفرین! پیشرفت خوبی داشتی</div>
-      <div class="ul-title">قفل باز شد</div>
+      <div class="ul-eyebrow">${__("آفرین! پیشرفت خوبی داشتی")}</div>
+      <div class="ul-title">${__("قفل باز شد")}</div>
       <div class="ul-groups">${groups.map(g => `<span class="ul-chip"><span aria-hidden="true">${g.icon}</span>${g.title}</span>`).join('')}</div>
-      <div class="ul-sub">${many ? 'مأموریت‌های تازهٔ این بخش‌ها' : 'مأموریت‌های تازهٔ این بخش'} منتظر توست.${groups.some(g => g.id === 'circuit') ? ' تب «طراحی مدار» هم باز شد.' : ''}</div>
+      <div class="ul-sub">${many ? __('مأموریت‌های تازهٔ این بخش‌ها') : __('مأموریت‌های تازهٔ این بخش')} ${__("منتظر توست.")}${groups.some(g => g.id === 'circuit') ? __(' تب «طراحی مدار» هم باز شد.') : ''}</div>
       <div class="ul-btns">
-        <button type="button" class="ul-go">${many ? 'ببین چی باز شد' : 'برو به ' + groups[0].title}</button>
-        <button type="button" class="ul-later">بعداً</button>
+        <button type="button" class="ul-go">${many ? __('ببین چی باز شد') : __('برو به ') + groups[0].title}</button>
+        <button type="button" class="ul-later">${__("بعداً")}</button>
       </div>
     </div>`;
   const onKey = e => { if(e.key === 'Escape') close(); };
@@ -669,7 +671,7 @@ function render(){
         <div class="node-sub">${q.sub}</div>
       </div>
       <div class="node-status">
-        <span class="status-pill">${done ? 'انجام شد' : locked ? 'قفل' : 'آماده'}</span>
+        <span class="status-pill">${done ? __('انجام شد') : locked ? __('قفل') : __('آماده')}</span>
       </div>
     `;
     node.addEventListener('click', (evt) => onNodeClick(i, locked, evt));
@@ -692,7 +694,7 @@ function render(){
       <div class="node-sub">${LOCKED_TEASER.desc}</div>
     </div>
     <div class="node-status">
-      <span class="status-pill">+${toFa(LOCKED_TEASER.count)} مأموریت</span>
+      <span class="status-pill">+${toFa(LOCKED_TEASER.count)} ${__("مأموریت")}</span>
     </div>
   `;
   teaserRow.appendChild(teaserNode);
@@ -714,17 +716,17 @@ function updateHUD(){
   const from = xpForLevel(level), span = xpForLevel(level + 1) - from;
   const pct = maxed ? 100 : Math.round(((earned - from) / span) * 100);
   const xpFill = document.getElementById('xpFill');
-  document.getElementById('xpText').textContent = maxed ? `${toFa(earned)} XP · سطح نهایی` : `${toFa(earned - from)} / ${toFa(span)} XP`;
+  document.getElementById('xpText').textContent = maxed ? __f("{0} XP · سطح نهایی", toFa(earned)) : `${toFa(earned - from)} / ${toFa(span)} XP`;
   document.getElementById('pctText').textContent = maxed ? '' : toFa(pct) + '%';
   xpFill.style.width = pct + '%';
   const done = completedCount(), all = QUESTS.length;
-  document.getElementById('completionText').textContent = `تکمیل مسیر: ${toFa(Math.round((done / all) * 100))}% · ${toFa(done)} از ${toFa(all)} مأموریت`;
+  document.getElementById('completionText').textContent = __f("تکمیل مسیر: {0}% · {1} از {2} مأموریت", toFa(Math.round((done / all) * 100)), toFa(done), toFa(all));
   if(earned > lastEarned){
     xpFill.classList.remove('filling'); void xpFill.offsetWidth; xpFill.classList.add('filling');
   }
   const levelEl = document.getElementById('levelNum');
   const badge = document.querySelector('.level-badge');
-  badge.title = earned < total ? `${toFa(xpForLevel(level + 1) - earned)} XP تا سطح بعد` : '';
+  badge.title = earned < total ? __f("{0} XP تا سطح بعد", toFa(xpForLevel(level + 1) - earned)) : '';
   if(level !== lastLevel){
     animateCount(levelEl, lastLevel, level, 400);
     badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump');
@@ -735,7 +737,7 @@ function updateHUD(){
 }
 
 function toFa(n){
-  return String(n).replace(/[0-9]/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+  return String(n).replace(/[0-9]/g, d => __('۰۱۲۳۴۵۶۷۸۹')[d]);
 }
 
 function drawPath(){
@@ -825,49 +827,49 @@ const CONCEPT_SIMS = {
   motor_pwm: mountHalPwmSim
 };
 
-const FIRST_MISSION_INTRO_TEXT = '📖 این مأموریت اختیاریه! می‌تونی توضیحات بالا رو مطالعه کنی و با اسلایدر امتحانش کنی، یا اگه دوست نداری همین‌جوری همون دکمه‌ی «مطالعه کردم ✓» رو بزن تا مأموریت تکمیل بشه و بری سراغ مأموریت بعدی.';
-const RESISTOR_CALC_INTRO_TEXT = '🎨 نوارهای رنگی مقاومت رو با منوی کشویی پایین عوض کن تا عدد روی صفحه دقیقاً ۲۲۰ Ω رو نشون بده — همین‌که بهش رسیدی، مأموریت خودکار تکمیل می‌شه!';
-const HELLO_MISSION_INTRO_TEXT = '📝 تو این ماموریت باید متن Hello World رو با کد چاپ کنی. اگه برنامه‌نویسی بلد نیستی نگران نباش  از حالت بلوکی استفاده کن و بلوک های متن و سریال رو کنار هم بچین.';
+const FIRST_MISSION_INTRO_TEXT = __('📖 این مأموریت اختیاریه! می‌تونی توضیحات بالا رو مطالعه کنی و با اسلایدر امتحانش کنی، یا اگه دوست نداری همین‌جوری همون دکمه‌ی «مطالعه کردم ✓» رو بزن تا مأموریت تکمیل بشه و بری سراغ مأموریت بعدی.');
+const RESISTOR_CALC_INTRO_TEXT = __('🎨 نوارهای رنگی مقاومت رو با منوی کشویی پایین عوض کن تا عدد روی صفحه دقیقاً ۲۲۰ Ω رو نشون بده — همین‌که بهش رسیدی، مأموریت خودکار تکمیل می‌شه!');
+const HELLO_MISSION_INTRO_TEXT = __('📝 تو این ماموریت باید متن Hello World رو با کد چاپ کنی. اگه برنامه‌نویسی بلد نیستی نگران نباش  از حالت بلوکی استفاده کن و بلوک های متن و سریال رو کنار هم بچین.');
 
 /* راهنمای داخل ادیتور: کدها بین {{ }} نوشته می‌شوند. متن با همان افکت تایپِ بنر می‌آید و هر بار که بنر
    یک حرف اضافه می‌کند، همان لحظه نسخه‌ی رنگیِ همان مقدار متن جایگزین می‌شود. */
-const LINE_INTRO_TEXT = '🤖 به بخش رباتیک خوش اومدی! اول بخون ربات تعقیب خط چیه و چطور کار می‌کنه، بعد ببین یه ربات کامل چطور روی چند مسیر خط رو می‌ره. دو مسیر رو تا 🏁 برسون تا مأموریت تکمیل بشه.';
-const ROBOT_ASSEMBLE_INTRO_TEXT = '🛠️ حالا که چشم ربات رو شناختی، وقت ساختنه! قبل از اینکه ربات راه بیفته، باید خودت بدنه‌ش رو سر هم کنی. هر قطعه رو بگیر و بنداز روی جایگاه خط‌چینِ خودش؛ آخرش هم روشنش کن!';
-const STLINK_INTRO_TEXT = '🔌 برد Blue Pill برخلاف آردوینو خودش مبدل USB به سریال و بوت‌لودر نداره، واسه همین برای ریختن برنامه یه «برنامه‌ریز» به اسم ST-Link لازمه. چهار تا سیم رو وصل کن: 3.3V، GND، SWDIO و SWCLK. مواظب ۵ ولت هم باش، چیپ رو می‌سوزونه!';
-const CLOCK_TIMER_INTRO_TEXT = '⚙️ این چرخ‌دنده‌ها مفهوم فنی «درخت کلاک (Clock Tree)» را به زبان مکانیک نشان می‌دهند: در میکروکنترلر سرعت همه‌چیز یکسان نیست؛ بلکه فرکانس اصلی با کمک ضریب‌ها (ضرب و تقسیم)، به هر بخش با سرعت متناسب خودش می‌رسد.';
-const LINE_SENSOR_INTRO_TEXT = '🤖 ربات تعقیب خط اول از همه یه «چشم» می‌خواد: سنسور مادون‌قرمز. اول بخش توضیحی رو ببین تا بفهمی IR چیه و چرا با چشم فرق داره؛ بعد سنسور رو روی مسیر بکش و آستانه رو جوری تنظیم کن که روی سفید LED خاموش و روی خط مشکی روشن بشه.';
+const LINE_INTRO_TEXT = __('🤖 به بخش رباتیک خوش اومدی! اول بخون ربات تعقیب خط چیه و چطور کار می‌کنه، بعد ببین یه ربات کامل چطور روی چند مسیر خط رو می‌ره. دو مسیر رو تا 🏁 برسون تا مأموریت تکمیل بشه.');
+const ROBOT_ASSEMBLE_INTRO_TEXT = __('🛠️ حالا که چشم ربات رو شناختی، وقت ساختنه! قبل از اینکه ربات راه بیفته، باید خودت بدنه‌ش رو سر هم کنی. هر قطعه رو بگیر و بنداز روی جایگاه خط‌چینِ خودش؛ آخرش هم روشنش کن!');
+const STLINK_INTRO_TEXT = __('🔌 برد Blue Pill برخلاف آردوینو خودش مبدل USB به سریال و بوت‌لودر نداره، واسه همین برای ریختن برنامه یه «برنامه‌ریز» به اسم ST-Link لازمه. چهار تا سیم رو وصل کن: 3.3V، GND، SWDIO و SWCLK. مواظب ۵ ولت هم باش، چیپ رو می‌سوزونه!');
+const CLOCK_TIMER_INTRO_TEXT = __('⚙️ این چرخ‌دنده‌ها مفهوم فنی «درخت کلاک (Clock Tree)» را به زبان مکانیک نشان می‌دهند: در میکروکنترلر سرعت همه‌چیز یکسان نیست؛ بلکه فرکانس اصلی با کمک ضریب‌ها (ضرب و تقسیم)، به هر بخش با سرعت متناسب خودش می‌رسد.');
+const LINE_SENSOR_INTRO_TEXT = __('🤖 ربات تعقیب خط اول از همه یه «چشم» می‌خواد: سنسور مادون‌قرمز. اول بخش توضیحی رو ببین تا بفهمی IR چیه و چرا با چشم فرق داره؛ بعد سنسور رو روی مسیر بکش و آستانه رو جوری تنظیم کن که روی سفید LED خاموش و روی خط مشکی روشن بشه.');
 
-const LINE_LOGIC_INTRO_TEXT = '🧠 مغزِ ربات یه فهرست قانونه! اول با ربات متحرک ببین هر قانون چی کار می‌کنه: «شروع» رو بزن و قانون‌های چپ و راست رو روشن کن. بعدش پایین‌تر مثل STM32CubeIDE اول پایه‌ها رو تو CubeMX تنظیم کن و بعد همین قانون‌ها رو با if و else if کد بزن؛ ربات دقیقاً کدِ تو رو اجرا می‌کنه.';
+const LINE_LOGIC_INTRO_TEXT = __('🧠 مغزِ ربات یه فهرست قانونه! اول با ربات متحرک ببین هر قانون چی کار می‌کنه: «شروع» رو بزن و قانون‌های چپ و راست رو روشن کن. بعدش پایین‌تر مثل STM32CubeIDE اول پایه‌ها رو تو CubeMX تنظیم کن و بعد همین قانون‌ها رو با if و else if کد بزن؛ ربات دقیقاً کدِ تو رو اجرا می‌کنه.');
 
 const CIRCUIT_INTRO_TEXT = {
-  schematic_intro: '📐 قبل از بستن مدار باید زبان نقشه‌ی مدار را بدانی! مدار را در دو حالت «عکس واقعی» و «شماتیک» ببین و بخوان هر نماد چه قطعه‌ای است. بعد «مطالعه کردم ✓» را بزن.',
-  footprint_intro: '🧩 شماتیک فقط اتصال‌ها را می‌گوید؛ فوت‌پرینت جای پایه‌های قطعه روی برد است. هر قطعه را انتخاب کن و فوت‌پرینتش را ببین. بعد «مطالعه کردم ✓» را بزن.',
-  led_circuit: '🔌 اولین مدارت رو خودت می‌بندی! از فهرست کنار صفحه کانکتور باتری، مقاومت و LED قرمز رو بردار، روی صفحه بذار و با ابزار «سیم‌کشی» بهم وصل‌شون کن. حواست باشه: LED بدون مقاومت می‌سوزه و آندش باید سمت مثبت باشه! گیر کردی؟ «گزینه‌ها ← نمایش پاسخ».',
-  switch_lamp: '💡 یک کلید بین مقاومت و LED بگذار و مدار را ببند. کلید اول باز است؛ روی آن دوبار بزن تا ببندد و چراغ روشن شود. گیر کردی؟ «گزینه‌ها ← نمایش پاسخ».',
-  traffic_light: '🚦 سه تا LED، سه تا مقاومت، یک کانکتور باتری! هر سه مدار از همون دو سیم کانکتور تغذیه می‌شن.'
+  schematic_intro: __('📐 قبل از بستن مدار باید زبان نقشه‌ی مدار را بدانی! مدار را در دو حالت «عکس واقعی» و «شماتیک» ببین و بخوان هر نماد چه قطعه‌ای است. بعد «مطالعه کردم ✓» را بزن.'),
+  footprint_intro: __('🧩 شماتیک فقط اتصال‌ها را می‌گوید؛ فوت‌پرینت جای پایه‌های قطعه روی برد است. هر قطعه را انتخاب کن و فوت‌پرینتش را ببین. بعد «مطالعه کردم ✓» را بزن.'),
+  led_circuit: __('🔌 اولین مدارت رو خودت می‌بندی! از فهرست کنار صفحه کانکتور باتری، مقاومت و LED قرمز رو بردار، روی صفحه بذار و با ابزار «سیم‌کشی» بهم وصل‌شون کن. حواست باشه: LED بدون مقاومت می‌سوزه و آندش باید سمت مثبت باشه! گیر کردی؟ «گزینه‌ها ← نمایش پاسخ».'),
+  switch_lamp: __('💡 یک کلید بین مقاومت و LED بگذار و مدار را ببند. کلید اول باز است؛ روی آن دوبار بزن تا ببندد و چراغ روشن شود. گیر کردی؟ «گزینه‌ها ← نمایش پاسخ».'),
+  traffic_light: __('🚦 سه تا LED، سه تا مقاومت، یک کانکتور باتری! هر سه مدار از همون دو سیم کانکتور تغذیه می‌شن.')
 };
 const HAL_INTRO_TEXT = {
-  line_read: '📟 حالا خودِ STM32 باید سنسور را بخواند! اول در مرحله‌ی ۱ روی نقشه‌ی چیپ بگو PA0 ورودی است و PC13 خروجی؛ بعد در مرحله‌ی ۲ با HAL_GPIO_ReadPin بخوان و LED را کنترل کن.',
-  line_motors: '⚙️ موتورها با دو پایه‌ی جهت کنترل می‌شوند. اول چهار پایه‌ی PB0 و PB1 و PB10 و PB11 را خروجی کن، بعد حرکت‌ها را با WritePin و HAL_Delay بنویس.',
-  motor_pwm: '🎚️ جهت را داری؛ حالا سرعت. پایه‌های PA8 و PA9 را تایمر کن، PWM را قبل از حلقه روشن کن و با __HAL_TIM_SET_COMPARE سرعت بده.'
+  line_read: __('📟 حالا خودِ STM32 باید سنسور را بخواند! اول در مرحله‌ی ۱ روی نقشه‌ی چیپ بگو PA0 ورودی است و PC13 خروجی؛ بعد در مرحله‌ی ۲ با HAL_GPIO_ReadPin بخوان و LED را کنترل کن.'),
+  line_motors: __('⚙️ موتورها با دو پایه‌ی جهت کنترل می‌شوند. اول چهار پایه‌ی PB0 و PB1 و PB10 و PB11 را خروجی کن، بعد حرکت‌ها را با WritePin و HAL_Delay بنویس.'),
+  motor_pwm: __('🎚️ جهت را داری؛ حالا سرعت. پایه‌های PA8 و PA9 را تایمر کن، PWM را قبل از حلقه روشن کن و با __HAL_TIM_SET_COMPARE سرعت بده.')
 };
 
 const ESP32_INTRO_TEXT = {
-  esp32_intro: '📡 به بخش ESP32 خوش اومدی! این برد Wi-Fi و بلوتوث داخل خودش داره و با همون کد آردوینو برنامه می‌گیره. روی هر بخش برد بزن تا بفهمی چی کجاست. این مأموریت فقط مطالعه‌ست؛ هر وقت خوندی «مطالعه کردم ✓» رو بزن.',
-  esp32_blink: '💡 کد آردوینو رو بلدی؟ پس ESP32 رو هم بلدی! LED داخل برد روی پایه‌ی ۲ نشسته؛ همون چشمک‌زن همیشگی رو بنویس. حواست باشه ولتاژ منطقش ۳٫۳ ولته، نه ۵ ولت.',
-  esp32_wifi_led: '🌐 حالا وقتشه چراغ رو بی‌سیم روشن کنی! کدِ این مأموریت از قبل کامله؛ بخونش، «اجرا کن» رو بزن و از «گوشیِ مجازی» /on رو بزن. حالت بلوکی هم همین کد رو با بلوک نشون می‌ده.'
+  esp32_intro: __('📡 به بخش ESP32 خوش اومدی! این برد Wi-Fi و بلوتوث داخل خودش داره و با همون کد آردوینو برنامه می‌گیره. روی هر بخش برد بزن تا بفهمی چی کجاست. این مأموریت فقط مطالعه‌ست؛ هر وقت خوندی «مطالعه کردم ✓» رو بزن.'),
+  esp32_blink: __('💡 کد آردوینو رو بلدی؟ پس ESP32 رو هم بلدی! LED داخل برد روی پایه‌ی ۲ نشسته؛ همون چشمک‌زن همیشگی رو بنویس. حواست باشه ولتاژ منطقش ۳٫۳ ولته، نه ۵ ولت.'),
+  esp32_wifi_led: __('🌐 حالا وقتشه چراغ رو بی‌سیم روشن کنی! کدِ این مأموریت از قبل کامله؛ بخونش، «اجرا کن» رو بزن و از «گوشیِ مجازی» /on رو بزن. حالت بلوکی هم همین کد رو با بلوک نشون می‌ده.')
 };
 
 const EDITOR_GUIDE = {
-  hello:  (c) => 'اینجا باید دو کار بکنی: ۱) در {{setup()}} با {{Serial.begin(9600)}} ارتباط سریال را باز کن. ۲) با {{Serial.println("Hello World")}} پیام را چاپ کن. بعدش «اجرا کن» را بزن. در حالت بلوکی هم همین دو کار را با بلوک‌های سریال انجام بده.',
-  led:    (c) => `برای روشن‌شدن LED در {{setup()}} پین ${c.pin} را با {{pinMode(${c.pin}, OUTPUT)}} خروجی کن و بعد با {{digitalWrite(${c.pin}, HIGH)}} روشنش کن. بعدش «اجرا کن» را بزن.`,
-  blink:  (c) => `پین ${c.pin} را در {{setup()}} خروجی کن. در {{loop()}} این چهار خط را پشت‌سرهم بنویس: {{digitalWrite(${c.pin}, HIGH)}} ← {{delay(500)}} ← {{digitalWrite(${c.pin}, LOW)}} ← {{delay(500)}}. بعد اجرا کن.`,
-  button: (c) => `در {{setup()}} پین ${c.buttonPin} را {{INPUT_PULLUP}} و پین ${c.pin} را {{OUTPUT}} کن. در {{loop()}} اگر {{digitalRead(${c.buttonPin}) == LOW}} بود (دکمه فشرده است) پین ${c.pin} را {{HIGH}} کن، وگرنه {{LOW}}. بعد اجرا کن و دکمه را فشار بده.`,
-  pot:    (c) => `در {{loop()}} مقدار ولوم را با {{analogRead(${c.potPin})}} بخوان، با {{map(v, 0, 1023, 0, 255)}} به بازه‌ی PWM ببر و با {{analogWrite(${c.pin}, ...)}} به LED بده. اجرا کن و ولوم را بچرخان.`,
-  esp32_blink: (c) => `پین ${c.pin} در کد اولیه با {{pinMode(ledPin, OUTPUT)}} خروجی شده. در {{loop()}} این چهار خط را پشت‌سرهم بنویس: {{digitalWrite(ledPin, HIGH)}} ← {{delay(500)}} ← {{digitalWrite(ledPin, LOW)}} ← {{delay(500)}}. روی ESP32 مقدار HIGH یعنی LED روشن. بعد اجرا کن.`,
-  esp32_wifi_led: () => 'کدِ کامل از قبل نوشته شده. اول بخوانش: {{WiFi.begin("MyHome", "12345678")}} وصل می‌شود، {{server.on("/on", handleOn)}} هر آدرس را به یک تابع می‌دهد و {{server.handleClient()}} در {{loop()}} به درخواست‌ها گوش می‌دهد. «اجرا کن» را بزن، صبر کن برد آنلاین شود و از «گوشیِ مجازی» /on را بزن.',
-  stm32_blink: () => 'داخل {{main()}} بعد از راه‌اندازی‌ها، در حلقه‌ی {{while (1)}} این دو خط را بنویس: {{HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13)}} و بعد {{HAL_Delay(500)}}. روی Blue Pill مقدار صفر یعنی LED روشن. بعد «اجرا کن» را بزن.',
-  servo:  (c) => `اول {{#include <Servo.h>}} و یک شیء {{Servo}} بساز، بعد در {{setup()}} با {{attach(${c.pin})}} وصلش کن. با یک حلقه‌ی {{for}} زاویه را از ۰ تا ۱۸۰ ببر و در هر مرحله {{servo.write(angle)}} و {{delay(15)}} بگذار. بعد اجرا کن.`
+  hello:  (c) => __('اینجا باید دو کار بکنی: ۱) در {{setup()}} با {{Serial.begin(9600)}} ارتباط سریال را باز کن. ۲) با {{Serial.println("Hello World")}} پیام را چاپ کن. بعدش «اجرا کن» را بزن. در حالت بلوکی هم همین دو کار را با بلوک‌های سریال انجام بده.'),
+  led:    (c) => __f("برای روشن‌شدن LED در {{setup()}} پین {0} را با {{pinMode({1}, OUTPUT)}} خروجی کن و بعد با {{digitalWrite({2}, HIGH)}} روشنش کن. بعدش «اجرا کن» را بزن.", c.pin, c.pin, c.pin),
+  blink:  (c) => __f("پین {0} را در {{setup()}} خروجی کن. در {{loop()}} این چهار خط را پشت‌سرهم بنویس: {{digitalWrite({1}, HIGH)}} ← {{delay(500)}} ← {{digitalWrite({2}, LOW)}} ← {{delay(500)}}. بعد اجرا کن.", c.pin, c.pin, c.pin),
+  button: (c) => __f("در {{setup()}} پین {0} را {{INPUT_PULLUP}} و پین {1} را {{OUTPUT}} کن. در {{loop()}} اگر {{digitalRead({2}) == LOW}} بود (دکمه فشرده است) پین {3} را {{HIGH}} کن، وگرنه {{LOW}}. بعد اجرا کن و دکمه را فشار بده.", c.buttonPin, c.pin, c.buttonPin, c.pin),
+  pot:    (c) => __f("در {{loop()}} مقدار ولوم را با {{analogRead({0})}} بخوان، با {{map(v, 0, 1023, 0, 255)}} به بازه‌ی PWM ببر و با {{analogWrite({1}, ...)}} به LED بده. اجرا کن و ولوم را بچرخان.", c.potPin, c.pin),
+  esp32_blink: (c) => __f("پین {0} در کد اولیه با {{pinMode(ledPin, OUTPUT)}} خروجی شده. در {{loop()}} این چهار خط را پشت‌سرهم بنویس: {{digitalWrite(ledPin, HIGH)}} ← {{delay(500)}} ← {{digitalWrite(ledPin, LOW)}} ← {{delay(500)}}. روی ESP32 مقدار HIGH یعنی LED روشن. بعد اجرا کن.", c.pin),
+  esp32_wifi_led: () => __('کدِ کامل از قبل نوشته شده. اول بخوانش: {{WiFi.begin("MyHome", "12345678")}} وصل می‌شود، {{server.on("/on", handleOn)}} هر آدرس را به یک تابع می‌دهد و {{server.handleClient()}} در {{loop()}} به درخواست‌ها گوش می‌دهد. «اجرا کن» را بزن، صبر کن برد آنلاین شود و از «گوشیِ مجازی» /on را بزن.'),
+  stm32_blink: () => __('داخل {{main()}} بعد از راه‌اندازی‌ها، در حلقه‌ی {{while (1)}} این دو خط را بنویس: {{HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13)}} و بعد {{HAL_Delay(500)}}. روی Blue Pill مقدار صفر یعنی LED روشن. بعد «اجرا کن» را بزن.'),
+  servo:  (c) => `${__("اول {{#include")} <Servo.h>${__("}} و یک شیء {{Servo}} بساز، بعد در {{setup()}} با {{attach(")}${c.pin}${__(")}} وصلش کن. با یک حلقه‌ی {{for}} زاویه را از ۰ تا ۱۸۰ ببر و در هر مرحله {{servo.write(angle)}} و {{delay(15)}} بگذار. بعد اجرا کن.")}`
 };
 
 function cutHtml(h, k){
@@ -958,7 +960,7 @@ function onNodeClick(i, locked, evt){
   currentIndex = i;
   const q = QUESTS[i];
   track('mission_opened', { id: q.id, title: q.title, already_done: !!progress[q.id] });
-  document.getElementById('modalEyebrow').textContent = (q.boss ? '🏆 نبرد آخر' : '🎯 مأموریت') ;
+  document.getElementById('modalEyebrow').textContent = (q.boss ? __('🏆 نبرد آخر') : __('🎯 مأموریت')) ;
   document.getElementById('modalTitle').textContent = q.title;
   document.getElementById('modalQuote').textContent = q.quote;
   document.getElementById('modalDesc').textContent = q.desc;
@@ -1072,7 +1074,7 @@ function onNodeClick(i, locked, evt){
       onSuccess: () => {
         completeMission(q, { closeOverlayAfter: null });
         nextMissionBtn.style.display = '';
-        nextMissionBtn.textContent = (i + 1 < QUESTS.length) ? 'مأموریت بعدی ⟶' : 'دیدن مسیر';
+        nextMissionBtn.textContent = (i + 1 < QUESTS.length) ? __('مأموریت بعدی ⟶') : __('دیدن مسیر');
       }
     });
     activeSim = {
@@ -1081,7 +1083,7 @@ function onNodeClick(i, locked, evt){
 
     if(done && i + 1 < QUESTS.length){
       nextMissionBtn.style.display = '';
-      nextMissionBtn.textContent = 'مأموریت بعدی ⟶';
+      nextMissionBtn.textContent = __('مأموریت بعدی ⟶');
     }
   } else if(conceptMount){
     // مأموریت‌های مفهومی (فیزیک) هم مثل شبیه‌ساز آردوینو با رسیدن به شرط موفقیت خودکار کامل می‌شوند.
@@ -1093,12 +1095,12 @@ function onNodeClick(i, locked, evt){
       onSuccess: () => {
         completeMission(q, { closeOverlayAfter: null });
         nextMissionBtn.style.display = '';
-        nextMissionBtn.textContent = (i + 1 < QUESTS.length) ? 'مأموریت بعدی ⟶' : 'دیدن مسیر';
+        nextMissionBtn.textContent = (i + 1 < QUESTS.length) ? __('مأموریت بعدی ⟶') : __('دیدن مسیر');
       }
     });
     if(done && i + 1 < QUESTS.length){
       nextMissionBtn.style.display = '';
-      nextMissionBtn.textContent = 'مأموریت بعدی ⟶';
+      nextMissionBtn.textContent = __('مأموریت بعدی ⟶');
     }
   } else if(READ_ONLY_MISSIONS.has(q.id)){
     modalSim.style.display = '';
@@ -1106,14 +1108,14 @@ function onNodeClick(i, locked, evt){
     document.querySelector('.modal .reward-row').style.display = '';
     activeSim = READ_ONLY_SIMS[q.id](modalSim, { alreadyDone: done });
     btn.style.display = '';
-    btn.textContent = done ? 'قبلاً تکمیل شده ✓' : 'مطالعه کردم ✓';
+    btn.textContent = done ? __('قبلاً تکمیل شده ✓') : __('مطالعه کردم ✓');
     btn.disabled = done;
   } else {
     modalSim.style.display = 'none';
     modalSim.closest('.modal').classList.remove('has-sim');
     document.querySelector('.modal .reward-row').style.display = '';
     btn.style.display = '';
-    btn.textContent = done ? 'قبلاً تکمیل شده ✓' : (READ_ONLY_MISSIONS.has(q.id) ? 'مطالعه کردم ✓' : 'مأموریت را تکمیل کردم');
+    btn.textContent = done ? __('قبلاً تکمیل شده ✓') : (READ_ONLY_MISSIONS.has(q.id) ? __('مطالعه کردم ✓') : __('مأموریت را تکمیل کردم'));
     btn.disabled = done;
   }
   // مأموریت‌های پهن (مثل چرخ‌دنده‌های کلاک) مودال عریض‌تری می‌گیرند
@@ -1174,7 +1176,7 @@ function completeMission(q, { closeOverlayAfter = 420 } = {}){
 
   showKnightLine(
     q.boss
-      ? 'باورنکردنی است... تو دیگر شاگرد نیستی. تو خودت اکنون یک شوالیه‌ی مدار هستی. 🏆'
+      ? __('باورنکردنی است... تو دیگر شاگرد نیستی. تو خودت اکنون یک شوالیه‌ی مدار هستی. 🏆')
       : KNIGHT_AVAILABLE_TOASTS[Math.floor(Math.random()*KNIGHT_AVAILABLE_TOASTS.length)],
     q.boss ? 'powered' : 'wink'
   );
@@ -1236,7 +1238,7 @@ render();
 if(TEST_MODE){
   const badge = document.createElement('div');
   badge.className = 'test-badge';
-  badge.textContent = '🧪 حالت تست — همه‌ی مراحل باز است';
+  badge.textContent = __('🧪 حالت تست — همه‌ی مراحل باز است');
   document.body.appendChild(badge);
   console.info('[quest] TEST_MODE: all missions and lab cards are unlocked');
 }

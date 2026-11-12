@@ -5,44 +5,44 @@
    ======================================================================== */
 
 const QUESTS_STM32 = [
-  { id:'stm32_cube', icon:'🧩', section:{ icon:'🔵', title:'بخش STM32', sub:'STM32F103C8T6 یک میکروکنترلرِ ۳۲بیتی ساخت STMicroelectronics است که روی برد ارزانِ Blue Pill نشسته؛ ساعتش ۷۲ مگاهرتز است (چهار پنج برابرِ آردوینو Uno)، ۲۰ کیلوبایت RAM دارد و با ۳٫۳ ولت کار می‌کند. چون سریع و ارزان است، در ربات‌ها، کنترلِ موتور و پروژه‌های جدی‌تر زیاد استفاده می‌شود. آن را با CubeMX تنظیم و با HAL برنامه‌ریزی می‌کنیم.' },
-    title:'STM32 — تنظیم پایه‌ها و ساعت در CubeMX', sub:'گام اول STM32 — پایه‌ی PC13 و ساعت ۷۲ مگاهرتز',
+  { id:'stm32_cube', icon:'🧩', section:{ icon:'🔵', title:__('بخش STM32'), sub:__('STM32F103C8T6 یک میکروکنترلرِ ۳۲بیتی ساخت STMicroelectronics است که روی برد ارزانِ Blue Pill نشسته؛ ساعتش ۷۲ مگاهرتز است (چهار پنج برابرِ آردوینو Uno)، ۲۰ کیلوبایت RAM دارد و با ۳٫۳ ولت کار می‌کند. چون سریع و ارزان است، در ربات‌ها، کنترلِ موتور و پروژه‌های جدی‌تر زیاد استفاده می‌شود. آن را با CubeMX تنظیم و با HAL برنامه‌ریزی می‌کنیم.') },
+    title:__('STM32 — تنظیم پایه‌ها و ساعت در CubeMX'), sub:__('گام اول STM32 — پایه‌ی PC13 و ساعت ۷۲ مگاهرتز'),
     xp:100,
-    quote:'«برد STM32 برخلاف آردوینو از همان لحظه‌ی اول همه‌چیز را به خودت می‌سپارد: هر پایه چه کاری بکند و ساعت چیپ چند مگاهرتز باشد. ابزار CubeMX این تنظیم‌ها را روی یک صفحه‌ی گرافیکی نشان می‌دهد و کدِ راه‌اندازی را خودش می‌نویسد.»',
-    desc:'Blue Pill چیپ STM32F103C8T6 دارد: هسته‌ی ۳۲ بیتی Cortex-M3 تا ۷۲ مگاهرتز. در CubeMX دو کار اصلی داری: ۱) برای هر پایه یک کار انتخاب کنی (مثلاً GPIO_Output برای LED روی PC13). ۲) ساعت را بسازی: کریستال ۸ مگاهرتز ضربدر ضریب PLL برابر ۹ می‌شود ۷۲ مگاهرتز.\n\nپایه‌های SWD (PA13 و PA14) برای برنامه‌ریز ST-Link و پایه‌های کریستال (PD0 و PD1) را CubeMX خودش تنظیم می‌کند؛ لازم نیست دست بزنی.',
+    quote:__('«برد STM32 برخلاف آردوینو از همان لحظه‌ی اول همه‌چیز را به خودت می‌سپارد: هر پایه چه کاری بکند و ساعت چیپ چند مگاهرتز باشد. ابزار CubeMX این تنظیم‌ها را روی یک صفحه‌ی گرافیکی نشان می‌دهد و کدِ راه‌اندازی را خودش می‌نویسد.»'),
+    desc:__('Blue Pill چیپ STM32F103C8T6 دارد: هسته‌ی ۳۲ بیتی Cortex-M3 تا ۷۲ مگاهرتز. در CubeMX دو کار اصلی داری: ۱) برای هر پایه یک کار انتخاب کنی (مثلاً GPIO_Output برای LED روی PC13). ۲) ساعت را بسازی: کریستال ۸ مگاهرتز ضربدر ضریب PLL برابر ۹ می‌شود ۷۲ مگاهرتز.\n\nپایه‌های SWD (PA13 و PA14) برای برنامه‌ریز ST-Link و پایه‌های کریستال (PD0 و PD1) را CubeMX خودش تنظیم می‌کند؛ لازم نیست دست بزنی.'),
     steps:[
-      'اول تبِ «ساعت» باز است: دکمه‌ی «استاندارد ۷۲ مگاهرتز» را بزن (یا ضریب PLL را روی ۹ بگذار) تا SYSCLK برابر ۷۲ مگاهرتز شود.',
-      'APB1 باید تقسیم بر ۲ باشد؛ سقف این باس ۳۶ مگاهرتز است و بیشتر از آن قرمز می‌شود (دکمه‌ی استاندارد خودش همین را می‌گذارد).',
-      'بعد به تبِ «Cube» برو؛ کادرِ طلایی بالای صفحه قدم‌به‌قدم می‌گوید کدام پایه را بزنی.',
-      'روی پایه‌ی `PC13` (طلایی) کلیک کن و از دکمه‌های پایین `GPIO_Output` را بزن؛ این همان LED روی برد است.',
-      'وقتی ساعت بدون خطا و PC13 درست تنظیم شد، مأموریت خودکار تکمیل می‌شود.'
+      __('اول تبِ «ساعت» باز است: دکمه‌ی «استاندارد ۷۲ مگاهرتز» را بزن (یا ضریب PLL را روی ۹ بگذار) تا SYSCLK برابر ۷۲ مگاهرتز شود.'),
+      __('APB1 باید تقسیم بر ۲ باشد؛ سقف این باس ۳۶ مگاهرتز است و بیشتر از آن قرمز می‌شود (دکمه‌ی استاندارد خودش همین را می‌گذارد).'),
+      __('بعد به تبِ «Cube» برو؛ کادرِ طلایی بالای صفحه قدم‌به‌قدم می‌گوید کدام پایه را بزنی.'),
+      __('روی پایه‌ی `PC13` (طلایی) کلیک کن و از دکمه‌های پایین `GPIO_Output` را بزن؛ این همان LED روی برد است.'),
+      __('وقتی ساعت بدون خطا و PC13 درست تنظیم شد، مأموریت خودکار تکمیل می‌شود.')
     ]},
-  { id:'stm32_stlink', icon:'🔌', title:'STM32 — اتصال برد به ST-Link', sub:'سیم‌کشی SWD، Connect و آپلود برنامه',
+  { id:'stm32_stlink', icon:'🔌', title:__('STM32 — اتصال برد به ST-Link'), sub:__('سیم‌کشی SWD، Connect و آپلود برنامه'),
     xp:110,
-    quote:'«آردوینو Uno از کارخانه یک بوت‌لودر و یک مبدل USB به سریال دارد، برای همین با یک کابل برنامه می‌گیرد. Blue Pill هیچ‌کدام را ندارد؛ چیپ‌اش خام است. برای ریختن برنامه یک برنامه‌ریز جدا لازم است و ارزان‌ترین و بهترینش ST-Link است: با دو سیم سیگنال (SWDIO و SWCLK) مستقیم به بخش دیباگِ چیپ وصل می‌شود.»',
-    desc:'تا حالا برنامه را فقط در شبیه‌ساز اجرا کرده‌ای. برای اینکه کدت روی برد واقعی بنشیند باید آن را از کامپیوتر به چیپ برسانی، و این کارِ ST-Link است.\n\nچرا برنامه‌ریز جدا؟ چون Blue Pill بوت‌لودرِ USB ندارد و چیپ F103 هم در ROM اش فقط یک بوت‌لودرِ سریال (USART1) دارد. پورت micro-USB روی برد به‌تنهایی برنامه نمی‌گیرد. ST-Link از راه SWD حافظه‌ی فلش را می‌نویسد و علاوه بر آن دیباگ هم می‌دهد: برنامه را می‌شود وسط اجرا متوقف کرد و مقدار متغیرها را دید. دکمه‌ی Run در CubeIDE هم از همین راه کار می‌کند.\n\nدر شبیه‌ساز زیر مثل واقعیت چهار سیم را وصل می‌کنی: 3.3V، GND، SWDIO و SWCLK. ۵ ولت را به ۳٫۳ ولتِ برد نزن و اگر یکی از سیم‌ها را جا بیندازی یا SWDIO و SWCLK را جابه‌جا کنی، ST-Link همان خطاهای واقعی را می‌دهد.',
+    quote:__('«آردوینو Uno از کارخانه یک بوت‌لودر و یک مبدل USB به سریال دارد، برای همین با یک کابل برنامه می‌گیرد. Blue Pill هیچ‌کدام را ندارد؛ چیپ‌اش خام است. برای ریختن برنامه یک برنامه‌ریز جدا لازم است و ارزان‌ترین و بهترینش ST-Link است: با دو سیم سیگنال (SWDIO و SWCLK) مستقیم به بخش دیباگِ چیپ وصل می‌شود.»'),
+    desc:__('تا حالا برنامه را فقط در شبیه‌ساز اجرا کرده‌ای. برای اینکه کدت روی برد واقعی بنشیند باید آن را از کامپیوتر به چیپ برسانی، و این کارِ ST-Link است.\n\nچرا برنامه‌ریز جدا؟ چون Blue Pill بوت‌لودرِ USB ندارد و چیپ F103 هم در ROM اش فقط یک بوت‌لودرِ سریال (USART1) دارد. پورت micro-USB روی برد به‌تنهایی برنامه نمی‌گیرد. ST-Link از راه SWD حافظه‌ی فلش را می‌نویسد و علاوه بر آن دیباگ هم می‌دهد: برنامه را می‌شود وسط اجرا متوقف کرد و مقدار متغیرها را دید. دکمه‌ی Run در CubeIDE هم از همین راه کار می‌کند.\n\nدر شبیه‌ساز زیر مثل واقعیت چهار سیم را وصل می‌کنی: 3.3V، GND، SWDIO و SWCLK. ۵ ولت را به ۳٫۳ ولتِ برد نزن و اگر یکی از سیم‌ها را جا بیندازی یا SWDIO و SWCLK را جابه‌جا کنی، ST-Link همان خطاهای واقعی را می‌دهد.'),
     steps:[
-      'اول بخش «چرا برنامه‌ریز جدا؟» را بخوان؛ بعد با USB قطع، سیم‌کشی را شروع کن.',
-      'یک پایه از ST-Link (مثلاً SWDIO) و بعد پایه‌ی هم‌نامش را روی برد بزن؛ همین‌طور 3.3V، GND و SWCLK. نوشته‌ی کنار هر پایه را بخوان؛ ترتیب پایه‌ها روی ST-Link و روی برد یکی نیست.',
-      'ST-Link را به USB کامپیوتر بزن؛ LED اش و LED قرمز PWR روی برد باید روشن شوند.',
-      'Connect را بزن؛ ST-Link شناسه‌ی چیپ را می‌خواند (Device ID 0x410).',
-      'آپلود (Run) را بزن تا برنامه‌ی چشمک‌زن روی فلش نوشته شود. اگر LED چشمک نزد، جامپر BOOT0 را ببین: باید روی ۰ باشد و بعد RESET بزن.',
-      'وقتی LED روی PC13 چشمک زد، مأموریت خودکار تکمیل می‌شود.'
+      __('اول بخش «چرا برنامه‌ریز جدا؟» را بخوان؛ بعد با USB قطع، سیم‌کشی را شروع کن.'),
+      __('یک پایه از ST-Link (مثلاً SWDIO) و بعد پایه‌ی هم‌نامش را روی برد بزن؛ همین‌طور 3.3V، GND و SWCLK. نوشته‌ی کنار هر پایه را بخوان؛ ترتیب پایه‌ها روی ST-Link و روی برد یکی نیست.'),
+      __('ST-Link را به USB کامپیوتر بزن؛ LED اش و LED قرمز PWR روی برد باید روشن شوند.'),
+      __('Connect را بزن؛ ST-Link شناسه‌ی چیپ را می‌خواند (Device ID 0x410).'),
+      __('آپلود (Run) را بزن تا برنامه‌ی چشمک‌زن روی فلش نوشته شود. اگر LED چشمک نزد، جامپر BOOT0 را ببین: باید روی ۰ باشد و بعد RESET بزن.'),
+      __('وقتی LED روی PC13 چشمک زد، مأموریت خودکار تکمیل می‌شود.')
     ]},
-  { id:'stm32_blink', icon:'💡', title:'STM32 — چشمک‌زن Blue Pill', sub:'HAL_GPIO_TogglePin و HAL_Delay',
+  { id:'stm32_blink', icon:'💡', title:__('STM32 — چشمک‌زن Blue Pill'), sub:__('HAL_GPIO_TogglePin و HAL_Delay'),
     xp:110,
-    quote:'«روی Blue Pill چراغ PC13 معکوس وصل شده: وقتی پایه صفر است LED روشن می‌شود و وقتی یک است خاموش. تابع HAL_GPIO_TogglePin حالت پایه را برعکس می‌کند و HAL_Delay به میلی‌ثانیه صبر می‌کند؛ این دو تا معادل digitalWrite و delay آردوینو هستند.»',
-    desc:'کد خودت را بین USER CODE BEGIN و USER CODE END داخل while(1) فایل main.c می‌نویسی؛ بیرون از این بخش‌ها، CubeMX موقع تولید دوباره‌ی کد همه‌چیز را پاک می‌کند.\n\nدر شبیه‌ساز زیر همین کار را می‌کنی: کدی بنویس که LED روی PC13 چشمک بزند.',
+    quote:__('«روی Blue Pill چراغ PC13 معکوس وصل شده: وقتی پایه صفر است LED روشن می‌شود و وقتی یک است خاموش. تابع HAL_GPIO_TogglePin حالت پایه را برعکس می‌کند و HAL_Delay به میلی‌ثانیه صبر می‌کند؛ این دو تا معادل digitalWrite و delay آردوینو هستند.»'),
+    desc:__('کد خودت را بین USER CODE BEGIN و USER CODE END داخل while(1) فایل main.c می‌نویسی؛ بیرون از این بخش‌ها، CubeMX موقع تولید دوباره‌ی کد همه‌چیز را پاک می‌کند.\n\nدر شبیه‌ساز زیر همین کار را می‌کنی: کدی بنویس که LED روی PC13 چشمک بزند.'),
     steps:[
-      'در `while(1)` با `HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);` حالت LED را برعکس کن.',
-      'بعدش `HAL_Delay(500);` بنویس تا نیم ثانیه صبر کند.',
-      'دکمه‌ی اجرا را بزن؛ LED باید روشن و خاموش شود.',
-      'اگر خواستی همین کار را با `HAL_GPIO_WritePin` هم بکن: `GPIO_PIN_RESET` روشن می‌کند و `GPIO_PIN_SET` خاموش.'
+      __('در `while(1)` با `HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);` حالت LED را برعکس کن.'),
+      __('بعدش `HAL_Delay(500);` بنویس تا نیم ثانیه صبر کند.'),
+      __('دکمه‌ی اجرا را بزن؛ LED باید روشن و خاموش شود.'),
+      __('اگر خواستی همین کار را با `HAL_GPIO_WritePin` هم بکن: `GPIO_PIN_RESET` روشن می‌کند و `GPIO_PIN_SET` خاموش.')
     ]},
-  { id:'stm32_clock_timer', icon:'⏱️', title:'STM32 — کلاک و تایمر: ضربانِ قلبِ چیپ', sub:'کلاکِ ۷۲ مگاهرتز، ضریب‌ها و ساختنِ PWM با تایمر',
+  { id:'stm32_clock_timer', icon:'⏱️', title:__('STM32 — کلاک و تایمر: ضربانِ قلبِ چیپ'), sub:__('کلاکِ ۷۲ مگاهرتز، ضریب‌ها و ساختنِ PWM با تایمر'),
     xp:130,
-    quote:'«چیپ بدون ضربان کار نمی‌کند: کریستال ۸ مگاهرتز می‌زند، PLL آن را ۹ برابر می‌کند و ۷۲ میلیون بار در ثانیه چیپ یک قدم برمی‌دارد. تایمر یک شمارنده‌ی سخت‌افزاری است که روی همین ضربان سوار می‌شود و بدون درگیر کردنِ CPU، شمارش و PWM می‌سازد.»',
-    desc:'میکروکنترلر یک مغز کوچک است، اما بدون ضربان قلب کار نمی‌کند. این ضربان همان کلاک است؛ درست مثل ضربان قلب که با هر تپش، چیپ را یک قدم به جلو می‌راند. هرچه این ضربان تندتر باشد، پردازش سریع‌تر انجام می‌شود. به همین دلیل برد Blue Pill کار را با کریستال ۸ مگاهرتزی آغاز می‌کند و با کمک ضریب‌ساز (PLL)، آن را به ۷۲ مگاهرتز می‌رساند؛ یعنی ۷۲ میلیون تپش در هر ثانیه!\n\nاما فقط ضربان کافی نیست؛ باید زمان را هم شمرد. اگر برای تأخیر از تابع delay استفاده کنید، CPU مثل کسی است که به ساعت زل زده و دست از کار می‌کشد. اینجاست که تایمر وارد میدان می‌شود و شمردن را به سخت‌افزار می‌سپارد: یک شمارنده‌ی مستقل که در پشت صحنه تپش‌ها را می‌شمارد و CPU را کاملاً آزاد می‌گذارد تا به کارهای دیگرش برسد.\n\nوقتی تایمر در دست دارید، می‌توانید یک پین را با سرعت بالا روشن و خاموش کنید؛ این همان PWM است. موتورِ متصل به آن، چشمک‌زدن‌های سریع را حس نمی‌کند و فقط «میانگین» را می‌بیند: نیمی از زمان روشن، یعنی نصف سرعت!',
+    quote:__('«چیپ بدون ضربان کار نمی‌کند: کریستال ۸ مگاهرتز می‌زند، PLL آن را ۹ برابر می‌کند و ۷۲ میلیون بار در ثانیه چیپ یک قدم برمی‌دارد. تایمر یک شمارنده‌ی سخت‌افزاری است که روی همین ضربان سوار می‌شود و بدون درگیر کردنِ CPU، شمارش و PWM می‌سازد.»'),
+    desc:__('میکروکنترلر یک مغز کوچک است، اما بدون ضربان قلب کار نمی‌کند. این ضربان همان کلاک است؛ درست مثل ضربان قلب که با هر تپش، چیپ را یک قدم به جلو می‌راند. هرچه این ضربان تندتر باشد، پردازش سریع‌تر انجام می‌شود. به همین دلیل برد Blue Pill کار را با کریستال ۸ مگاهرتزی آغاز می‌کند و با کمک ضریب‌ساز (PLL)، آن را به ۷۲ مگاهرتز می‌رساند؛ یعنی ۷۲ میلیون تپش در هر ثانیه!\n\nاما فقط ضربان کافی نیست؛ باید زمان را هم شمرد. اگر برای تأخیر از تابع delay استفاده کنید، CPU مثل کسی است که به ساعت زل زده و دست از کار می‌کشد. اینجاست که تایمر وارد میدان می‌شود و شمردن را به سخت‌افزار می‌سپارد: یک شمارنده‌ی مستقل که در پشت صحنه تپش‌ها را می‌شمارد و CPU را کاملاً آزاد می‌گذارد تا به کارهای دیگرش برسد.\n\nوقتی تایمر در دست دارید، می‌توانید یک پین را با سرعت بالا روشن و خاموش کنید؛ این همان PWM است. موتورِ متصل به آن، چشمک‌زدن‌های سریع را حس نمی‌کند و فقط «میانگین» را می‌بیند: نیمی از زمان روشن، یعنی نصف سرعت!'),
     steps:[]}
 ];
 
@@ -55,35 +55,35 @@ const QUESTS_STM32 = [
 const SL_ST_SIGS = ['RST', 'SWCLK', 'SWIM', 'SWDIO', 'GND', 'GND', '3V3', '3V3', '5V', '5V'];
 const SL_LBL = { RST:'RST', SWIM:'SWIM', SWCLK:'SWCLK', SWDIO:'SWDIO', GND:'GND', '3V3':'3.3V', '5V':'5.0V' };
 const SL_NOTE = {
-  RST:   'ریست؛ اختیاری است و برای این مأموریت لازم نیست.',
-  SWIM:  'SWIM مخصوص چیپ‌های STM8 است؛ Blue Pill (STM32) آن را لازم ندارد.',
-  SWCLK: 'سیم ساعت؛ ضرب‌آهنگِ انتقالِ داده است (در چیپ به PA14 می‌رسد).',
-  SWDIO: 'سیم داده؛ برنامه و فرمان‌ها از این سیم می‌گذرند (در چیپ به PA13 می‌رسد).',
-  GND:   'زمین؛ باید بین دو برد مشترک باشد تا ولتاژها یک مرجع داشته باشند. (پایه‌های ۵ و ۶ هر دو GND و یکی هستند.)',
-  '3V3': 'تغذیه‌ی ۳٫۳ ولت؛ Blue Pill با همین برق می‌گیرد. (پایه‌های ۷ و ۸ هر دو 3.3V و یکی هستند.)',
-  '5V':  '⚠️ ۵ ولت؛ برای Blue Pill این‌جا لازم نیست و روی پایه‌ی ۳٫۳ ولتِ برد به چیپ آسیب می‌زند. (پایه‌های ۹ و ۱۰)'
+  RST:   __('ریست؛ اختیاری است و برای این مأموریت لازم نیست.'),
+  SWIM:  __('SWIM مخصوص چیپ‌های STM8 است؛ Blue Pill (STM32) آن را لازم ندارد.'),
+  SWCLK: __('سیم ساعت؛ ضرب‌آهنگِ انتقالِ داده است (در چیپ به PA14 می‌رسد).'),
+  SWDIO: __('سیم داده؛ برنامه و فرمان‌ها از این سیم می‌گذرند (در چیپ به PA13 می‌رسد).'),
+  GND:   __('زمین؛ باید بین دو برد مشترک باشد تا ولتاژها یک مرجع داشته باشند. (پایه‌های ۵ و ۶ هر دو GND و یکی هستند.)'),
+  '3V3': __('تغذیه‌ی ۳٫۳ ولت؛ Blue Pill با همین برق می‌گیرد. (پایه‌های ۷ و ۸ هر دو 3.3V و یکی هستند.)'),
+  '5V':  __('⚠️ ۵ ولت؛ برای Blue Pill این‌جا لازم نیست و روی پایه‌ی ۳٫۳ ولتِ برد به چیپ آسیب می‌زند. (پایه‌های ۹ و ۱۰)')
 };
 const SL_ST = SL_ST_SIGS.map((sig, k) => ({ id:'p' + (k + 1), n:k + 1, sig, lbl:SL_LBL[sig], note:SL_NOTE[sig], col:k % 2, row:k >> 1, key:[2, 4, 6, 8].includes(k + 1) }));
 const SL_BP = [
-  { id:'GND',   lbl:'GND',   note:'زمینِ برد.' },
-  { id:'SWCLK', lbl:'SWCLK', note:'ورودیِ ساعتِ SWD (پایه‌ی PA14 چیپ).' },
-  { id:'SWDIO', lbl:'SWDIO', note:'دیتای SWD (پایه‌ی PA13 چیپ).' },
-  { id:'3V3',   lbl:'3.3V',  note:'ورودیِ ۳٫۳ ولت؛ حداکثر تحملِ چیپ حدود ۴ ولت است.' }
+  { id:'GND',   lbl:'GND',   note:__('زمینِ برد.') },
+  { id:'SWCLK', lbl:'SWCLK', note:__('ورودیِ ساعتِ SWD (پایه‌ی PA14 چیپ).') },
+  { id:'SWDIO', lbl:'SWDIO', note:__('دیتای SWD (پایه‌ی PA13 چیپ).') },
+  { id:'3V3',   lbl:'3.3V',  note:__('ورودیِ ۳٫۳ ولت؛ حداکثر تحملِ چیپ حدود ۴ ولت است.') }
 ];
 const SL_TALK_ST = {
-  RST:   'این پایه‌ی ریست (RST) است؛ ریستِ چیپ را از طرف ST-Link کنترل می‌کند. برای این مأموریت لازمش نداری، پس جایی وصلش نکن.',
-  SWIM:  'این SWIM است، پایه‌ی برنامه‌ریزیِ چیپ‌های STM8. Blue Pill یک STM32 است و این پایه را ندارد؛ وصلش نکن.',
-  SWCLK: 'این SWCLK است، سیمِ ساعتِ SWD؛ ضرب‌آهنگِ انتقالِ داده روی همین سیم می‌آید. 👉 آن را به پایه‌ی SWCLK روی هدر چهارپایه‌ی بالای Blue Pill وصل کن (از چپ: GND، SWCLK، SWDIO، 3.3V؛ یعنی دومی).',
-  SWDIO: 'این SWDIO است، سیمِ داده‌ی SWD؛ برنامه و فرمان‌ها از همین سیم رد می‌شوند. 👉 آن را به پایه‌ی SWDIO روی هدر چهارپایه‌ی بالای Blue Pill وصل کن (از چپ سومی).',
-  GND:   'این GND است، یعنی زمین؛ دو برد باید زمینِ مشترک داشته باشند. پایه‌های ۵ و ۶ هر دو GND و یکی هستند. 👉 آن را به GND روی هدر چهارپایه‌ی بالای Blue Pill وصل کن (اولین پایه‌ی سمت چپ).',
-  '3V3': 'این 3.3V است، تغذیه‌ی ۳٫۳ ولت؛ Blue Pill از همین برق می‌گیرد. پایه‌های ۷ و ۸ هر دو 3.3V و یکی هستند. 👉 آن را به 3.3V روی هدر چهارپایه‌ی بالای Blue Pill وصل کن (آخرین پایه‌ی سمت راست).',
-  '5V':  '⚠️ این ۵ ولت است. Blue Pill این‌جا ۵ ولت نمی‌خواهد و روی پایه‌ی ۳٫۳ ولتِ برد چیپ را می‌سوزاند. هیچ‌جا وصلش نکن.'
+  RST:   __('این پایه‌ی ریست (RST) است؛ ریستِ چیپ را از طرف ST-Link کنترل می‌کند. برای این مأموریت لازمش نداری، پس جایی وصلش نکن.'),
+  SWIM:  __('این SWIM است، پایه‌ی برنامه‌ریزیِ چیپ‌های STM8. Blue Pill یک STM32 است و این پایه را ندارد؛ وصلش نکن.'),
+  SWCLK: __('این SWCLK است، سیمِ ساعتِ SWD؛ ضرب‌آهنگِ انتقالِ داده روی همین سیم می‌آید. 👉 آن را به پایه‌ی SWCLK روی هدر چهارپایه‌ی بالای Blue Pill وصل کن (از چپ: GND، SWCLK، SWDIO، 3.3V؛ یعنی دومی).'),
+  SWDIO: __('این SWDIO است، سیمِ داده‌ی SWD؛ برنامه و فرمان‌ها از همین سیم رد می‌شوند. 👉 آن را به پایه‌ی SWDIO روی هدر چهارپایه‌ی بالای Blue Pill وصل کن (از چپ سومی).'),
+  GND:   __('این GND است، یعنی زمین؛ دو برد باید زمینِ مشترک داشته باشند. پایه‌های ۵ و ۶ هر دو GND و یکی هستند. 👉 آن را به GND روی هدر چهارپایه‌ی بالای Blue Pill وصل کن (اولین پایه‌ی سمت چپ).'),
+  '3V3': __('این 3.3V است، تغذیه‌ی ۳٫۳ ولت؛ Blue Pill از همین برق می‌گیرد. پایه‌های ۷ و ۸ هر دو 3.3V و یکی هستند. 👉 آن را به 3.3V روی هدر چهارپایه‌ی بالای Blue Pill وصل کن (آخرین پایه‌ی سمت راست).'),
+  '5V':  __('⚠️ این ۵ ولت است. Blue Pill این‌جا ۵ ولت نمی‌خواهد و روی پایه‌ی ۳٫۳ ولتِ برد چیپ را می‌سوزاند. هیچ‌جا وصلش نکن.')
 };
 const SL_TALK_BP = {
-  GND:   'این پایه‌ی GND برد است. 👉 با یک سیم به GND ST-Link وصلش کن (پایه‌ی ۵ یا ۶ داخل سوکت مشکیِ ST-Link).',
-  SWCLK: 'این SWCLK برد است، ورودیِ ساعتِ SWD (پایه‌ی PA14 چیپ). 👉 با یک سیم به SWCLK ST-Link وصلش کن (پایه‌ی ۲).',
-  SWDIO: 'این SWDIO برد است، پایه‌ی داده‌ی SWD (پایه‌ی PA13 چیپ). 👉 با یک سیم به SWDIO ST-Link وصلش کن (پایه‌ی ۴).',
-  '3V3': 'این پایه‌ی 3.3V برد است و برد از همین‌جا برق می‌گیرد. 👉 با یک سیم به 3.3V ST-Link وصلش کن (پایه‌ی ۷ یا ۸)، نه به ۵ ولت!'
+  GND:   __('این پایه‌ی GND برد است. 👉 با یک سیم به GND ST-Link وصلش کن (پایه‌ی ۵ یا ۶ داخل سوکت مشکیِ ST-Link).'),
+  SWCLK: __('این SWCLK برد است، ورودیِ ساعتِ SWD (پایه‌ی PA14 چیپ). 👉 با یک سیم به SWCLK ST-Link وصلش کن (پایه‌ی ۲).'),
+  SWDIO: __('این SWDIO برد است، پایه‌ی داده‌ی SWD (پایه‌ی PA13 چیپ). 👉 با یک سیم به SWDIO ST-Link وصلش کن (پایه‌ی ۴).'),
+  '3V3': __('این پایه‌ی 3.3V برد است و برد از همین‌جا برق می‌گیرد. 👉 با یک سیم به 3.3V ST-Link وصلش کن (پایه‌ی ۷ یا ۸)، نه به ۵ ولت!')
 };
 const SL_ROW_Y = r => 38 + r * 14, SL_PR_X = [166, 184], SL_COL_X = [233, 251], SL_EXIT_X = 262;
 const SL_BP_DX = -82, SL_BP_DY = 112, SL_BP_X = j => 212 + j * 24, SL_BP_Y = 72;
@@ -107,46 +107,46 @@ function mountStlinkSim(container, { onSuccess, alreadyDone } = {}){
 
   container.innerHTML = `
     <div class="sim-wrap sl-wrap">
-      <div class="sim-hw-note">هدف: برد Blue Pill را با چهار سیم به ST-Link وصل کن، ST-Link را به کامپیوتر بزن، به چیپ Connect شو و برنامه‌ی چشمک‌زن را بریز. سیم را از یک پایه بکش و روی پایه‌ی هم‌نامش در سمتِ دیگر رها کن (یا ابتدا یک پایه و بعد پایه‌ی هم‌نامش را بزن)؛ زدنِ پایه‌ی سیم‌دار، سیم را برمی‌دارد. چهار پایه‌ی درخشانِ سوکت (۲، ۴، ۶ و ۸) همان‌هایی هستند که لازم داری؛ بقیه کم‌رنگ‌اند و لازم نیستند (پایه‌های ۵ و ۷ هم‌ارزِ ۶ و ۸ هستند).</div>
+      <div class="sim-hw-note">${__("هدف: برد Blue Pill را با چهار سیم به ST-Link وصل کن، ST-Link را به کامپیوتر بزن، به چیپ Connect شو و برنامه‌ی چشمک‌زن را بریز. سیم را از یک پایه بکش و روی پایه‌ی هم‌نامش در سمتِ دیگر رها کن (یا ابتدا یک پایه و بعد پایه‌ی هم‌نامش را بزن)؛ زدنِ پایه‌ی سیم‌دار، سیم را برمی‌دارد. چهار پایه‌ی درخشانِ سوکت (۲، ۴، ۶ و ۸) همان‌هایی هستند که لازم داری؛ بقیه کم‌رنگ‌اند و لازم نیستند (پایه‌های ۵ و ۷ هم‌ارزِ ۶ و ۸ هستند).")}</div>
       <details class="hs-det" open>
-        <summary>چرا Blue Pill به یک برنامه‌ریزِ جدا نیاز دارد؟</summary>
-        <div class="hs-p">آردوینو Uno برای دریافتِ برنامه دو چیز دارد که از کارخانه روی بردش گذاشته‌اند: یک «بوت‌لودر» داخل چیپ (برنامه‌ی کوچکی که منتظرِ کدِ تازه می‌ماند) و یک چیپِ مبدلِ USB به سریال. برای همین فقط کابل USB کافی است. Blue Pill هیچ‌کدام را ندارد.</div>
+        <summary>${__("چرا Blue Pill به یک برنامه‌ریزِ جدا نیاز دارد؟")}</summary>
+        <div class="hs-p">${__("آردوینو Uno برای دریافتِ برنامه دو چیز دارد که از کارخانه روی بردش گذاشته‌اند: یک «بوت‌لودر» داخل چیپ (برنامه‌ی کوچکی که منتظرِ کدِ تازه می‌ماند) و یک چیپِ مبدلِ USB به سریال. برای همین فقط کابل USB کافی است. Blue Pill هیچ‌کدام را ندارد.")}</div>
         <table class="hs-table">
-          <tr><th></th><th>آردوینو Uno</th><th>Blue Pill</th></tr>
-          <tr><td>بوت‌لودر</td><td>از کارخانه داخل چیپ است</td><td>ندارد؛ فقط بوت‌لودرِ ROM خودِ ST را دارد که فقط از پایه‌های PA9 و PA10 (USART1) حرف می‌شنود</td></tr>
-          <tr><td>USB به سریال</td><td>دارد (ATmega16U2 یا CH340)</td><td>ندارد؛ پورت micro-USB تنها برنامه نمی‌گیرد (چیپ F103 در ROM اش بوت‌لودرِ USB ندارد)</td></tr>
-          <tr><td>دیباگ (توقف و گام‌به‌گام)</td><td>ندارد</td><td>با ST-Link و SWD دارد</td></tr>
+          <tr><th></th><th>${__("آردوینو Uno")}</th><th>Blue Pill</th></tr>
+          <tr><td>${__("بوت‌لودر")}</td><td>${__("از کارخانه داخل چیپ است")}</td><td>${__("ندارد؛ فقط بوت‌لودرِ ROM خودِ ST را دارد که فقط از پایه‌های PA9 و PA10 (USART1) حرف می‌شنود")}</td></tr>
+          <tr><td>${__("USB به سریال")}</td><td>${__("دارد (ATmega16U2 یا CH340)")}</td><td>${__("ندارد؛ پورت micro-USB تنها برنامه نمی‌گیرد (چیپ F103 در ROM اش بوت‌لودرِ USB ندارد)")}</td></tr>
+          <tr><td>${__("دیباگ (توقف و گام‌به‌گام)")}</td><td>${__("ندارد")}</td><td>${__("با ST-Link و SWD دارد")}</td></tr>
         </table>
-        <div class="hs-p">پس مرغ و تخم‌مرغ می‌شود: برای ریختنِ حتی یک بوت‌لودرِ USB روی Blue Pill هم اول باید یک برنامه‌ریز داشته باشی. ST-Link از روی SWD یعنی فقط دو سیمِ سیگنال (SWDIO و SWCLK)، مستقیم به بخشِ دیباگِ چیپ وصل می‌شود؛ با آن می‌توانی حافظه‌ی فلش را بنویسی، برنامه را روی خط‌به‌خط متوقف کنی و مقدار متغیرها را ببینی. دکمه‌ی Run در CubeIDE هم همین کار را می‌کند. حتی اگر برنامه‌ی خراب چیپ را قفل کرده باشد، ST-Link می‌تواند دوباره پاکش کند.</div>
-        <div class="hs-p">راهِ ارزان‌تر هم هست: آداپتور USB به سریال روی PA9 و PA10 و جامپر BOOT0 روی ۱. اما فقط برنامه می‌ریزد (دیباگ ندارد) و هر بار باید جامپر را جابه‌جا کنی. ST-Link راحت‌تر است.</div>
+        <div class="hs-p">${__("پس مرغ و تخم‌مرغ می‌شود: برای ریختنِ حتی یک بوت‌لودرِ USB روی Blue Pill هم اول باید یک برنامه‌ریز داشته باشی. ST-Link از روی SWD یعنی فقط دو سیمِ سیگنال (SWDIO و SWCLK)، مستقیم به بخشِ دیباگِ چیپ وصل می‌شود؛ با آن می‌توانی حافظه‌ی فلش را بنویسی، برنامه را روی خط‌به‌خط متوقف کنی و مقدار متغیرها را ببینی. دکمه‌ی Run در CubeIDE هم همین کار را می‌کند. حتی اگر برنامه‌ی خراب چیپ را قفل کرده باشد، ST-Link می‌تواند دوباره پاکش کند.")}</div>
+        <div class="hs-p">${__("راهِ ارزان‌تر هم هست: آداپتور USB به سریال روی PA9 و PA10 و جامپر BOOT0 روی ۱. اما فقط برنامه می‌ریزد (دیباگ ندارد) و هر بار باید جامپر را جابه‌جا کنی. ST-Link راحت‌تر است.")}</div>
       </details>
       <details class="hs-det">
-        <summary>نکته‌هایِ سیم‌کشی و CubeMX</summary>
+        <summary>${__("نکته‌هایِ سیم‌کشی و CubeMX")}</summary>
         <ol class="hs-ol">
-          <li>همیشه اول سیم‌کشی کن و بعد USB را بزن. هیچ‌وقت ۵ ولت به پایه‌ی ۳٫۳ ولتِ برد نده؛ تحملِ ولتاژِ چیپ حدود ۴ ولت است.</li>
-          <li>GND باید حتماً وصل باشد، وگرنه ST-Link چیزی نمی‌شنود.</li>
-          <li>سیم‌ها به پایه‌های داخل سوکتِ مشکیِ ST-Link وصل می‌شوند؛ هر پایه‌ی سوکت هم‌ردیفِ شماره و نامِ چاپ‌شده‌ی روی بدنه است (پایه‌های فرد ۱ تا ۹ ستون چپ و زوج ۲ تا ۱۰ ستون راست). دو پایه‌ی GND یکی هستند و دو پایه‌ی 3.3V هم یکی هستند؛ هرکدام را بزنی فرقی ندارد. SWIM و RST برای این کار لازم نیستند. ترتیبِ پایه‌ها روی ST-Linkهای دیگر فرق می‌کند؛ همیشه نامِ چاپ‌شده را بخوان، نه جای پایه را.</li>
-          <li>در CubeMX بخش System Core ‹ SYS ‹ Debug باید روی Serial Wire باشد (همان PA13 و PA14 که خودکار سبز بود). اگر No Debug بگذاری، بعد از اولین آپلود ST-Link دیگر به چیپ وصل نمی‌شود.</li>
-          <li>هر دو جامپرِ BOOT0 و BOOT1 روی ۰ باشند تا چیپ برنامه‌ی تو را از فلش اجرا کند.</li>
+          <li>${__("همیشه اول سیم‌کشی کن و بعد USB را بزن. هیچ‌وقت ۵ ولت به پایه‌ی ۳٫۳ ولتِ برد نده؛ تحملِ ولتاژِ چیپ حدود ۴ ولت است.")}</li>
+          <li>${__("GND باید حتماً وصل باشد، وگرنه ST-Link چیزی نمی‌شنود.")}</li>
+          <li>${__("سیم‌ها به پایه‌های داخل سوکتِ مشکیِ ST-Link وصل می‌شوند؛ هر پایه‌ی سوکت هم‌ردیفِ شماره و نامِ چاپ‌شده‌ی روی بدنه است (پایه‌های فرد ۱ تا ۹ ستون چپ و زوج ۲ تا ۱۰ ستون راست). دو پایه‌ی GND یکی هستند و دو پایه‌ی 3.3V هم یکی هستند؛ هرکدام را بزنی فرقی ندارد. SWIM و RST برای این کار لازم نیستند. ترتیبِ پایه‌ها روی ST-Linkهای دیگر فرق می‌کند؛ همیشه نامِ چاپ‌شده را بخوان، نه جای پایه را.")}</li>
+          <li>${__("در CubeMX بخش System Core ‹ SYS ‹ Debug باید روی Serial Wire باشد (همان PA13 و PA14 که خودکار سبز بود). اگر No Debug بگذاری، بعد از اولین آپلود ST-Link دیگر به چیپ وصل نمی‌شود.")}</li>
+          <li>${__("هر دو جامپرِ BOOT0 و BOOT1 روی ۰ باشند تا چیپ برنامه‌ی تو را از فلش اجرا کند.")}</li>
         </ol>
       </details>
       <div class="st-steps" id="slSteps">
-        <span class="st-chip" data-s="1">۱ سیم‌کشی</span>
-        <button type="button" class="st-chip st-btn" data-s="2" id="slPlug">۲ USB را بزن</button>
-        <button type="button" class="st-chip st-btn" data-s="3" id="slConn" disabled>۳ Connect</button>
-        <button type="button" class="st-chip st-btn" data-s="4" id="slFlash" disabled>۴ آپلود و اجرا</button>
-        <button type="button" class="sim-btn sim-btn-ghost st-reset" id="slReset">↺ از اول</button>
+        <span class="st-chip" data-s="1">${__("۱ سیم‌کشی")}</span>
+        <button type="button" class="st-chip st-btn" data-s="2" id="slPlug">${__("۲ USB را بزن")}</button>
+        <button type="button" class="st-chip st-btn" data-s="3" id="slConn" disabled>${__("۳ Connect")}</button>
+        <button type="button" class="st-chip st-btn" data-s="4" id="slFlash" disabled>${__("۴ آپلود و اجرا")}</button>
+        <button type="button" class="sim-btn sim-btn-ghost st-reset" id="slReset">${__("↺ از اول")}</button>
       </div>
       <div class="st-prog" id="slProgWrap" hidden><i id="slProg"></i></div>
       <div class="sim-console" id="slLog" aria-live="polite"></div>
-      <svg class="sl-svg" viewBox="0 0 320 492" role="img" aria-label="ST-Link V2 به شکل فلش USB آبی با سوکت مشکیِ ده‌پایه، و برد Blue Pill با هدر چهارپایه‌ی SWD">
+      <svg class="sl-svg" viewBox="0 0 320 492" role="img" aria-label="${__("ST-Link V2 به شکل فلش USB آبی با سوکت مشکیِ ده‌پایه، و برد Blue Pill با هدر چهارپایه‌ی SWD")}">
         <defs>
           <linearGradient id="slMetal" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#eef0f4"/><stop offset="50%" stop-color="#b7bdc8"/><stop offset="100%" stop-color="#8f97a4"/></linearGradient>
           <linearGradient id="slBlue" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3d82ea"/><stop offset="55%" stop-color="#2160cc"/><stop offset="100%" stop-color="#18489f"/></linearGradient>
         </defs>
         <!-- کامپیوتر -->
         <rect id="slPc" class="sl-pc" x="2" y="10" width="22" height="112" rx="5"/>
-        <text id="slPcT" class="sl-pc-t" transform="translate(13 66) rotate(-90)" x="0" y="3.5">کامپیوتر</text>
+        <text id="slPcT" class="sl-pc-t" transform="translate(13 66) rotate(-90)" x="0" y="3.5">${__("کامپیوتر")}</text>
         <!-- ST-Link V2: دوشاخه‌ی USB-A، بدنه‌ی آبی، سوکت مشکی ده‌پایه -->
         <rect x="22" y="31" width="44" height="70" rx="2" fill="url(#slMetal)" stroke="#6b7280"/>
         <rect x="26" y="35" width="36" height="62" rx="1.5" fill="none" stroke="#7b8391"/>
@@ -199,20 +199,20 @@ function mountStlinkSim(container, { onSuccess, alreadyDone } = {}){
   const sigOf = w => SL_ST[stIdx(w.s)].sig;
   const pinOf = (side, id) => (side === 'st' ? SL_ST : SL_BP).find(x => x.id === id);
   const pinSig = (side, id) => side === 'st' ? pinOf('st', id).sig : id;
-  const pinName = (side, id) => { const p = pinOf(side, id); return side === 'st' ? `${p.lbl} (پایه‌ی ${toFa(p.n)})` : p.lbl; };
+  const pinName = (side, id) => { const p = pinOf(side, id); return side === 'st' ? __f("{0} (پایه‌ی {1})", p.lbl, toFa(p.n)) : p.lbl; };
   const has = (sig, b) => wires.some(w => sigOf(w) === sig && w.b === b);
 
   function wireInfo(w){
     const sg = sigOf(w), L = SL_LBL[sg], bl = SL_BP[bpIdx(w.b)].lbl;
-    if(sg === '5V' && w.b === '3V3') return { lvl:'danger', text:'۵ ولت روی پایه‌ی ۳٫۳ ولتِ برد! تحملِ ولتاژِ چیپ حدود ۴ ولت است و در واقعیت چیپ همین‌جا می‌سوزد.' };
-    if(sg === '5V' && w.b === 'GND') return { lvl:'danger', text:'۵ ولت به GND یعنی اتصال کوتاه؛ ST-Link یا USB کامپیوتر آسیب می‌بیند.' };
-    if(sg === '5V') return { lvl:'danger', text:'۵ ولت را به پایه‌ی سیگنال نده؛ پایه‌های Blue Pill برای ۳٫۳ ولت ساخته شده‌اند.' };
-    if((sg === '3V3' && w.b === 'GND') || (sg === 'GND' && w.b === '3V3')) return { lvl:'danger', text:'۳٫۳ ولت به GND یعنی اتصال کوتاه؛ همه‌ی جریان از همین سیم می‌گذرد.' };
-    if(sg === w.b) return { lvl:'ok', text:`✅ «${L}» درست وصل شد. ${SL_NOTE[sg]}` };
-    if(sg === 'RST') return { lvl:'bad', text:'هدر چهارپایه‌ی SWD روی Blue Pill پایه‌ی ریست ندارد؛ این سیم جایی نمی‌رود و لازم هم نیست.' };
-    if(sg === 'SWIM') return { lvl:'bad', text:'SWIM مخصوص STM8 است؛ هدر SWD چیپ STM32 پایه‌ی SWIM ندارد و لازمش نداری.' };
-    if((sg === 'SWDIO' && w.b === 'SWCLK') || (sg === 'SWCLK' && w.b === 'SWDIO')) return { lvl:'bad', text:'SWDIO را به SWCLK (یا برعکس) زده‌ای. سیم وصل است ولی داده و ساعت جابه‌جا شده‌اند و ST-Link چیزی نمی‌شنود.' };
-    return { lvl:'bad', text:`«${L}» با «${bl}» همنام نیست؛ هر سیگنال فقط به هم‌نامِ خودش وصل می‌شود.` };
+    if(sg === '5V' && w.b === '3V3') return { lvl:'danger', text:__('۵ ولت روی پایه‌ی ۳٫۳ ولتِ برد! تحملِ ولتاژِ چیپ حدود ۴ ولت است و در واقعیت چیپ همین‌جا می‌سوزد.') };
+    if(sg === '5V' && w.b === 'GND') return { lvl:'danger', text:__('۵ ولت به GND یعنی اتصال کوتاه؛ ST-Link یا USB کامپیوتر آسیب می‌بیند.') };
+    if(sg === '5V') return { lvl:'danger', text:__('۵ ولت را به پایه‌ی سیگنال نده؛ پایه‌های Blue Pill برای ۳٫۳ ولت ساخته شده‌اند.') };
+    if((sg === '3V3' && w.b === 'GND') || (sg === 'GND' && w.b === '3V3')) return { lvl:'danger', text:__('۳٫۳ ولت به GND یعنی اتصال کوتاه؛ همه‌ی جریان از همین سیم می‌گذرد.') };
+    if(sg === w.b) return { lvl:'ok', text:__f("✅ «{0}» درست وصل شد. {1}", L, SL_NOTE[sg]) };
+    if(sg === 'RST') return { lvl:'bad', text:__('هدر چهارپایه‌ی SWD روی Blue Pill پایه‌ی ریست ندارد؛ این سیم جایی نمی‌رود و لازم هم نیست.') };
+    if(sg === 'SWIM') return { lvl:'bad', text:__('SWIM مخصوص STM8 است؛ هدر SWD چیپ STM32 پایه‌ی SWIM ندارد و لازمش نداری.') };
+    if((sg === 'SWDIO' && w.b === 'SWCLK') || (sg === 'SWCLK' && w.b === 'SWDIO')) return { lvl:'bad', text:__('SWDIO را به SWCLK (یا برعکس) زده‌ای. سیم وصل است ولی داده و ساعت جابه‌جا شده‌اند و ST-Link چیزی نمی‌شنود.') };
+    return { lvl:'bad', text:__f("«{0}» با «{1}» همنام نیست؛ هر سیگنال فقط به هم‌نامِ خودش وصل می‌شود.", L, bl) };
   }
   function diag(){
     const danger = wires.map(wireInfo).find(i => i.lvl === 'danger') || null;
@@ -251,7 +251,7 @@ function mountStlinkSim(container, { onSuccess, alreadyDone } = {}){
         okTimer = setTimeout(() => {
           if(!succeeded && blinkTimer){
             succeeded = true;
-            say('success', '✅ LED روی PC13 چشمک می‌زند! برنامه‌ات با ST-Link روی چیپ نشست و چیپ آن را اجرا می‌کند. از حالا هر بار که کد را عوض کنی، همین‌طور دوباره می‌ریزی‌اش.');
+            say('success', __('✅ LED روی PC13 چشمک می‌زند! برنامه‌ات با ST-Link روی چیپ نشست و چیپ آن را اجرا می‌کند. از حالا هر بار که کد را عوض کنی، همین‌طور دوباره می‌ریزی‌اش.'));
             onSuccess && onSuccess();
           }
         }, 1500);
@@ -262,10 +262,10 @@ function mountStlinkSim(container, { onSuccess, alreadyDone } = {}){
     const d = diag(), pw = isPowered();
     q('#slPc').classList.toggle('on', plugged);
     q('#slBridge').classList.toggle('on', plugged);
-    q('#slPcT').textContent = plugged ? 'کامپیوتر ✓' : 'کامپیوتر';
+    q('#slPcT').textContent = plugged ? __('کامپیوتر ✓') : __('کامپیوتر');
     q('#slStLed').classList.toggle('on', plugged);
     q('#slPwr').classList.toggle('on', pw);
-    btnPlug.textContent = plugged ? '۲ USB را بکش' : '۲ USB را بزن';
+    btnPlug.textContent = plugged ? __('۲ USB را بکش') : __('۲ USB را بزن');
     btnPlug.disabled = flashing;
     btnConn.disabled = !plugged || flashing;
     btnFlash.disabled = !connected || flashing;
@@ -280,17 +280,17 @@ function mountStlinkSim(container, { onSuccess, alreadyDone } = {}){
   function afterWireChange(){
     connected = false;
     const d = diag();
-    if(plugged && d.danger){ plugged = false; stopBlink(); say('error', '⚠️ ' + d.danger.text + ' برای حفظِ بُرد، USB را کشیدم. اول این سیم را بردار.'); }
+    if(plugged && d.danger){ plugged = false; stopBlink(); say('error', '⚠️ ' + d.danger.text + __(' برای حفظِ بُرد، USB را کشیدم. اول این سیم را بردار.')); }
     refreshRun(); refreshUi();
   }
 
   function hintText(side, id){
     const sg = pinSig(side, id);
     const found = side === 'st' ? SL_BP.some(x => x.id === sg) : SL_ST.some(x => x.sig === sg);
-    if(found) return `مقصدش روی ${side === 'st' ? 'برد' : 'ST-Link'} با حلقه‌ی سبز نشان داده شد؛ همان را بزن.`;
-    return side === 'st' ? 'برای این پایه هیچ مقصدی روی هدر برد نیست؛ لازمش نداری.' : '';
+    if(found) return __f("مقصدش روی {0} با حلقه‌ی سبز نشان داده شد؛ همان را بزن.", side === 'st' ? __('برد') : 'ST-Link');
+    return side === 'st' ? __('برای این پایه هیچ مقصدی روی هدر برد نیست؛ لازمش نداری.') : '';
   }
-  const selectText = (side, id) => `«${pinName(side, id)}» انتخاب شد. ${pinOf(side, id).note} ${hintText(side, id)}`;
+  const selectText = (side, id) => __f("«{0}» انتخاب شد. {1} {2}", pinName(side, id), pinOf(side, id).note, hintText(side, id));
 
   function onPin(side, id){
     if(flashing) return;
@@ -298,13 +298,13 @@ function mountStlinkSim(container, { onSuccess, alreadyDone } = {}){
     showKnightLine(`«${pinName(side, id)}»: ${(side === 'st' ? SL_TALK_ST : SL_TALK_BP)[sg]}`, warn ? 'stern' : 'happy', 'knight');
     const existing = wires.find(w => (side === 'st' ? w.s : w.b) === id);
     if(!sel){
-      if(existing){ wires = wires.filter(w => w !== existing); say('idle', 'سیم برداشته شد.'); afterWireChange(); return; }
+      if(existing){ wires = wires.filter(w => w !== existing); say('idle', __('سیم برداشته شد.')); afterWireChange(); return; }
       sel = { side, id };
       say('running', selectText(side, id));
       refreshUi(); return;
     }
     if(sel.side === side){
-      if(sel.id === id){ sel = null; say('idle', 'انتخاب برداشته شد.'); }
+      if(sel.id === id){ sel = null; say('idle', __('انتخاب برداشته شد.')); }
       else { sel = { side, id }; say('running', selectText(side, id)); }
       refreshUi(); return;
     }
@@ -314,9 +314,9 @@ function mountStlinkSim(container, { onSuccess, alreadyDone } = {}){
     const w = { s, b }; wires.push(w);
     const info = wireInfo(w), wasPlugged = plugged;
     afterWireChange();
-    if(info.lvl === 'danger'){ if(!wasPlugged) say('error', '⚠️ ' + info.text + ' این سیم را بردار (روی یکی از دو سرش بزن).'); }
-    else if(info.lvl === 'bad') say('error', '❌ ' + info.text + ' این سیم را بردار (روی یکی از دو سرش بزن).');
-    else if(diag().linkOk) say('success', '✅ هر چهار سیم (3.3V، GND، SWDIO، SWCLK) درست وصل است. ' + (plugged ? 'حالا Connect را بزن.' : 'حالا USB را به کامپیوتر بزن.'));
+    if(info.lvl === 'danger'){ if(!wasPlugged) say('error', '⚠️ ' + info.text + __(' این سیم را بردار (روی یکی از دو سرش بزن).')); }
+    else if(info.lvl === 'bad') say('error', '❌ ' + info.text + __(' این سیم را بردار (روی یکی از دو سرش بزن).'));
+    else if(diag().linkOk) say('success', __('✅ هر چهار سیم (3.3V، GND، SWDIO، SWCLK) درست وصل است. ') + (plugged ? __('حالا Connect را بزن.') : __('حالا USB را به کامپیوتر بزن.')));
     else say('running', info.text);
   }
 
@@ -325,13 +325,13 @@ function mountStlinkSim(container, { onSuccess, alreadyDone } = {}){
     if(justDragged) return;
     if(e.target.closest('[data-boot]') && !flashing){
       boot0 = boot0 ? 0 : 1; refreshUi();
-      say(boot0 ? 'error' : 'idle', `جامپر BOOT0 روی ${boot0} رفت. ${boot0 ? 'با BOOT0=1 چیپ بعد از ریست بوت‌لودرِ ROM را اجرا می‌کند، نه برنامه‌ی تو. ' : ''}چیپ تنظیمِ جدید را فقط موقع ریست یا روشن‌شدن می‌خواند؛ دکمه‌ی RESET روی برد را بزن.`);
+      say(boot0 ? 'error' : 'idle', __f("جامپر BOOT0 روی {0} رفت. {1}چیپ تنظیمِ جدید را فقط موقع ریست یا روشن‌شدن می‌خواند؛ دکمه‌ی RESET روی برد را بزن.", boot0, boot0 ? __('با BOOT0=1 چیپ بعد از ریست بوت‌لودرِ ROM را اجرا می‌کند، نه برنامه‌ی تو. ') : ''));
       return;
     }
     if(e.target.closest('[data-rst]')){
-      if(!isPowered()){ say('idle', 'برد برق ندارد؛ ریست معنی ندارد.'); return; }
+      if(!isPowered()){ say('idle', __('برد برق ندارد؛ ریست معنی ندارد.')); return; }
       latched = boot0; stopBlink(); refreshRun(); refreshUi();
-      say(flashed ? (latched ? 'error' : 'running') : 'idle', flashed ? (latched ? 'RESET زده شد؛ BOOT0=1 است و چیپ بوت‌لودرِ ROM را اجرا می‌کند، پس LED چشمک نمی‌زند. جامپر را روی ۰ بگذار و دوباره RESET بزن.' : 'RESET زده شد؛ چیپ برنامه‌ی تو را از فلش اجرا می‌کند.') : 'RESET زده شد؛ هنوز برنامه‌ای روی چیپ نیست.');
+      say(flashed ? (latched ? 'error' : 'running') : 'idle', flashed ? (latched ? __('RESET زده شد؛ BOOT0=1 است و چیپ بوت‌لودرِ ROM را اجرا می‌کند، پس LED چشمک نمی‌زند. جامپر را روی ۰ بگذار و دوباره RESET بزن.') : __('RESET زده شد؛ چیپ برنامه‌ی تو را از فلش اجرا می‌کند.')) : __('RESET زده شد؛ هنوز برنامه‌ای روی چیپ نیست.'));
       return;
     }
     const pin = e.target.closest('.sl-pin');
@@ -390,7 +390,7 @@ function mountStlinkSim(container, { onSuccess, alreadyDone } = {}){
       const t = snapAt(e, drag.side) || drag.target, from = drag;
       endDrag();
       if(t) onPin(t.side, t.id);
-      else { sel = null; say('idle', 'سیم رها شد؛ باید سرِ دیگرش را روی پایه‌ی هم‌نامِ آن سمت رها کنی.'); refreshUi(); }
+      else { sel = null; say('idle', __('سیم رها شد؛ باید سرِ دیگرش را روی پایه‌ی هم‌نامِ آن سمت رها کنی.')); refreshUi(); }
     } else endDrag();
   });
   svg.addEventListener('touchmove', e => { if(drag) e.preventDefault(); }, { passive:false });
@@ -398,12 +398,12 @@ function mountStlinkSim(container, { onSuccess, alreadyDone } = {}){
 
   btnPlug.addEventListener('click', () => {
     if(flashing) return;
-    if(plugged){ plugged = false; connected = false; stopBlink(); refreshUi(); say('idle', 'USB کشیده شد؛ برد برق ندارد.'); return; }
+    if(plugged){ plugged = false; connected = false; stopBlink(); refreshUi(); say('idle', __('USB کشیده شد؛ برد برق ندارد.')); return; }
     const d = diag();
-    if(d.danger){ say('error', '⚠️ ' + d.danger.text + ' تا این سیم هست USB را نزن.'); return; }
+    if(d.danger){ say('error', '⚠️ ' + d.danger.text + __(' تا این سیم هست USB را نزن.')); return; }
     plugged = true; latched = boot0; refreshRun(); refreshUi();
-    if(d.powerOk) say('success', '🔌 ST-Link شناخته شد (LED اش روشن شد) و برد از پایه‌ی ۳٫۳ ولتِ آن برق گرفت؛ LED قرمزِ PWR روشن است. حالا Connect را بزن.');
-    else say('running', '🔌 ST-Link شناخته شد، ولی برد برق نمی‌گیرد: ' + (!has('3V3', '3V3') ? 'سیمِ 3.3V وصل نیست. ' : '') + (!has('GND', 'GND') ? 'سیمِ GND وصل نیست. ' : '') + 'با این حال Connect را بزن تا ببینی ST-Link چه می‌گوید.');
+    if(d.powerOk) say('success', __('🔌 ST-Link شناخته شد (LED اش روشن شد) و برد از پایه‌ی ۳٫۳ ولتِ آن برق گرفت؛ LED قرمزِ PWR روشن است. حالا Connect را بزن.'));
+    else say('running', __('🔌 ST-Link شناخته شد، ولی برد برق نمی‌گیرد: ') + (!has('3V3', '3V3') ? __('سیمِ 3.3V وصل نیست. ') : '') + (!has('GND', 'GND') ? __('سیمِ GND وصل نیست. ') : '') + __('با این حال Connect را بزن تا ببینی ST-Link چه می‌گوید.'));
   });
 
   btnConn.addEventListener('click', () => {
@@ -415,7 +415,7 @@ function mountStlinkSim(container, { onSuccess, alreadyDone } = {}){
       log('sim-serial', 'Voltage     : 0.00V');
       log('sim-error', 'Error: No STM32 target found!');
       connected = false; refreshUi();
-      say('error', 'ST-Link ولتاژی روی برد نمی‌بیند (0.00V) و چیپی پیدا نمی‌کند. ' + (!has('3V3', '3V3') ? 'سیمِ 3.3V ' : '') + (!has('GND', 'GND') ? 'سیمِ GND ' : '') + 'درست وصل نیست. بدون زمینِ مشترک و برق، هیچ ارتباطی ممکن نیست.');
+      say('error', __('ST-Link ولتاژی روی برد نمی‌بیند (0.00V) و چیپی پیدا نمی‌کند. ') + (!has('3V3', '3V3') ? __('سیمِ 3.3V ') : '') + (!has('GND', 'GND') ? __('سیمِ GND ') : '') + __('درست وصل نیست. بدون زمینِ مشترک و برق، هیچ ارتباطی ممکن نیست.'));
       return;
     }
     log('sim-serial', 'Voltage     : 3.27V');
@@ -425,7 +425,7 @@ function mountStlinkSim(container, { onSuccess, alreadyDone } = {}){
       log('sim-error', 'Error: No STM32 target found!');
       connected = false; refreshUi();
       const sw = (has('SWDIO', 'SWCLK') && has('SWCLK', 'SWDIO'));
-      say('error', sw ? 'ST-Link برد را برق‌دار می‌بیند ولی با چیپ حرف نمی‌زند: SWDIO و SWCLK جابه‌جا وصل شده‌اند. جایشان را عوض کن.' : 'برد برق دارد ولی ST-Link با چیپ حرف نمی‌زند: ' + (!has('SWDIO', 'SWDIO') ? 'سیمِ SWDIO ' : '') + (!has('SWCLK', 'SWCLK') ? 'سیمِ SWCLK ' : '') + 'درست وصل نیست.');
+      say('error', sw ? __('ST-Link برد را برق‌دار می‌بیند ولی با چیپ حرف نمی‌زند: SWDIO و SWCLK جابه‌جا وصل شده‌اند. جایشان را عوض کن.') : __('برد برق دارد ولی ST-Link با چیپ حرف نمی‌زند: ') + (!has('SWDIO', 'SWDIO') ? __('سیمِ SWDIO ') : '') + (!has('SWCLK', 'SWCLK') ? __('سیمِ SWCLK ') : '') + __('درست وصل نیست.'));
       return;
     }
     log('sim-serial', 'Connect mode: Normal');
@@ -436,7 +436,7 @@ function mountStlinkSim(container, { onSuccess, alreadyDone } = {}){
     log('sim-serial', 'Device type : MCU');
     log('sim-serial', 'Device CPU  : Cortex-M3');
     connected = true; refreshUi();
-    say('success', '🔎 وصل شد! ST-Link از راه SWD شناسه‌ی چیپ را خواند (0x410 یعنی خانواده‌ی F103) و حالا می‌تواند حافظه‌ی فلش را بنویسد. «آپلود» را بزن.');
+    say('success', __('🔎 وصل شد! ST-Link از راه SWD شناسه‌ی چیپ را خواند (0x410 یعنی خانواده‌ی F103) و حالا می‌تواند حافظه‌ی فلش را بنویسد. «آپلود» را بزن.'));
   });
 
   btnFlash.addEventListener('click', () => {
@@ -448,7 +448,7 @@ function mountStlinkSim(container, { onSuccess, alreadyDone } = {}){
     log('sim-serial', '  Address       : 0x08000000');
     log('sim-serial', 'Erasing internal memory sectors ...');
     log('sim-serial', 'Download in Progress:');
-    say('running', '⬇️ ST-Link فلش را پاک می‌کند و برنامه را می‌نویسد...');
+    say('running', __('⬇️ ST-Link فلش را پاک می‌کند و برنامه را می‌نویسد...'));
     let p = 0;
     flashTimer = setInterval(() => {
       p += 7; bar.style.width = Math.min(p, 100) + '%';
@@ -461,8 +461,8 @@ function mountStlinkSim(container, { onSuccess, alreadyDone } = {}){
       flashing = false; flashed = true; latched = boot0;
       setTimeout(() => { wrap.hidden = true; }, 600);
       refreshRun(); refreshUi();
-      if(latched === 1) say('error', 'برنامه با موفقیت روی فلش نوشته شد، ولی LED چشمک نمی‌زند: جامپر BOOT0 روی ۱ است و چیپ بعد از ریست بوت‌لودرِ ROM را اجرا می‌کند. BOOT0 را روی ۰ بگذار و RESET بزن.');
-      else say('running', 'برنامه‌ی تازه روی فلش نشست و چیپ ریست شد؛ به LED روی PC13 نگاه کن...');
+      if(latched === 1) say('error', __('برنامه با موفقیت روی فلش نوشته شد، ولی LED چشمک نمی‌زند: جامپر BOOT0 روی ۱ است و چیپ بعد از ریست بوت‌لودرِ ROM را اجرا می‌کند. BOOT0 را روی ۰ بگذار و RESET بزن.'));
+      else say('running', __('برنامه‌ی تازه روی فلش نشست و چیپ ریست شد؛ به LED روی PC13 نگاه کن...'));
     }, 90);
   });
 
@@ -471,12 +471,12 @@ function mountStlinkSim(container, { onSuccess, alreadyDone } = {}){
     wires = []; sel = null; plugged = false; connected = false; flashed = false; flashing = false; boot0 = 0; latched = 0;
     logEl.innerHTML = ''; q('#slProgWrap').hidden = true;
     refreshUi();
-    say('idle', '🔌 برد و ST-Link از هم جدا هستند. یک پایه از ST-Link و بعد پایه‌ی هم‌نامش را روی برد بزن تا سیم وصل شود.');
+    say('idle', __('🔌 برد و ST-Link از هم جدا هستند. یک پایه از ST-Link و بعد پایه‌ی هم‌نامش را روی برد بزن تا سیم وصل شود.'));
   }
   q('#slReset').addEventListener('click', resetAll);
 
   resetAll();
-  if(alreadyDone) say('success', '✅ قبلاً برد را به ST-Link وصل کرده و برنامه را ریخته‌ای. دوست داری دوباره امتحان کنی؟ پایه‌ها را وصل کن.');
+  if(alreadyDone) say('success', __('✅ قبلاً برد را به ST-Link وصل کرده و برنامه را ریخته‌ای. دوست داری دوباره امتحان کنی؟ پایه‌ها را وصل کن.'));
   return { stop(){ clearInterval(flashTimer); clearInterval(blinkTimer); clearTimeout(okTimer); } };
 }
 

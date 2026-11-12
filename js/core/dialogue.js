@@ -19,7 +19,7 @@ const knightImg = document.getElementById('knightImg');
 const knightNameEl = document.querySelector('#knightSection .name');
 const CHARACTERS = {
   knight: {
-    name: 'استاد اهم',
+    name: t('char.knight'),
     moods: {
       happy:   'assets/images/knight-happy.png',
       stern:   'assets/images/knight-stern.png',
@@ -28,7 +28,7 @@ const CHARACTERS = {
     }
   },
   voltage: {
-    name: 'ولتاژ',
+    name: t('char.voltage'),
     moods: {
       happy:   'assets/images/voltage-happy.png',
       stern:   'assets/images/voltage-stern.png',

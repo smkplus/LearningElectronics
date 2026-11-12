@@ -94,7 +94,7 @@
     hintEl.className = 'ab-rotate-hint';
     hintEl.setAttribute('role', 'status');
     hintEl.innerHTML = '<span class="ab-rotate-hint-icon">📱↻</span>' +
-      '<span>برای دیدنِ بهتر، گوشی را افقی بگیرید</span>';
+      __('<span>برای دیدنِ بهتر، گوشی را افقی بگیرید</span>');
     hintEl.addEventListener('click', hideHint);
     document.body.appendChild(hintEl);
   }

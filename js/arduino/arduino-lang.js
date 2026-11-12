@@ -185,8 +185,8 @@
     const atOp = v => at('op', v);
     const atId = v => at('id', v);
     const advance = () => tokens[pos++];
-    const err = msg => new SyntaxErr(`خطای نحوی نزدیک خط ${peek().line}: ${msg}`);
-    const expectOp = v => { if (!atOp(v)) throw err(`انتظار «${v}» می‌رفت`); return advance(); };
+    const err = msg => new SyntaxErr(__f("خطای نحوی نزدیک خط {0}: {1}", peek().line, msg));
+    const expectOp = v => { if (!atOp(v)) throw err(__f("انتظار «{0}» می‌رفت", v)); return advance(); };
 
     function isTypeStart() {
       const t = peek();
@@ -202,10 +202,10 @@
     function parseTypeSpec() {
       while (atId('const')) advance();
       if (atId('unsigned') || atId('signed')) advance();
-      if (peek().type !== 'id') throw err('نوع داده منتظر بود');
+      if (peek().type !== 'id') throw err(__('نوع داده منتظر بود'));
       const t = peek();
       if (!TYPE_KEYWORDS.has(t.value) && !OBJECT_TYPE_KEYWORDS.has(t.value)) {
-        throw err(`«${t.value}» یک نوع دادهٔ معتبر نیست`);
+        throw err(__f("«{0}» یک نوع دادهٔ معتبر نیست", t.value));
       }
       const typeName = advance().value;
       while (atOp('*')) advance();
@@ -269,7 +269,7 @@
           expr = { type: 'Call', callee: expr, arguments: args };
         } else if (atOp('.')) {
           advance();
-          if (peek().type !== 'id') throw err('نام ویژگی منتظر بود');
+          if (peek().type !== 'id') throw err(__('نام ویژگی منتظر بود'));
           const prop = advance().value;
           expr = { type: 'Member', object: expr, property: prop };
         } else if (atOp('[')) {
@@ -297,15 +297,15 @@
         expectOp('}');
         return { type: 'ArrayLit', elements };
       }
-      if (atOp('[')) throw err('تابعِ بی‌نام (lambda) در شبیه‌ساز پشتیبانی نمی‌شود؛ یک تابع معمولی مثل void handleOn() بنویس و فقط اسمش را به server.on بده');
-      throw err('عبارت نامعتبر یا ناتمام');
+      if (atOp('[')) throw err(__('تابعِ بی‌نام (lambda) در شبیه‌ساز پشتیبانی نمی‌شود؛ یک تابع معمولی مثل void handleOn() بنویس و فقط اسمش را به server.on بده'));
+      throw err(__('عبارت نامعتبر یا ناتمام'));
     }
 
     function parseVarDeclStatement() {
       const varType = parseTypeSpec();
       const decls = [];
       do {
-        if (peek().type !== 'id') throw err('نام متغیر منتظر بود');
+        if (peek().type !== 'id') throw err(__('نام متغیر منتظر بود'));
         const name = advance().value;
         let arraySize = null;
         if (atOp('[')) { advance(); if (!atOp(']')) arraySize = parseExpr(); expectOp(']'); }
@@ -349,7 +349,7 @@
       expectOp('{');
       const body = [];
       while (!atOp('}')) {
-        if (at('eof')) throw err('«}» بسته‌نشده — یک آکولاد جا افتاده؟');
+        if (at('eof')) throw err(__('«}» بسته‌نشده — یک آکولاد جا افتاده؟'));
         try {
           body.push(parseStatement());
         } catch (e) {
@@ -396,7 +396,7 @@
     function parseDoWhile() {
       advance();
       const body = parseStatement();
-      if (!atId('while')) throw err('«while» بعد از «do» منتظر بود');
+      if (!atId('while')) throw err(__('«while» بعد از «do» منتظر بود'));
       advance(); expectOp('(');
       const test = parseExpr();
       expectOp(')'); expectOp(';');
@@ -443,14 +443,14 @@
         // مستقلِ بعدی (مثلاً چند خط تک‌کلمه‌ای پشتِ‌سرِهم) هرگز گزارش
         // نمی‌شدند. پس فقط همین یک توکن را رد می‌کنیم و به تلاشِ بعدی
         // می‌رویم، تا هر خط خراب جدا گزارش شود.
-        errors.push(err(`شناسهٔ «${peek().value}» ناشناخته است؛ انتظار نوع داده (مثل void یا int) یا تعریف تابع/متغیر می‌رفت`));
+        errors.push(err(__f("شناسهٔ «{0}» ناشناخته است؛ انتظار نوع داده (مثل void یا int) یا تعریف تابع/متغیر می‌رفت", peek().value)));
         if (!at('eof')) advance();
         continue;
       }
       try {
         const save = pos;
         const gType = parseTypeSpec();
-        if (peek().type !== 'id') throw err('نام تابع یا متغیر سراسری منتظر بود');
+        if (peek().type !== 'id') throw err(__('نام تابع یا متغیر سراسری منتظر بود'));
         const name = advance().value;
         if (atOp('(') && !OBJECT_TYPE_KEYWORDS.has(gType)) {
           advance();
@@ -492,7 +492,7 @@
     get(name) {
       let s = this;
       while (s) { if (name in s.vars) return s.vars[name]; s = s.parent; }
-      throw new RuntimeErr(`متغیر تعریف‌نشده: ${name}`);
+      throw new RuntimeErr(__f("متغیر تعریف‌نشده: {0}", name));
     }
     set(name, val) {
       let s = this;
@@ -506,7 +506,7 @@
   // شناسه‌ی پایه‌ی STM32 مثل 'PC13' از روی پورت ('C') و ماسک پایه (1 << 13)
   function halPin(port, mask) {
     if (typeof port !== 'string' || !(mask > 0) || (mask & (mask - 1)) !== 0) {
-      throw new RuntimeErr('پورت یا پایه‌ی HAL نامعتبر است — مثل GPIOC و GPIO_PIN_13 بنویس.');
+      throw new RuntimeErr(__('پورت یا پایه‌ی HAL نامعتبر است — مثل GPIOC و GPIO_PIN_13 بنویس.'));
     }
     return 'P' + port + Math.round(Math.log2(mask));
   }
@@ -639,7 +639,7 @@
       let begun = false, sent = false;
       return {
         on(path, handler) {
-          if (!handler || !handler.__fn) throw new RuntimeErr('server.on() به‌عنوان آرگومانِ دوم نامِ یک تابع می‌خواهد، مثل server.on("/on", handleOn).');
+          if (!handler || !handler.__fn) throw new RuntimeErr(__('server.on() به‌عنوان آرگومانِ دوم نامِ یک تابع می‌خواهد، مثل server.on("/on", handleOn).'));
           routes[String(path)] = handler.__fn;
           if (self.io.webOn) self.io.webOn(String(path));
         },
@@ -696,7 +696,7 @@
     tick() {
       this.sliceSteps++;
       if (this.sliceSteps > this.MAX_SLICE_STEPS) {
-        throw new RuntimeErr('کد بدون فراخوانی delay() در یک حلقه گیر کرده و شبیه‌ساز را قفل می‌کند. یک delay() (یا HAL_Delay()) داخل loop() اضافه کن.');
+        throw new RuntimeErr(__('کد بدون فراخوانی delay() در یک حلقه گیر کرده و شبیه‌ساز را قفل می‌کند. یک delay() (یا HAL_Delay()) داخل loop() اضافه کن.'));
       }
     }
 
@@ -704,8 +704,8 @@
       for (const g of this.ast.globals) yield* this.execVarDecl(g, this.global);
       const setupFn = this.ast.functions['setup'];
       const loopFn = this.ast.functions['loop'];
-      if (!setupFn) throw new RuntimeErr('تابع ()setup پیدا نشد.');
-      if (!loopFn) throw new RuntimeErr('تابع ()loop پیدا نشد.');
+      if (!setupFn) throw new RuntimeErr(__('تابع ()setup پیدا نشد.'));
+      if (!loopFn) throw new RuntimeErr(__('تابع ()loop پیدا نشد.'));
       yield* this.callFunction(setupFn, []);
       yield { type: 'setupDone' };
       while (true) {
@@ -798,7 +798,7 @@
         }
         case 'Break': throw new BreakSignal();
         case 'Continue': throw new ContinueSignal();
-        default: throw new RuntimeErr('نوع دستور ناشناخته: ' + node.type);
+        default: throw new RuntimeErr(__('نوع دستور ناشناخته: ') + node.type);
       }
     }
 
@@ -815,7 +815,7 @@
         const obj = yield* this.evalExpr(node.object, scope);
         return { current: obj ? obj[node.property] : undefined, set: (v) => { if (obj) obj[node.property] = v; } };
       }
-      throw new RuntimeErr('سمت چپ انتساب نامعتبر است');
+      throw new RuntimeErr(__('سمت چپ انتساب نامعتبر است'));
     }
 
     * evalAssign(node, scope) {
@@ -829,7 +829,7 @@
         case '*=': newV = ref.current * rhs; break;
         case '/=': newV = ref.current / rhs; break;
         case '%=': newV = ref.current % rhs; break;
-        default: throw new RuntimeErr('عملگر انتساب ناشناخته');
+        default: throw new RuntimeErr(__('عملگر انتساب ناشناخته'));
       }
       ref.set(newV);
       return newV;
@@ -853,7 +853,7 @@
         case '-': return l - r;
         case '*': return l * r;
         case '/':
-          if (r === 0) throw new RuntimeErr('تقسیم بر صفر');
+          if (r === 0) throw new RuntimeErr(__('تقسیم بر صفر'));
           return (Number.isInteger(l) && Number.isInteger(r)) ? Math.trunc(l / r) : l / r;
         case '%': return l % r;
         case '==': return l === r;
@@ -867,7 +867,7 @@
         case '^': return l ^ r;
         case '<<': return l << r;
         case '>>': return l >> r;
-        default: throw new RuntimeErr('عملگر ناشناخته: ' + node.operator);
+        default: throw new RuntimeErr(__('عملگر ناشناخته: ') + node.operator);
       }
     }
 
@@ -896,12 +896,12 @@
           for (const a of node.arguments) args.push(yield* this.evalExpr(a, scope));
           return this.natives[name](args);
         }
-        throw new RuntimeErr(`تابع ناشناخته: ${name}()`);
+        throw new RuntimeErr(__f("تابع ناشناخته: {0}()", name));
       }
       if (node.callee.type === 'Member') {
         const obj = yield* this.evalExpr(node.callee.object, scope);
         const method = obj ? obj[node.callee.property] : undefined;
-        if (typeof method !== 'function') throw new RuntimeErr(`متد ناشناخته: ${node.callee.property}()`);
+        if (typeof method !== 'function') throw new RuntimeErr(__f("متد ناشناخته: {0}()", node.callee.property));
         const args = [];
         for (const a of node.arguments) args.push(yield* this.evalExpr(a, scope));
         const result = method.apply(obj, args);
@@ -909,7 +909,7 @@
         if (result && typeof result.next === 'function' && typeof result[Symbol.iterator] === 'function') return yield* result;
         return result;
       }
-      throw new RuntimeErr('فراخوانی نامعتبر');
+      throw new RuntimeErr(__('فراخوانی نامعتبر'));
     }
 
     * evalExpr(node, scope) {
@@ -938,7 +938,7 @@
           if (node.operator === '-') return -v;
           if (node.operator === '+') return +v;
           if (node.operator === '!') return !truthy(v);
-          throw new RuntimeErr('عملگر یکانی ناشناخته');
+          throw new RuntimeErr(__('عملگر یکانی ناشناخته'));
         }
         case 'UpdateExpr': {
           const ref = yield* this.resolveRef(node.argument, scope);
@@ -950,7 +950,7 @@
         case 'Binary': return yield* this.evalBinary(node, scope);
         case 'Member': {
           const obj = yield* this.evalExpr(node.object, scope);
-          if (obj == null) throw new RuntimeErr('دسترسی به ویژگی روی مقدار نامعتبر');
+          if (obj == null) throw new RuntimeErr(__('دسترسی به ویژگی روی مقدار نامعتبر'));
           return obj[node.property];
         }
         case 'Index': {
@@ -959,7 +959,7 @@
           return obj ? obj[idx] : undefined;
         }
         case 'Call': return yield* this.evalCall(node, scope);
-        default: throw new RuntimeErr('عبارت ناشناخته: ' + node.type);
+        default: throw new RuntimeErr(__('عبارت ناشناخته: ') + node.type);
       }
     }
   }
@@ -1003,7 +1003,7 @@
     // than living in `natives`, so they need to be listed explicitly here.
     const SPECIAL_CALLS = new Set(['delay', 'delayMicroseconds', 'HAL_Delay']);
     const isCallable = (name) => functionNames.has(name) || builtins.natives.has(name) || SPECIAL_CALLS.has(name);
-    const errAt = (line, msg) => new SyntaxErr(`خطای نحوی${line ? ' نزدیک خط ' + line : ''}: ${msg}`);
+    const errAt = (line, msg) => new SyntaxErr(__f("خطای نحوی{0}: {1}", line ? __(' نزدیک خط ') + line : '', msg));
 
     const errors = [];
     // Same missing name reported once (e.g. a typo used 5 times in a loop
@@ -1023,7 +1023,7 @@
           if (!scope.has(node.name) && !functionNames.has(node.name)) {
             if (!reportedNames.has(node.name)) {
               reportedNames.add(node.name);
-              report(errAt(node.line, `شناسهٔ «${node.name}» تعریف نشده است`));
+              report(errAt(node.line, __f("شناسهٔ «{0}» تعریف نشده است", node.name)));
             }
             scope.declare(node.name); // avoid re-flagging the same name repeatedly in this scope
           }
@@ -1040,7 +1040,7 @@
             if (!isCallable(name) && !scope.has(name)) {
               if (!reportedNames.has(name)) {
                 reportedNames.add(name);
-                report(errAt(node.callee.line, `تابع «${name}» تعریف نشده است`));
+                report(errAt(node.callee.line, __f("تابع «{0}» تعریف نشده است", name)));
               }
             }
           } else {
@@ -1121,7 +1121,7 @@
     const body = main.body.body;
     const i = body.findIndex(s => s.type === 'While' && s.test &&
       ((s.test.type === 'Num' && s.test.value) || (s.test.type === 'Ident' && s.test.name === 'true')));
-    if (i < 0) throw new SyntaxErr('خطای نحوی: داخل ()main یک حلقه‌ی (while (1 لازم است.');
+    if (i < 0) throw new SyntaxErr(__('خطای نحوی: داخل ()main یک حلقه‌ی (while (1 لازم است.'));
     const pre = body.slice(0, i);
     ast.globals.push(...pre.filter(s => s.type === 'VarDecl'));
     const loopBody = body[i].body;

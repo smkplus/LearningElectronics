@@ -1,0 +1,10 @@
+const fs = require('fs');
+const cat = JSON.parse(fs.readFileSync('_i18n_work/arduino.cat.json', 'utf8'));
+const e1 = JSON.parse(fs.readFileSync('_i18n_work/arduino.en.1.json', 'utf8')), e2 = JSON.parse(fs.readFileSync('_i18n_work/arduino.en.2.json', 'utf8'));
+const en = Object.assign({}, e1, e2);
+const ids = Array.isArray(cat) ? cat.map(c => c.id || c[0]) : Object.keys(cat);
+console.log('catalog shape:', Array.isArray(cat) ? 'array' : 'object', 'entries:', ids.length, '| en ids:', Object.keys(en).length, '| en.1:', Object.keys(e1).length, 'en.2:', Object.keys(e2).length);
+console.log('first catalog entries:', JSON.stringify(Array.isArray(cat) ? cat.slice(0, 2) : Object.entries(cat).slice(0, 2)).slice(0, 400));
+const missing = ids.filter(i => en[i] === undefined);
+console.log('catalog ids with no english:', missing.length, missing.slice(0, 20).join(','));
+console.log('en ids not in catalog:', Object.keys(en).filter(k => !ids.includes(k)).length);

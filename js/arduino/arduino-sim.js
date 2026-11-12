@@ -274,7 +274,7 @@ const ArduinoSim = (() => {
       .sim-editor-block.is-sim-running .sim-editor-wrap { opacity: .55; filter: grayscale(.25); pointer-events: none; }
       .sim-editor-block.is-sim-running textarea.sim-editor { cursor: not-allowed; }
       .sim-editor-block.is-sim-running .sim-editor-wrap::after {
-        content: '▶ در حال اجرا…'; position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+        content: '${__("▶ در حال اجرا…")}'; position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
         z-index: 3; background: rgba(46,160,157,.92); color: #08150f; font-family: 'Vazirmatn', sans-serif;
         font-weight: 700; font-size: 12.5px; padding: 5px 12px; border-radius: 999px;
         box-shadow: 0 2px 8px rgba(0,0,0,.35); pointer-events: none; white-space: nowrap;
@@ -338,7 +338,7 @@ const ArduinoSim = (() => {
     ov.querySelector('.sim-dlg-title').textContent = title;
     ov.querySelector('.sim-dlg-body').innerHTML = bodyHtml;
     const btn = ov.querySelector('button');
-    btn.textContent = okText || 'فهمیدم';
+    btn.textContent = okText || __('فهمیدم');
     function close() {
       document.removeEventListener('keydown', onKey, true);
       if (ov.parentNode) ov.parentNode.removeChild(ov);
@@ -506,7 +506,7 @@ function serialSVG() {
     <rect x="216" y="114" width="26" height="8" rx="2" class="sim-monitor-body"/>
     <rect x="204" y="122" width="50" height="5" rx="2" class="sim-monitor-body"/>
 
-    <text x="229" y="150" text-anchor="middle" class="sim-caption">سریال مانیتور</text>
+    <text x="229" y="150" text-anchor="middle" class="sim-caption">${__("سریال مانیتور")}</text>
   </svg>`;
 }
 
@@ -542,7 +542,7 @@ function serialSVG() {
       <line x1="247.6" y1="86" x2="247.6" y2="140" class="sim-wire sim-wire-gnd"/>
       <line x1="247.6" y1="140" x2="148" y2="140" class="sim-wire sim-wire-gnd"/>
 
-      <text x="262" y="178" text-anchor="middle" class="sim-caption">LED + مقاومت ۲۲۰Ω</text>
+      <text x="262" y="178" text-anchor="middle" class="sim-caption">${__("LED + مقاومت ۲۲۰Ω")}</text>
     </svg>`;
   }
 
@@ -589,7 +589,7 @@ function serialSVG() {
         <rect id="simButtonHit" x="188" y="83" width="46" height="42" rx="10" class="sim-push-hit"/>
       </g>
 
-      <text x="222" y="178" text-anchor="middle" class="sim-caption">LED + دکمه (INPUT_PULLUP)</text>
+      <text x="222" y="178" text-anchor="middle" class="sim-caption">${__("LED + دکمه (INPUT_PULLUP)")}</text>
     </svg>`;
   }
 
@@ -643,7 +643,7 @@ function serialSVG() {
       <line x1="232" y1="104" x2="240" y2="104" class="sim-wire sim-wire-gnd"/>
       <line x1="240" y1="104" x2="240" y2="150" class="sim-wire sim-wire-gnd"/>
 
-      <text x="222" y="178" text-anchor="middle" class="sim-caption">LED + پتانسیومتر (Analog/PWM)</text>
+      <text x="222" y="178" text-anchor="middle" class="sim-caption">${__("LED + پتانسیومتر (Analog/PWM)")}</text>
     </svg>`;
   }
 
@@ -695,7 +695,7 @@ function serialSVG() {
       </g>
       <text x="236" y="102" text-anchor="middle" class="sim-pin-label" style="font-size:7px;fill:#e6eefc">PC13</text>
       <text x="150" y="132" text-anchor="middle" class="sim-board-sub" style="font-size:7px;fill:#bcd0f5">BLUE PILL</text>
-      <text x="150" y="172" text-anchor="middle" class="sim-caption">Blue Pill — LED روی PC13 (صفر = روشن، یک = خاموش)</text>
+      <text x="150" y="172" text-anchor="middle" class="sim-caption">${__("Blue Pill — LED روی PC13 (صفر = روشن، یک = خاموش)")}</text>
     </svg>`;
   }
 
@@ -736,7 +736,7 @@ function serialSVG() {
       <line x1="232" y1="108" x2="232" y2="150" class="sim-wire sim-wire-gnd"/>
       <line x1="232" y1="150" x2="148" y2="150" class="sim-wire sim-wire-gnd"/>
 
-      <text x="226" y="176" text-anchor="middle" class="sim-caption">سروو موتور (Servo)</text>
+      <text x="226" y="176" text-anchor="middle" class="sim-caption">${__("سروو موتور (Servo)")}</text>
     </svg>`;
   }
 
@@ -763,9 +763,9 @@ function serialSVG() {
       board: () => '',
       blocksTask: 'blink',
       maxRunMs: 60000,
-      hint: 'سه پین ۱۲ (قرمز)، ۱۱ (زرد) و ۱۰ (سبز) را خروجی کن و با digitalWrite و delay چراغ‌ها را یکی‌یکی روشن کن: سبز ← زرد ← قرمز. بعد «اجرا کن» را بزن.',
-      successText: '🎉 کد درست است — چراغ‌ها به ترتیب سبز ← زرد ← قرمز روشن شدند.',
-      successLog: '✓ ترتیب سبز ← زرد ← قرمز تشخیص داده شد.',
+      hint: __('سه پین ۱۲ (قرمز)، ۱۱ (زرد) و ۱۰ (سبز) را خروجی کن و با digitalWrite و delay چراغ‌ها را یکی‌یکی روشن کن: سبز ← زرد ← قرمز. بعد «اجرا کن» را بزن.'),
+      successText: __('🎉 کد درست است — چراغ‌ها به ترتیب سبز ← زرد ← قرمز روشن شدند.'),
+      successLog: __('✓ ترتیب سبز ← زرد ← قرمز تشخیص داده شد.'),
       starter: () => `int redPin = 12;
 int yellowPin = 11;
 int greenPin = 10;
@@ -794,10 +794,10 @@ void loop() {
 }
 `,
       check(state) {
-        const NAMES = { 12: 'قرمز', 11: 'زرد', 10: 'سبز' };
+        const NAMES = { 12: __('قرمز'), 11: __('زرد'), 10: __('سبز') };
         for (const p of [12, 11, 10]) {
           if (state.pinModes[p] !== 'OUTPUT') {
-            return { ok: false, reason: `پایه ${p} (${NAMES[p]}) هنوز با ()pinMode روی OUTPUT تنظیم نشده.` };
+            return { ok: false, reason: __f("پایه {0} ({1}) هنوز با ()pinMode روی OUTPUT تنظیم نشده.", p, NAMES[p]) };
           }
         }
         const lv = { 12: 0, 11: 0, 10: 0 }, snaps = [];
@@ -807,13 +807,13 @@ void loop() {
           lv[p] = e.val ? 1 : 0;
           snaps.push({ hi: Object.keys(lv).filter(k => lv[k]).join(','), ms: e.ms });
         });
-        if (!snaps.length) return { ok: false, reason: 'هنوز به چراغ‌ها فرمانی نرسیده — از ()digitalWrite استفاده کن.' };
+        if (!snaps.length) return { ok: false, reason: __('هنوز به چراغ‌ها فرمانی نرسیده — از ()digitalWrite استفاده کن.') };
         const want = ['10', '11', '12'];
         let idx = 0, last = -1;
         snaps.forEach(s => { if (idx < 3 && s.hi === want[idx] && s.ms > last) { idx++; last = s.ms; } });
-        if (idx === 0) return { ok: false, reason: 'هنوز چراغ سبز (پایه ۱۰) به‌تنهایی روشن نشده.' };
-        if (idx === 1) return { ok: false, reason: 'بعد از سبز، چراغ زرد (پایه ۱۱) باید به‌تنهایی روشن شود — بین مرحله‌ها از ()delay استفاده کن و سبز را خاموش کن.' };
-        if (idx === 2) return { ok: false, reason: 'در آخر چراغ قرمز (پایه ۱۲) باید به‌تنهایی روشن شود — زرد را خاموش کن.' };
+        if (idx === 0) return { ok: false, reason: __('هنوز چراغ سبز (پایه ۱۰) به‌تنهایی روشن نشده.') };
+        if (idx === 1) return { ok: false, reason: __('بعد از سبز، چراغ زرد (پایه ۱۱) باید به‌تنهایی روشن شود — بین مرحله‌ها از ()delay استفاده کن و سبز را خاموش کن.') };
+        if (idx === 2) return { ok: false, reason: __('در آخر چراغ قرمز (پایه ۱۲) باید به‌تنهایی روشن شود — زرد را خاموش کن.') };
         return { ok: true };
       }
     },
@@ -825,7 +825,7 @@ void loop() {
       board: () => '',
       blocksTask: 'blink',
       maxRunMs: 3600000,
-      hint: 'برنامهٔ همین آردوینو را بنویس و «اجرا کن» را بزن؛ پایه‌هایی که با digitalWrite می‌رانی در مدار روشن و خاموش می‌شوند.',
+      hint: __('برنامهٔ همین آردوینو را بنویس و «اجرا کن» را بزن؛ پایه‌هایی که با digitalWrite می‌رانی در مدار روشن و خاموش می‌شوند.'),
       successText: '',
       successLog: '',
       starter: () => `void setup() {
@@ -839,14 +839,14 @@ void loop() {
   delay(500);
 }
 `,
-      check: () => ({ ok: false, reason: 'این آردوینو فقط مدار را می‌راند.' })
+      check: () => ({ ok: false, reason: __('این آردوینو فقط مدار را می‌راند.') })
     },
 
     serial: {
       board: () => serialSVG(),
-      hint: 'کد را بنویس و «اجرا کن» را بزن تا پیام در کنسول سریال ظاهر شود.',
-      successText: '🎉 آفرین! برد حرف زد — مأموریت تکمیل شد.',
-      successLog: '✓ پیام Hello World روی سریال دریافت شد.',
+      hint: __('کد را بنویس و «اجرا کن» را بزن تا پیام در کنسول سریال ظاهر شود.'),
+      successText: __('🎉 آفرین! برد حرف زد — مأموریت تکمیل شد.'),
+      successLog: __('✓ پیام Hello World روی سریال دریافت شد.'),
       starter: () => `void setup() {
 
 }
@@ -858,10 +858,10 @@ void loop() {
       check(state) {
         const lines = state.serial.filter(s => s.trim());
         if (!lines.length) {
-          return { ok: false, reason: 'هنوز چیزی چاپ نشده — از ()Serial.begin و ()Serial.println استفاده کن.' };
+          return { ok: false, reason: __('هنوز چیزی چاپ نشده — از ()Serial.begin و ()Serial.println استفاده کن.') };
         }
         if (!lines.some(s => /hello\s*,?\s*world/i.test(s))) {
-          return { ok: false, reason: 'پیام چاپ شد، اما متن آن باید «Hello World» باشد.' };
+          return { ok: false, reason: __('پیام چاپ شد، اما متن آن باید «Hello World» باشد.') };
         }
         return { ok: true };
       }
@@ -869,9 +869,9 @@ void loop() {
 
     ledOn: {
       board: pins => ledSVG(pins.led),
-      hint: 'پین را خروجی کن، LED را روشن کن و «اجرا کن» را بزن.',
-      successText: '🎉 عالی بود! LED روشن شد — مأموریت تکمیل شد.',
-      successLog: '✓ روشن‌شدن LED با موفقیت تشخیص داده شد.',
+      hint: __('پین را خروجی کن، LED را روشن کن و «اجرا کن» را بزن.'),
+      successText: __('🎉 عالی بود! LED روشن شد — مأموریت تکمیل شد.'),
+      successLog: __('✓ روشن‌شدن LED با موفقیت تشخیص داده شد.'),
       starter: pins => `int ledPin = ${pins.led};
 
 void setup() {
@@ -884,14 +884,14 @@ void loop() {
 `,
       check(state) {
         if (state.pinModes[state.pins.led] !== 'OUTPUT') {
-          return { ok: false, reason: `پایه ${state.pins.led} هنوز با ()pinMode روی OUTPUT تنظیم نشده.` };
+          return { ok: false, reason: __f("پایه {0} هنوز با ()pinMode روی OUTPUT تنظیم نشده.", state.pins.led) };
         }
         const pinEvents = ledEventsOf(state);
         if (!pinEvents.length) {
-          return { ok: false, reason: 'هنوز به LED فرمانی نرسیده — از ()digitalWrite استفاده کن.' };
+          return { ok: false, reason: __('هنوز به LED فرمانی نرسیده — از ()digitalWrite استفاده کن.') };
         }
         if (pinEvents[pinEvents.length - 1].val <= 0) {
-          return { ok: false, reason: 'LED خاموش است — با HIGH آن را روشن کن.' };
+          return { ok: false, reason: __('LED خاموش است — با HIGH آن را روشن کن.') };
         }
         return { ok: true };
       }
@@ -899,9 +899,9 @@ void loop() {
 
     blink: {
       board: pins => ledSVG(pins.led),
-      hint: 'کد چشمک‌زن را بنویس و «اجرا کن» را بزن.',
-      successText: '🎉 عالی بود! LED درست چشمک زد — مأموریت تکمیل شد.',
-      successLog: '✓ چشمک‌زدن با موفقیت تشخیص داده شد.',
+      hint: __('کد چشمک‌زن را بنویس و «اجرا کن» را بزن.'),
+      successText: __('🎉 عالی بود! LED درست چشمک زد — مأموریت تکمیل شد.'),
+      successLog: __('✓ چشمک‌زدن با موفقیت تشخیص داده شد.'),
       starter: pins => `int ledPin = ${pins.led};
 
 void setup() {
@@ -914,18 +914,18 @@ void loop() {
 `,
       check(state) {
         if (state.pinModes[state.pins.led] !== 'OUTPUT') {
-          return { ok: false, reason: `پایه ${state.pins.led} هنوز با ()pinMode روی OUTPUT تنظیم نشده.` };
+          return { ok: false, reason: __f("پایه {0} هنوز با ()pinMode روی OUTPUT تنظیم نشده.", state.pins.led) };
         }
         const pinEvents = ledEventsOf(state);
         if (pinEvents.length < 2) {
-          return { ok: false, reason: 'هنوز LED روشن و خاموش (چشمک) نشده — از ()digitalWrite با HIGH و LOW استفاده کن.' };
+          return { ok: false, reason: __('هنوز LED روشن و خاموش (چشمک) نشده — از ()digitalWrite با HIGH و LOW استفاده کن.') };
         }
         let toggles = 0;
         for (let i = 1; i < pinEvents.length; i++) {
           if (pinEvents[i].val !== pinEvents[i - 1].val && pinEvents[i].ms > pinEvents[i - 1].ms) toggles++;
         }
         if (toggles < 2) {
-          return { ok: false, reason: 'LED باید حداقل یک‌بار کامل روشن ← خاموش ← روشن شود (با delay() بین هرکدام).' };
+          return { ok: false, reason: __('LED باید حداقل یک‌بار کامل روشن ← خاموش ← روشن شود (با delay() بین هرکدام).') };
         }
         return { ok: true };
       }
@@ -934,9 +934,9 @@ void loop() {
     esp32blink: {
       board: () => esp32BoardSVG({ led: true }),
       blocksTask: 'blink',
-      hint: 'کد چشمک‌زن را بنویس و «اجرا کن» را بزن — LED روی GPIO2 باید چشمک بزند.',
-      successText: '🎉 آفرین! LED روی GPIO2 روشن و خاموش شد — اولین چشمک‌زن ESP32 تو آماده است.',
-      successLog: '✓ چشمک‌زدن LED روی GPIO2 تشخیص داده شد.',
+      hint: __('کد چشمک‌زن را بنویس و «اجرا کن» را بزن — LED روی GPIO2 باید چشمک بزند.'),
+      successText: __('🎉 آفرین! LED روی GPIO2 روشن و خاموش شد — اولین چشمک‌زن ESP32 تو آماده است.'),
+      successLog: __('✓ چشمک‌زدن LED روی GPIO2 تشخیص داده شد.'),
       starter: pins => `int ledPin = ${pins.led};
 
 void setup() {
@@ -949,18 +949,18 @@ void loop() {
 `,
       check(state) {
         if (state.pinModes[state.pins.led] !== 'OUTPUT') {
-          return { ok: false, reason: `پایه ${state.pins.led} هنوز با ()pinMode روی OUTPUT تنظیم نشده.` };
+          return { ok: false, reason: __f("پایه {0} هنوز با ()pinMode روی OUTPUT تنظیم نشده.", state.pins.led) };
         }
         const pinEvents = ledEventsOf(state);
         if (pinEvents.length < 2) {
-          return { ok: false, reason: 'هنوز LED روشن و خاموش (چشمک) نشده — از ()digitalWrite با HIGH و LOW روی پایه‌ی ۲ استفاده کن.' };
+          return { ok: false, reason: __('هنوز LED روشن و خاموش (چشمک) نشده — از ()digitalWrite با HIGH و LOW روی پایه‌ی ۲ استفاده کن.') };
         }
         let toggles = 0;
         for (let i = 1; i < pinEvents.length; i++) {
           if (pinEvents[i].val !== pinEvents[i - 1].val && pinEvents[i].ms > pinEvents[i - 1].ms) toggles++;
         }
         if (toggles < 2) {
-          return { ok: false, reason: 'LED باید حداقل یک‌بار کامل روشن ← خاموش ← روشن شود (با delay() بین هرکدام).' };
+          return { ok: false, reason: __('LED باید حداقل یک‌بار کامل روشن ← خاموش ← روشن شود (با delay() بین هرکدام).') };
         }
         return { ok: true };
       }
@@ -972,9 +972,9 @@ void loop() {
       hasPhone: true,
       baud: 115200,
       maxRunMs: 120000,
-      hint: 'کد کامل است؛ «اجرا کن» را بزن و وقتی برد آنلاین شد، از گوشیِ مجازی /on را بزن.',
-      successText: '🎉 آفرین! چراغ را از راه دور و با Wi-Fi روشن کردی — مأموریت تکمیل شد.',
-      successLog: '✓ درخواستِ /on از گوشی به ESP32 رسید و LED روشن شد.',
+      hint: __('کد کامل است؛ «اجرا کن» را بزن و وقتی برد آنلاین شد، از گوشیِ مجازی /on را بزن.'),
+      successText: __('🎉 آفرین! چراغ را از راه دور و با Wi-Fi روشن کردی — مأموریت تکمیل شد.'),
+      successLog: __('✓ درخواستِ /on از گوشی به ESP32 رسید و LED روشن شد.'),
       starter: pins => `#include <WiFi.h>
 #include <WebServer.h>
 
@@ -1008,17 +1008,17 @@ void loop() {
 `,
       check(state) {
         const w = state.wifi;
-        if (!w.began) return { ok: false, reason: 'هنوز با WiFi.begin("MyHome", "12345678") به مودم وصل نشده‌ای.' };
+        if (!w.began) return { ok: false, reason: __('هنوز با WiFi.begin("MyHome", "12345678") به مودم وصل نشده‌ای.') };
         if (!w.connected) {
           return { ok: false, reason: (w.ssidOk && w.passOk)
-            ? 'برد هنوز به Wi-Fi وصل نشده — بعد از WiFi.begin باید صبر کنی تا WiFi.status() برابر WL_CONNECTED شود.'
-            : 'برد به Wi-Fi وصل نشد — نام و رمز را با مودمِ مجازی (MyHome و 12345678) یکی کن.' };
+            ? __('برد هنوز به Wi-Fi وصل نشده — بعد از WiFi.begin باید صبر کنی تا WiFi.status() برابر WL_CONNECTED شود.')
+            : __('برد به Wi-Fi وصل نشد — نام و رمز را با مودمِ مجازی (MyHome و 12345678) یکی کن.') };
         }
-        if (!w.serverBegun) return { ok: false, reason: 'وب‌سرور هنوز راه نیفتاده — بعد از ثبتِ مسیرها server.begin() را صدا بزن.' };
-        if (w.routes.indexOf('/on') < 0) return { ok: false, reason: 'برای مسیرِ /on هنوز server.on("/on", ...) ننوشته‌ای.' };
-        if (!w.requests.some(r => r.path === '/on')) return { ok: false, reason: 'برد آنلاین است؛ حالا از گوشیِ مجازی دکمه‌ی /on را بزن.' };
+        if (!w.serverBegun) return { ok: false, reason: __('وب‌سرور هنوز راه نیفتاده — بعد از ثبتِ مسیرها server.begin() را صدا بزن.') };
+        if (w.routes.indexOf('/on') < 0) return { ok: false, reason: __('برای مسیرِ /on هنوز server.on("/on", ...) ننوشته‌ای.') };
+        if (!w.requests.some(r => r.path === '/on')) return { ok: false, reason: __('برد آنلاین است؛ حالا از گوشیِ مجازی دکمه‌ی /on را بزن.') };
         if (!w.requests.some(r => r.path === '/on' && r.sent && r.code === 200 && r.led === 1)) {
-          return { ok: false, reason: 'مسیرِ /on باید LED را با digitalWrite(ledPin, HIGH) روشن کند و با server.send(200, ...) جواب بدهد.' };
+          return { ok: false, reason: __('مسیرِ /on باید LED را با digitalWrite(ledPin, HIGH) روشن کند و با server.send(200, ...) جواب بدهد.') };
         }
         return { ok: true };
       }
@@ -1028,9 +1028,9 @@ void loop() {
       board: pins => ledButtonSVG(pins.led, pins.button),
       hasButton: true,
       maxRunMs: 60000,
-      hint: 'کد را بنویس، «اجرا کن» را بزن و بعد دکمه‌ی مدار را نگه دار.',
-      successText: '🎉 آفرین! دکمه LED را کنترل کرد — مأموریت تکمیل شد.',
-      successLog: '✓ روشن‌شدن با فشار دکمه و خاموش‌شدن با رها کردن تشخیص داده شد.',
+      hint: __('کد را بنویس، «اجرا کن» را بزن و بعد دکمه‌ی مدار را نگه دار.'),
+      successText: __('🎉 آفرین! دکمه LED را کنترل کرد — مأموریت تکمیل شد.'),
+      successLog: __('✓ روشن‌شدن با فشار دکمه و خاموش‌شدن با رها کردن تشخیص داده شد.'),
       starter: pins => `int ledPin = ${pins.led};
 int buttonPin = ${pins.button};
 
@@ -1045,20 +1045,20 @@ void loop() {
 `,
       check(state) {
         if (state.pinModes[state.pins.led] !== 'OUTPUT') {
-          return { ok: false, reason: `پایه ${state.pins.led} هنوز با ()pinMode روی OUTPUT تنظیم نشده.` };
+          return { ok: false, reason: __f("پایه {0} هنوز با ()pinMode روی OUTPUT تنظیم نشده.", state.pins.led) };
         }
         const btnMode = state.pinModes[state.pins.button];
         if (btnMode !== 'INPUT' && btnMode !== 'INPUT_PULLUP') {
-          return { ok: false, reason: `پایه ${state.pins.button} باید با ()pinMode روی INPUT_PULLUP تنظیم شود.` };
+          return { ok: false, reason: __f("پایه {0} باید با ()pinMode روی INPUT_PULLUP تنظیم شود.", state.pins.button) };
         }
         if (!state.buttonSeen) {
-          return { ok: false, reason: 'حالا دکمه‌ی مدار را نگه دار تا نتیجه را ببینیم.' };
+          return { ok: false, reason: __('حالا دکمه‌ی مدار را نگه دار تا نتیجه را ببینیم.') };
         }
         if (!state.ledOnWhilePressed) {
-          return { ok: false, reason: 'با فشار دکمه، LED باید روشن شود — یادت باشد با INPUT_PULLUP دکمه‌ی فشرده LOW می‌خواند، نه HIGH.' };
+          return { ok: false, reason: __('با فشار دکمه، LED باید روشن شود — یادت باشد با INPUT_PULLUP دکمه‌ی فشرده LOW می‌خواند، نه HIGH.') };
         }
         if (!state.ledOffWhenReleased) {
-          return { ok: false, reason: 'دکمه را رها کن؛ LED باید خاموش شود.' };
+          return { ok: false, reason: __('دکمه را رها کن؛ LED باید خاموش شود.') };
         }
         return { ok: true };
       }
@@ -1068,9 +1068,9 @@ void loop() {
       board: pins => potSVG(pins.led, pins.pot),
       hasPot: true,
       maxRunMs: 60000,
-      hint: 'کد را بنویس، «اجرا کن» را بزن و بعد دسته‌ی ولوم را از کم به زیاد بکش.',
-      successText: '🎉 آفرین! روشنایی LED با ولوم کنترل شد — مأموریت تکمیل شد.',
-      successLog: '✓ کنترل روشنایی با پتانسیومتر (analogRead + PWM) تشخیص داده شد.',
+      hint: __('کد را بنویس، «اجرا کن» را بزن و بعد دسته‌ی ولوم را از کم به زیاد بکش.'),
+      successText: __('🎉 آفرین! روشنایی LED با ولوم کنترل شد — مأموریت تکمیل شد.'),
+      successLog: __('✓ کنترل روشنایی با پتانسیومتر (analogRead + PWM) تشخیص داده شد.'),
       starter: pins => `int ledPin = ${pins.led};
 int potPin = ${pins.pot};
 
@@ -1084,17 +1084,17 @@ void loop() {
 `,
       check(state) {
         if (state.pinModes[state.pins.led] !== 'OUTPUT') {
-          return { ok: false, reason: `پایه ${state.pins.led} هنوز با ()pinMode روی OUTPUT تنظیم نشده.` };
+          return { ok: false, reason: __f("پایه {0} هنوز با ()pinMode روی OUTPUT تنظیم نشده.", state.pins.led) };
         }
         if (!state.potSeen) {
-          return { ok: false, reason: 'هنوز از ()analogRead روی پین ولوم استفاده نشده.' };
+          return { ok: false, reason: __('هنوز از ()analogRead روی پین ولوم استفاده نشده.') };
         }
         const pinEvents = ledEventsOf(state);
         if (!pinEvents.length) {
-          return { ok: false, reason: 'هنوز به LED فرمانی نرسیده — از ()analogWrite استفاده کن.' };
+          return { ok: false, reason: __('هنوز به LED فرمانی نرسیده — از ()analogWrite استفاده کن.') };
         }
         if (!state.lowBrightnessSeen || !state.highBrightnessSeen) {
-          return { ok: false, reason: 'دسته‌ی ولوم را کامل از کم به زیاد بچرخان تا روشنایی LED واقعاً کم و زیاد شود.' };
+          return { ok: false, reason: __('دسته‌ی ولوم را کامل از کم به زیاد بچرخان تا روشنایی LED واقعاً کم و زیاد شود.') };
         }
         return { ok: true };
       }
@@ -1106,9 +1106,9 @@ void loop() {
       halMain: true,
       activeLow: true,
       maxRunMs: 60000,
-      hint: 'کد داخل while(1) را بنویس و «اجرا کن» را بزن — LED روی PC13 باید چشمک بزند.',
-      successText: '🎉 آفرین! LED روی PC13 روشن و خاموش شد — اولین چشمک‌زن STM32 تو آماده است.',
-      successLog: '✓ چشمک‌زدن LED روی PC13 با HAL تشخیص داده شد.',
+      hint: __('کد داخل while(1) را بنویس و «اجرا کن» را بزن — LED روی PC13 باید چشمک بزند.'),
+      successText: __('🎉 آفرین! LED روی PC13 روشن و خاموش شد — اولین چشمک‌زن STM32 تو آماده است.'),
+      successLog: __('✓ چشمک‌زدن LED روی PC13 با HAL تشخیص داده شد.'),
       starter: () => `int main(void)
 {
   HAL_Init();
@@ -1124,14 +1124,14 @@ void loop() {
       check(state) {
         const pinEvents = ledEventsOf(state);
         if (!pinEvents.length) {
-          return { ok: false, reason: 'هنوز به LED روی PC13 فرمانی نرسیده — از HAL_GPIO_WritePin یا HAL_GPIO_TogglePin با GPIOC و GPIO_PIN_13 استفاده کن.' };
+          return { ok: false, reason: __('هنوز به LED روی PC13 فرمانی نرسیده — از HAL_GPIO_WritePin یا HAL_GPIO_TogglePin با GPIOC و GPIO_PIN_13 استفاده کن.') };
         }
         let toggles = 0;
         for (let i = 1; i < pinEvents.length; i++) {
           if (pinEvents[i].val !== pinEvents[i - 1].val && pinEvents[i].ms > pinEvents[i - 1].ms) toggles++;
         }
         if (toggles < 2) {
-          return { ok: false, reason: 'LED باید حداقل یک‌بار کامل روشن ← خاموش ← روشن شود (با HAL_Delay() بین هرکدام).' };
+          return { ok: false, reason: __('LED باید حداقل یک‌بار کامل روشن ← خاموش ← روشن شود (با HAL_Delay() بین هرکدام).') };
         }
         return { ok: true };
       }
@@ -1140,9 +1140,9 @@ void loop() {
     servo: {
       board: pins => servoSVG(pins.led),
       maxRunMs: 60000,
-      hint: 'کد را بنویس و «اجرا کن» را بزن — بازوی سروو باید بین ۰ تا ۱۸۰ درجه رفت‌وبرگشت کند.',
-      successText: '🎉 آفرین! سروو بین ۰ تا ۱۸۰ درجه حرکت کرد — مأموریت تکمیل شد.',
-      successLog: '✓ چرخش کامل سروو (Servo.write) بین کم و زیاد تشخیص داده شد.',
+      hint: __('کد را بنویس و «اجرا کن» را بزن — بازوی سروو باید بین ۰ تا ۱۸۰ درجه رفت‌وبرگشت کند.'),
+      successText: __('🎉 آفرین! سروو بین ۰ تا ۱۸۰ درجه حرکت کرد — مأموریت تکمیل شد.'),
+      successLog: __('✓ چرخش کامل سروو (Servo.write) بین کم و زیاد تشخیص داده شد.'),
       starter: pins => `#include <Servo.h>
 Servo myServo;
 int servoPin = ${pins.led};
@@ -1158,16 +1158,16 @@ void loop() {
 `,
       check(state) {
         if (!state.servoAttached) {
-          return { ok: false, reason: 'هنوز سروو با ()attach به پین سیگنال وصل نشده.' };
+          return { ok: false, reason: __('هنوز سروو با ()attach به پین سیگنال وصل نشده.') };
         }
         if (state.servoPin !== undefined && state.servoPin !== state.pins.led) {
-          return { ok: false, reason: `سروو باید به پایه‌ی ${state.pins.led} وصل شود.` };
+          return { ok: false, reason: __f("سروو باید به پایه‌ی {0} وصل شود.", state.pins.led) };
         }
         if (!state.servoSeen) {
-          return { ok: false, reason: 'هنوز زاویه‌ای با ()myServo.write به سروو فرستاده نشده.' };
+          return { ok: false, reason: __('هنوز زاویه‌ای با ()myServo.write به سروو فرستاده نشده.') };
         }
         if (!state.lowAngleSeen || !state.highAngleSeen) {
-          return { ok: false, reason: 'زاویه را کامل از نزدیک ۰ تا نزدیک ۱۸۰ درجه تغییر بده تا حرکت کامل دیده شود.' };
+          return { ok: false, reason: __('زاویه را کامل از نزدیک ۰ تا نزدیک ۱۸۰ درجه تغییر بده تا حرکت کامل دیده شود.') };
         }
         return { ok: true };
       }
@@ -1232,7 +1232,7 @@ void loop() {
       maxRunMs: 10 * 60 * 1000,
       hint: h.hint,
       successText: h.successText,
-      successLog: h.successLog || '✓ مأموریت با HAL انجام شد.',
+      successLog: h.successLog || __('✓ مأموریت با HAL انجام شد.'),
       starter: () => h.starter,
       check: () => ({ ok: false })
     };
@@ -1263,24 +1263,24 @@ void loop() {
         <div class="sim-status" data-state="idle">${task.hint}</div>
         ${task.hasButton ? `
         <div class="sim-hw-row">
-          <button type="button" class="sim-push-key" data-act="press">🔘 دکمه را نگه دار</button>
-          <span class="sim-hw-note">با ماوس یا انگشت نگه دار — رها کنی، دکمه آزاد می‌شود.</span>
+          <button type="button" class="sim-push-key" data-act="press">${__("🔘 دکمه را نگه دار")}</button>
+          <span class="sim-hw-note">${__("با ماوس یا انگشت نگه دار — رها کنی، دکمه آزاد می‌شود.")}</span>
         </div>` : ''}
         ${task.hasPot ? `
         <div class="sim-hw-row sim-hw-row-pot">
           <span class="sim-pot-icon" aria-hidden="true">🎚️</span>
-          <input type="range" class="sim-pot-range" min="0" max="1023" value="512" step="1" data-act="pot" aria-label="ولوم"/>
-          <span class="sim-hw-note">دسته‌ی ولوم را بکش — چپ = تاریک، راست = کاملاً روشن.</span>
+          <input type="range" class="sim-pot-range" min="0" max="1023" value="512" step="1" data-act="pot" aria-label="${__("ولوم")}"/>
+          <span class="sim-hw-note">${__("دسته‌ی ولوم را بکش — چپ = تاریک، راست = کاملاً روشن.")}</span>
         </div>` : ''}
         ${task.hasPhone ? `
         <div class="sim-wifi">
           <div class="sim-wifi-row">
-            <span class="sim-wifi-chip" data-role="wifi-chip">📶 ESP32: آفلاین</span>
-            <span class="sim-hw-note">مودمِ مجازی: <bdi dir="ltr">MyHome</bdi> — رمز: <bdi dir="ltr">12345678</bdi></span>
+            <span class="sim-wifi-chip" data-role="wifi-chip">${__("📶 ESP32: آفلاین")}</span>
+            <span class="sim-hw-note">${__("مودمِ مجازی:")} <bdi dir="ltr">MyHome</bdi> ${__("— رمز:")} <bdi dir="ltr">12345678</bdi></span>
           </div>
           <div class="sim-phone">
             <div class="sim-phone-url" dir="ltr" data-role="phone-url">http://—</div>
-            <div class="sim-phone-screen" dir="ltr" data-role="phone-screen">اول برنامه را اجرا کن تا برد به Wi-Fi وصل شود.</div>
+            <div class="sim-phone-screen" dir="ltr" data-role="phone-screen">${__("اول برنامه را اجرا کن تا برد به Wi-Fi وصل شود.")}</div>
             <div class="sim-phone-btns">
               <button type="button" class="sim-phone-btn" data-path="/on">/on</button>
               <button type="button" class="sim-phone-btn" data-path="/off">/off</button>
@@ -1289,16 +1289,16 @@ void loop() {
         </div>` : ''}
         <div class="sim-editor-block">
           <div class="sim-editor-head">
-            <span class="sim-editor-title">${isStm ? 'کد STM32' : 'کد آردوینو'} <span dir="ltr" style="unicode-bidi: isolate;">(${isStm ? 'C / HAL' : 'Arduino C++'})</span></span>
+            <span class="sim-editor-title">${isStm ? __('کد STM32') : __('کد آردوینو')} <span dir="ltr" style="unicode-bidi: isolate;">(${isStm ? 'C / HAL' : 'Arduino C++'})</span></span>
             <div class="sim-actions">
-              <div class="sim-mode-toggle" role="group" aria-label="حالت ادیتور">
-                <button type="button" class="is-active" data-act="mode-text">🔤 متنی</button>
-                <button type="button" data-act="mode-blocks">🧩 بلوکی</button>
+              <div class="sim-mode-toggle" role="group" aria-label="${__("حالت ادیتور")}">
+                <button type="button" class="is-active" data-act="mode-text">${__("🔤 متنی")}</button>
+                <button type="button" data-act="mode-blocks">${__("🧩 بلوکی")}</button>
               </div>
-              <button type="button" class="sim-btn sim-btn-ghost sim-btn-expand" data-act="expand" title="بزرگ‌نمایی کد">⛶</button>
-              <button type="button" class="sim-btn sim-btn-ghost" data-act="reset">↺ کد اولیه</button>
-              <button type="button" class="sim-btn sim-btn-stop" data-act="stop" disabled>■ توقف</button>
-              <button type="button" class="sim-btn sim-btn-run" data-act="run">▶ اجرا کن</button>
+              <button type="button" class="sim-btn sim-btn-ghost sim-btn-expand" data-act="expand" title="${__("بزرگ‌نمایی کد")}">⛶</button>
+              <button type="button" class="sim-btn sim-btn-ghost" data-act="reset">${__("↺ کد اولیه")}</button>
+              <button type="button" class="sim-btn sim-btn-stop" data-act="stop" disabled>${__("■ توقف")}</button>
+              <button type="button" class="sim-btn sim-btn-run" data-act="run">${__("▶ اجرا کن")}</button>
             </div>
           </div>
           <div class="sim-editor-wrap">
@@ -1314,8 +1314,8 @@ void loop() {
         </div>
         <div class="sim-console-wrap" data-role="console-wrap">
           <div class="sim-console-head">
-            <span class="sim-console-head-label">${isStm ? 'کنسول' : 'مانیتور سریال'}</span>
-            <select class="sim-baud-select" data-act="baud" aria-label="نرخ باد کنسول"${isStm ? ' style="display:none"' : ''}>
+            <span class="sim-console-head-label">${isStm ? __('کنسول') : __('مانیتور سریال')}</span>
+            <select class="sim-baud-select" data-act="baud" aria-label="${__("نرخ باد کنسول")}"${isStm ? ' style="display:none"' : ''}>
               <option value="9600" selected>9600</option>
               <option value="19200">19200</option>
               <option value="38400">38400</option>
@@ -1528,7 +1528,7 @@ void loop() {
       textSpan.textContent = ghostSuggestion.text;
       const tabBadge = document.createElement('span');
       tabBadge.className = 'sim-ghost-tab';
-      tabBadge.textContent = isTouchDevice ? 'بزن ✓' : 'Tab ⇥';
+      tabBadge.textContent = isTouchDevice ? __('بزن ✓') : 'Tab ⇥';
       // pointerdown (نه click) با preventDefault تا لمسِ نشان روی گوشی باعثِ از-فوکوس-افتادنِ
       // textarea و بسته‌شدنِ صفحه‌کلید نشه — همون‌جا، بدون فاصله، پیشنهاد پذیرفته می‌شه.
       tabBadge.addEventListener('pointerdown', (e) => { e.preventDefault(); acceptGhost(); });
@@ -1613,8 +1613,8 @@ void loop() {
       isFullscreen = on;
       el.editorBlock.classList.toggle('is-sim-fullscreen', on);
       document.body.classList.toggle('sim-fullscreen-lock', on);
-      el.expandBtn.textContent = on ? '✕ بستن' : '⛶';
-      el.expandBtn.title = on ? 'بستن حالت تمام‌صفحه' : 'بزرگ‌نمایی کد';
+      el.expandBtn.textContent = on ? __('✕ بستن') : '⛶';
+      el.expandBtn.title = on ? __('بستن حالت تمام‌صفحه') : __('بزرگ‌نمایی کد');
       if (on) {
         document.body.appendChild(el.editorBlock);
         if (boardHome) el.editorBlock.insertBefore(el.boardWrap, el.editorBlock.firstChild);
@@ -1808,7 +1808,7 @@ function setSerialScreenText(text) {
       if (el.buttonGroup) el.buttonGroup.classList.toggle('is-pressed', held);
       if (el.pressBtn) {
         el.pressBtn.classList.toggle('is-pressed', held);
-        el.pressBtn.textContent = held ? '🔘 در حال فشردن...' : '🔘 دکمه را نگه دار';
+        el.pressBtn.textContent = held ? __('🔘 در حال فشردن...') : __('🔘 دکمه را نگه دار');
         // :active در CSS فقط با فشارِ واقعیِ ماوس/انگشت فعال می‌شود، نه با
         // فراخوانیِ برنامه‌ایِ setButtonHeld (مثلاً فشارِ خودکار بعد از اجرا)؛
         // پس این افکت را مستقیم این‌جا ست می‌کنیم تا در هر دو حالت یکسان باشد.
@@ -1911,8 +1911,8 @@ function setSerialScreenText(text) {
     function setWifiChip(mode) {
       if (!phoneUi) return;
       phoneUi.chip.setAttribute('data-mode', mode);
-      phoneUi.chip.textContent = mode === 'online' ? `📶 آنلاین — IP: ${NET.ip}`
-        : mode === 'connecting' ? `📶 در حال اتصال به ${NET.ssid}…` : '📶 ESP32: آفلاین';
+      phoneUi.chip.textContent = mode === 'online' ? __f("📶 آنلاین — IP: {0}", NET.ip)
+        : mode === 'connecting' ? __f("📶 در حال اتصال به {0}…", NET.ssid) : __('📶 ESP32: آفلاین');
     }
     function setPhone(url, text, kind) {
       if (!phoneUi) return;
@@ -1923,27 +1923,27 @@ function setSerialScreenText(text) {
     function resetWifiUi() {
       phoneQueue.length = 0;
       setWifiChip('offline');
-      setPhone('http://—', 'اول برنامه را اجرا کن تا برد به Wi-Fi وصل شود.', 'idle');
+      setPhone('http://—', __('اول برنامه را اجرا کن تا برد به Wi-Fi وصل شود.'), 'idle');
     }
     function phoneSend(path) {
       const w = state.wifi;
       const url = 'http://' + NET.ip + path;
       if (!running || !w.connected) {
-        setPhone(url, '⚠️ اتصال برقرار نشد — برد آنلاین نیست. اول برنامه را اجرا کن و صبر کن به Wi-Fi وصل شود.', 'error');
+        setPhone(url, __('⚠️ اتصال برقرار نشد — برد آنلاین نیست. اول برنامه را اجرا کن و صبر کن به Wi-Fi وصل شود.'), 'error');
         return;
       }
       if (!w.serverBegun) {
-        setPhone(url, '⚠️ ERR_CONNECTION_REFUSED — وب‌سرور راه نیفتاده؛ server.begin() را صدا بزن.', 'error');
+        setPhone(url, __('⚠️ ERR_CONNECTION_REFUSED — وب‌سرور راه نیفتاده؛ server.begin() را صدا بزن.'), 'error');
         return;
       }
       const req = { path, picked: false };
       phoneQueue.push(req);
-      setPhone(url, '⏳ منتظر پاسخِ برد…', 'wait');
+      setPhone(url, __('⏳ منتظر پاسخِ برد…'), 'wait');
       setTimeout(() => {
         if (req.picked || !phoneQueue.includes(req)) return;
         phoneQueue.splice(phoneQueue.indexOf(req), 1);
-        setPhone(url, '⏱️ پاسخی نیامد (timeout).', 'error');
-        logLine('✗ برد به درخواستِ گوشی گوش نداد — در loop() باید مدام server.handleClient() صدا زده شود.', 'sim-error');
+        setPhone(url, __('⏱️ پاسخی نیامد (timeout).'), 'error');
+        logLine(__('✗ برد به درخواستِ گوشی گوش نداد — در loop() باید مدام server.handleClient() صدا زده شود.'), 'sim-error');
       }, 2500);
     }
     if (phoneUi) {
@@ -2046,8 +2046,8 @@ function setSerialScreenText(text) {
             if (!w.failHint) {
               w.failHint = true;
               logLine(!w.ssidOk
-                ? `✗ شبکه‌ی «${w.ssid}» پیدا نشد — نامِ مودمِ مجازی ${NET.ssid} است.`
-                : '✗ رمزِ Wi-Fi اشتباه است — رمزِ مودمِ مجازی 12345678 است.', 'sim-error');
+                ? __f("✗ شبکه‌ی «{0}» پیدا نشد — نامِ مودمِ مجازی {1} است.", w.ssid, NET.ssid)
+                : __('✗ رمزِ Wi-Fi اشتباه است — رمزِ مودمِ مجازی 12345678 است.'), 'sim-error');
               setWifiChip('offline');
             }
             return !w.ssidOk ? 1 : 4;                              // WL_NO_SSID_AVAIL / WL_CONNECT_FAILED
@@ -2073,19 +2073,19 @@ function setSerialScreenText(text) {
           const req = state.wifi.current;
           if (!req) return;
           req.sent = true; req.code = code; req.body = body;
-          setPhone('http://' + NET.ip + req.path, code === 200 ? (body || '(پاسخِ خالی)') : `${code} — ${body}`, code === 200 ? 'ok' : 'error');
+          setPhone('http://' + NET.ip + req.path, code === 200 ? (body || __('(پاسخِ خالی)')) : `${code} — ${body}`, code === 200 ? 'ok' : 'error');
         },
         webEndRequest(req, sent) {
           const w = state.wifi;
           w.current = null;
           w.requests.push({ path: req.path, sent, code: req.code, body: req.body, led: req.led });
           if (!sent) {
-            setPhone('http://' + NET.ip + req.path, '⏱️ برد جواب نداد (timeout).', 'error');
-            logLine('✗ تابعِ مسیرِ ' + req.path + ' جوابی نفرستاد — در آخرش server.send(200, "text/plain", "...") را صدا بزن.', 'sim-error');
+            setPhone('http://' + NET.ip + req.path, __('⏱️ برد جواب نداد (timeout).'), 'error');
+            logLine(__('✗ تابعِ مسیرِ ') + req.path + __(' جوابی نفرستاد — در آخرش server.send(200, "text/plain", "...") را صدا بزن.'), 'sim-error');
           } else if (req.code === 404) {
-            logLine('ℹ️ برای مسیرِ ' + req.path + ' هنوز server.on(...) ننوشته‌ای (۴۰۴).', 'sim-error');
+            logLine(__('ℹ️ برای مسیرِ ') + req.path + __(' هنوز server.on(...) ننوشته‌ای (۴۰۴).'), 'sim-error');
           } else if (req.path === '/on' && req.led !== 1) {
-            logLine('ℹ️ مسیرِ /on جواب داد ولی LED را روشن نکرد — در تابعِ آن digitalWrite(ledPin, HIGH) بنویس.', 'sim-error');
+            logLine(__('ℹ️ مسیرِ /on جواب داد ولی LED را روشن نکرد — در تابعِ آن digitalWrite(ledPin, HIGH) بنویس.'), 'sim-error');
           }
         },
         serialBegin(baud) {
@@ -2094,13 +2094,13 @@ function setSerialScreenText(text) {
         serialNotBegun() {
           if (state.serialNotBegunWarned) return;
           state.serialNotBegunWarned = true;
-          logLine('✗ قبل از Serial.print/println باید Serial.begin() فراخوانی شود.', 'sim-error');
+          logLine(__('✗ قبل از Serial.print/println باید Serial.begin() فراخوانی شود.'), 'sim-error');
         },
         serialPrint(text) {
           if (state.serialBaud !== undefined && state.serialBaud !== selectedBaud) {
             if (!state.serialBaudMismatchWarned) {
               state.serialBaudMismatchWarned = true;
-              logLine(`✗ نرخ باد مانیتور سریال (${selectedBaud}) با ()Serial.begin در کد (${state.serialBaud}) یکی نیست — مانیتور را روی نرخ درست تنظیم کن.`, 'sim-error');
+              logLine(__f("✗ نرخ باد مانیتور سریال ({0}) با ()Serial.begin در کد ({1}) یکی نیست — مانیتور را روی نرخ درست تنظیم کن.", selectedBaud, state.serialBaud), 'sim-error');
             }
             text.split('\n').forEach((seg, idx, arr) => {
               if (idx < arr.length - 1 || seg) { logLine(garbleText(seg), 'sim-serial-garbled'); setSerialScreenText(garbleText(seg)); }
@@ -2121,7 +2121,7 @@ function setSerialScreenText(text) {
 
     // مأموریت‌های رباتیک: «تمام‌شدن» را خودِ سخت‌افزارِ شبیه‌سازی‌شده (hal-code-editor.js) می‌گوید
     function runCheck() {
-      if (halOpts) return { ok: !!(halHw && halHw.isDone()), reason: halOpts.pending || 'هنوز کامل نیست — شرطِ مأموریت را در شبیه‌ساز ببین.' };
+      if (halOpts) return { ok: !!(halHw && halHw.isDone()), reason: halOpts.pending || __('هنوز کامل نیست — شرطِ مأموریت را در شبیه‌ساز ببین.') };
       return task.check(state);
     }
 
@@ -2140,18 +2140,18 @@ function setSerialScreenText(text) {
       state.pullupHintShown = true;
       runToken++; // هر step() در حال انتظار را متوقف می‌کند
       setRunning(false);
-      setStatus('LED بدونِ فشردنِ دکمه روشن شد — شرطِ دکمه را وارونه نوشته‌ای.', 'error');
-      logLine('✗ دکمه فشرده نشده ولی LED روشن است. با INPUT_PULLUP دکمه‌ی فشرده LOW می‌خواند.', 'sim-error');
+      setStatus(__('LED بدونِ فشردنِ دکمه روشن شد — شرطِ دکمه را وارونه نوشته‌ای.'), 'error');
+      logLine(__('✗ دکمه فشرده نشده ولی LED روشن است. با INPUT_PULLUP دکمه‌ی فشرده LOW می‌خواند.'), 'sim-error');
       showSimDialog({
-        title: '⚠️ دکمه را نفشرده‌ای، ولی LED روشن است!',
+        title: __('⚠️ دکمه را نفشرده‌ای، ولی LED روشن است!'),
         bodyHtml:
-          '<p>الان دکمه فشرده نشده، اما برنامه‌ی تو LED را روشن کرده است.</p>' +
-          '<p>چون دکمه را با <code>INPUT_PULLUP</code> وصل کرده‌ایم، منطقش برعکس است:</p>' +
-          '<ul><li>دکمه <b>رها</b> است ← <code>digitalRead</code> برابر <code>HIGH</code></li>' +
-          '<li>دکمه <b>فشرده</b> است ← <code>digitalRead</code> برابر <code>LOW</code></li></ul>' +
-          '<p>پس باید بررسی کنی اگر مقدارِ دکمه <code>LOW</code> بود، چراغ روشن شود:</p>' +
+          __('<p>الان دکمه فشرده نشده، اما برنامه‌ی تو LED را روشن کرده است.</p>') +
+          __('<p>چون دکمه را با <code>INPUT_PULLUP</code> وصل کرده‌ایم، منطقش برعکس است:</p>') +
+          __('<ul><li>دکمه <b>رها</b> است ← <code>digitalRead</code> برابر <code>HIGH</code></li>') +
+          __('<li>دکمه <b>فشرده</b> است ← <code>digitalRead</code> برابر <code>LOW</code></li></ul>') +
+          __('<p>پس باید بررسی کنی اگر مقدارِ دکمه <code>LOW</code> بود، چراغ روشن شود:</p>') +
           '<p><code>if (digitalRead(' + pins.button + ') == LOW)</code></p>',
-        okText: 'فهمیدم، درستش می‌کنم'
+        okText: __('فهمیدم، درستش می‌کنم')
       });
     }
 
@@ -2182,7 +2182,7 @@ function setSerialScreenText(text) {
       setSerialScreenText('');
       setLed(0);
       hostPinsReset();
-      setStatus('در حال اجرا…', 'running');
+      setStatus(__('در حال اجرا…'), 'running');
 
       setErrorLine(0);
       if (halOpts && halOpts.preRun) {
@@ -2194,7 +2194,7 @@ function setSerialScreenText(text) {
       try {
         ast = ArduinoLang.compile(prelude + el.editor.value);
       } catch (e) {
-        setStatus('خطا در کد — کنسول را ببین.', 'error');
+        setStatus(__('خطا در کد — کنسول را ببین.'), 'error');
         // compile() may attach `.errors` (an array) when it found more than
         // one independent problem — log each on its own console line AND
         // highlight every one of their lines in the editor, not just the
@@ -2218,7 +2218,7 @@ function setSerialScreenText(text) {
       const interp = new ArduinoLang.Interpreter(ast, io);
       let gen;
       try { gen = interp.run(); }
-      catch (e) { setStatus('خطا در اجرا.', 'error'); logLine('✗ ' + e.message, 'sim-error'); return; }
+      catch (e) { setStatus(__('خطا در اجرا.'), 'error'); logLine('✗ ' + e.message, 'sim-error'); return; }
 
       setRunning(true);
       stopRequested = false;
@@ -2229,10 +2229,10 @@ function setSerialScreenText(text) {
         if (myToken !== runToken) return;
         setRunning(false);
         if (reason === 'stopped') {
-          setStatus('اجرا متوقف شد.', 'idle');
+          setStatus(__('اجرا متوقف شد.'), 'idle');
         } else if (reason === 'timeout') {
           const check = runCheck();
-          setStatus(check.ok ? 'خیلی خوبه — می‌تونی اجرا را ادامه بدی یا مأموریت را تمام‌شده علامت بزنی.' : ('هنوز کامل نیست: ' + check.reason), check.ok ? 'success' : 'idle');
+          setStatus(check.ok ? __('خیلی خوبه — می‌تونی اجرا را ادامه بدی یا مأموریت را تمام‌شده علامت بزنی.') : (__('هنوز کامل نیست: ') + check.reason), check.ok ? 'success' : 'idle');
         }
       }
 
@@ -2244,7 +2244,7 @@ function setSerialScreenText(text) {
           res = gen.next();
         } catch (e) {
           setRunning(false);
-          setStatus('خطا هنگام اجرا — کنسول را ببین.', 'error');
+          setStatus(__('خطا هنگام اجرا — کنسول را ببین.'), 'error');
           logLine('✗ ' + e.message, 'sim-error');
           return;
         }
@@ -2258,7 +2258,7 @@ function setSerialScreenText(text) {
           const check = runCheck();
           if (check.ok && !successFired) { fireSuccess(); return; }
           setRunning(false);
-          setStatus('برنامه به پایان رسید.', 'idle');
+          setStatus(__('برنامه به پایان رسید.'), 'idle');
           return;
         }
 
@@ -2290,7 +2290,7 @@ function setSerialScreenText(text) {
       resetWifiUi();
       if (halHw) halHw.reset();
       hostPinsReset();
-      setStatus('اجرا متوقف شد.', 'idle');
+      setStatus(__('اجرا متوقف شد.'), 'idle');
     }
 
     function resetCode() {
@@ -2316,7 +2316,7 @@ function setSerialScreenText(text) {
         setPotVisual(potValue);
       }
       if (el.servoHorn) setServoVisual(90);
-      setStatus('کد به حالت اولیه بازگشت.', 'idle');
+      setStatus(__('کد به حالت اولیه بازگشت.'), 'idle');
       if (blockMode && blockWorkspace) { if (!loadCurrentCodeIntoBlocks()) setMode('text', { skipSync: true, skipPersist: true }); }
       else if (blockMode && blocklyFrame) reloadBlockEditor();
     }
@@ -2348,7 +2348,7 @@ function setSerialScreenText(text) {
       const spin = document.createElement('div');
       spin.className = 'sim-blockly-spinner';
       const p = document.createElement('div');
-      p.textContent = text || 'در حال آماده‌سازی…';
+      p.textContent = text || __('در حال آماده‌سازی…');
       msgEl.appendChild(spin);
       msgEl.appendChild(p);
       msgEl.style.display = 'flex';
@@ -2379,7 +2379,7 @@ function setSerialScreenText(text) {
         msgEl.className = 'sim-blockly-msg';
         msgEl.innerHTML = '';
         const p = document.createElement('div');
-        p.textContent = 'صفحه برای نمایشِ درستِ بلوک‌ها خیلی باریک است — گوشی را افقی بگیر یا پنجره را عریض‌تر کن.';
+        p.textContent = __('صفحه برای نمایشِ درستِ بلوک‌ها خیلی باریک است — گوشی را افقی بگیر یا پنجره را عریض‌تر کن.');
         msgEl.appendChild(p);
         msgEl.style.display = 'flex';
       } else {
@@ -2448,7 +2448,7 @@ function setSerialScreenText(text) {
     }
     function loadCurrentCodeIntoBlocks() {
       if (typeof ArduinoBlocks === 'undefined') {
-        showBlockError('حالتِ بلوکی روی این صفحه در دسترس نیست.');
+        showBlockError(__('حالتِ بلوکی روی این صفحه در دسترس نیست.'));
         return false;
       }
       const currentCode = el.editor.value;
@@ -2483,7 +2483,7 @@ function setSerialScreenText(text) {
         // کاربر هرگز نباید با یک صفحه‌ی ساکت و بدون هیچ پیامی روبه‌رو
         // شود — پیامِ خودِ خطا را هم نشان می‌دهیم تا قابلِ گزارش باشد.
         blockSyncing = false;
-        showBlockError('خطای غیرمنتظره در تبدیلِ کد به بلوک: ' + (e && e.message ? e.message : e));
+        showBlockError(__('خطای غیرمنتظره در تبدیلِ کد به بلوک: ') + (e && e.message ? e.message : e));
         return false;
       }
       blockSyncing = false;
@@ -2495,8 +2495,8 @@ function setSerialScreenText(text) {
       // حبابِ هشدار، توی codeToWorkspace ست شده) و هم این‌جا در وضعیت/کنسول.
       if (res.warnings && res.warnings.length) {
         const n = res.warnings.length;
-        setStatus(n + (n === 1 ? ' بخش از کد قابلِ تبدیل به بلوک نبود' : ' بخش از کد قابلِ تبدیل به بلوک نبودند') + ' — به‌صورتِ «کدِ خام» (بلوکِ نارنجی) نگه داشته شد؛ رویش کلیک کن تا دلیلش را ببینی.', 'error');
-        res.warnings.forEach((w) => logLine('⚠ این کد قابلِ تبدیل به بلوکی نیست: ' + w.reason + ' → ' + w.code, 'sim-error'));
+        setStatus(n + (n === 1 ? __(' بخش از کد قابلِ تبدیل به بلوک نبود') : __(' بخش از کد قابلِ تبدیل به بلوک نبودند')) + __(' — به‌صورتِ «کدِ خام» (بلوکِ نارنجی) نگه داشته شد؛ رویش کلیک کن تا دلیلش را ببینی.'), 'error');
+        res.warnings.forEach((w) => logLine(__('⚠ این کد قابلِ تبدیل به بلوکی نیست: ') + w.reason + ' → ' + w.code, 'sim-error'));
       }
       resizeBlockly();
       blocksMatchText = true;
@@ -2508,11 +2508,11 @@ function setSerialScreenText(text) {
       return true;
     }
     function enterBlockMode() {
-      if (typeof ArduinoBlocks === 'undefined') { showBlockError('حالتِ بلوکی روی این صفحه در دسترس نیست.'); return; }
+      if (typeof ArduinoBlocks === 'undefined') { showBlockError(__('حالتِ بلوکی روی این صفحه در دسترس نیست.')); return; }
       // اگر بلوک‌ها همین الان دقیقاً معادلِ کدِ متنی‌اند، نیازی به بازسازی
       // (و نه حتی نمایشِ اسپینر) نیست — چیدمانِ دستیِ کاربر دست‌نخورده می‌ماند.
       if (blockWorkspace && blocksMatchText) { hideBlockMsg(); resizeBlockly(); return; }
-      showBlockSpinner('در حال آماده‌سازیِ بلوک‌ها…');
+      showBlockSpinner(__('در حال آماده‌سازیِ بلوک‌ها…'));
       ArduinoBlocks.ensureReady().then(() => {
         if (blockMode === false) return; // کاربر قبل از آماده‌شدن به حالتِ متنی برگشته
         if (!blockWorkspace) {
@@ -2527,7 +2527,7 @@ function setSerialScreenText(text) {
         // می‌تواند چند دلیلِ خیلی متفاوت داشته باشد (شبکه، بارگذاریِ خودِ
         // Blockly، یا یک باگِ واقعی)، و کاربر بدونِ دیدنِ متنِ دقیق نمی‌تواند
         // بگوید کدام‌یک بوده.
-        const reason = (e && e.message) ? e.message : 'بارگذاریِ ادیتورِ بلوکی ناموفق بود.';
+        const reason = (e && e.message) ? e.message : __('بارگذاریِ ادیتورِ بلوکی ناموفق بود.');
         showBlockError(reason);
         setMode('text', { skipSync: true, skipPersist: true });
       });
@@ -2571,11 +2571,11 @@ function setSerialScreenText(text) {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'ab-launcher-btn';
-      btn.textContent = '🧩 باز کردنِ ادیتورِ بلوکی';
+      btn.textContent = __('🧩 باز کردنِ ادیتورِ بلوکی');
       btn.addEventListener('click', openBlockEditor);
       const sub = document.createElement('div');
       sub.className = 'ab-launcher-sub';
-      sub.textContent = 'ادیتورِ بلوکی کنارِ بورد و کنسول، تمام‌صفحه باز می‌شود.';
+      sub.textContent = __('ادیتورِ بلوکی کنارِ بورد و کنسول، تمام‌صفحه باز می‌شود.');
       wrap.appendChild(btn);
       wrap.appendChild(sub);
       el.blocklyDiv.appendChild(wrap);
@@ -2628,7 +2628,7 @@ function setSerialScreenText(text) {
       el.blocklyDiv.innerHTML = '';
       window.addEventListener('message', onBlocklyFrameMessage);
       blocklyFrame = document.createElement('iframe');
-      blocklyFrame.title = 'ادیتورِ بلوکی';
+      blocklyFrame.title = __('ادیتورِ بلوکی');
       blocklyFrame.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0;background:#0d1117;';
       blocklyFrame.src = BLOCKLY_EDITOR_URL;
       el.blocklyDiv.appendChild(blocklyFrame);
@@ -2669,7 +2669,7 @@ function setSerialScreenText(text) {
           // ترجیحِ سراسری روی یک نمونه‌ی دیگر — هیچ‌کدام «تلاشِ مستقیمِ کاربر»
           // روی همین نمونه نیستند، پس نباید با یک پیامِ خطا سراغش برویم.
           if (!(opts && opts.silent)) {
-            setStatus('کدت خطا دارد؛ اول در حالتِ متنی درستش کن.', 'error');
+            setStatus(__('کدت خطا دارد؛ اول در حالتِ متنی درستش کن.'), 'error');
             check.messages.forEach((m) => logLine('✗ ' + m, 'sim-error'));
             setErrorLines(check.lines);
           }
@@ -2696,7 +2696,7 @@ function setSerialScreenText(text) {
         if (blockWorkspace && !(opts && opts.skipSync)) {
           forceCommitBlocklyFields();
           const ok = syncBlocksToText();
-          if (!ok) setStatus('یکی از بلوک‌ها ناقص است؛ کدِ متنی هنوز آخرین نسخه نیست.', 'error');
+          if (!ok) setStatus(__('یکی از بلوک‌ها ناقص است؛ کدِ متنی هنوز آخرین نسخه نیست.'), 'error');
         }
         el.blocklyWrap.style.display = 'none';
         el.editorWrap.style.display = '';

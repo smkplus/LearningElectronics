@@ -89,14 +89,14 @@
   .account-icon{ width:18px; height:18px; flex:0 0 auto; color:var(--muted); }
   .account-btn.signed-in .account-icon{ display:none; }
   .account-menu{
-    display:none; position:absolute; top:calc(100% + 8px); left:0; z-index:60;
+    display:none; position:absolute; top:calc(100% + 8px); inset-inline-end:0; z-index:60;
     min-width:200px; background:var(--bg2); border:1px solid var(--panel-border);
     border-radius:12px; padding:10px; box-shadow:0 12px 30px -10px rgba(0,0,0,.5);
   }
   .account-menu.open{ display:block; }
   .account-menu-note{ font-size:11.5px; color:var(--muted); padding:4px 6px 8px; line-height:1.7; }
   .account-menu-item{
-    width:100%; text-align:right; padding:8px 10px; border-radius:8px; border:none;
+    width:100%; text-align:start; padding:8px 10px; border-radius:8px; border:none;
     background:transparent; color:var(--danger); font-family:'Vazirmatn'; font-weight:700;
     font-size:12.5px; cursor:pointer;
   }
@@ -232,3 +232,14 @@
     .xp-wrap{ min-width:0; flex:1 1 120px; }
     .tab-nav{ padding-inline:10px; }
   }
+
+
+  /* ---------- LANGUAGE SWITCH ---------- */
+  html.i18n-pending body{ visibility:hidden; }
+  .lang-switch{ flex:0 0 auto; }
+  .lang-select{
+    background:var(--panel); color:var(--parchment); border:1px solid var(--panel-border);
+    border-radius:20px; padding:6px 12px; font:700 12.5px 'Vazirmatn', sans-serif; cursor:pointer;
+  }
+  .lang-select:hover{ border-color:var(--trace); }
+  .lang-select:focus-visible{ outline:2px solid var(--trace-bright); outline-offset:2px; }
